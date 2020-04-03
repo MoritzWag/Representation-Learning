@@ -3,7 +3,7 @@ import setuptools
 setuptools.setup(
     name="library",
     version="0.1.1",
-    author="Alexander Piehler & Jann Goschenhofer",
+    author="Alexander Piehler & Moritz Wagner",
     author_email="moritzwagner95@hotmail.de",
     description="package for representation learning",
     url="https://github.com/MoritzWag/Representation-Learning",
