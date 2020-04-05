@@ -19,8 +19,6 @@ class Encoder(nn.Module):
         self.relu1 = nn.ReLU()
         self.relu2 = nn.ReLU()
 
-
-    
     def forward(self, x):
         x = self.relu1(self.fc1(x))
         x = self.relu2(self.fc2(x))
@@ -84,7 +82,7 @@ class ConvDecoder(nn.Module):
         self.conv3 = nn.ConvTranspose2d(64, 32, kernel_size=4, stride=1)
         self.relu3 = nn.ReLU()
         self.conv4 = nn.ConvTranspose2d(32, 1, kernel_size=4, stride=1)
-        self.relu4 = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
         self.fc1 = nn.Linear(32, 4096)
 
         self.mu = nn.Linear(4096, 32)
@@ -96,9 +94,12 @@ class ConvDecoder(nn.Module):
         x = self.relu1(self.conv1(x))
         x = self.relu2(self.conv2(x))
         x = self.relu3(self.conv3(x))
-        x = self.relu4(self.conv4(x))
+        x = self.sigmoid(self.conv4(x))
+        #x = self.relu4(self.conv4(x))
 
-        return self.mu(x), self.logvar(x)
+        return x 
+
+        #return self.mu(x), self.logvar(x)
 
 
 class Flatten(nn.Module):
@@ -124,6 +125,13 @@ class UnFlatten(nn.Module):
         return input.view(input.size(0), 256, 4, 4)
 
 
+
+class result_container:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+
 ##################################
 #
 # Text Encoder and Decoder
@@ -135,7 +143,7 @@ class AttributeEncoder(nn.Module):
     """
     """
     def __init__(self, n_latents):
-        super(AttributeEncoder, self).__init__():
+        super(AttributeEncoder, self).__init__()
     
     def forward(self, z):
         pass
@@ -171,3 +179,11 @@ class ProductOfExperts(nn.Module):
         pd_var = 1 / torch.sum(1 / var, dim=0)
         pd_logvar = torch.log(pd_var)
         return pd_mu, pd_logvar
+
+
+####################################
+#
+# Mixture of Experts
+# https://github.com/iffsid/mmvae/blob/d988793447453565122b6bab1fdf1df18d2f74e9/src/models/mmvae.py#L65
+#
+#####################################
