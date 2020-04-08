@@ -6,6 +6,8 @@ import os
 from library import architectures
 from library.architectures import ConvEncoder, ConvDecoder
 
+from library.models.base import VaeBase
+
 
 import torch
 import torch.utils.data
