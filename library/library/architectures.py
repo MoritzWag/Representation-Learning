@@ -1,0 +1,302 @@
+import torch
+import torch.utils.data
+from torch import nn, optim
+from torch.nn import functional as F
+from torchvision import datasets, transforms
+from torchvision.utils import save_image
+from torch import Tensor
+import pdb
+
+class Encoder(nn.Module):
+    """
+    """
+    def __init__(self, input_dim, latent_dim):
+        super(Encoder, self).__init__()
+        self.input_dim = input_dim
+        self.latent_dim = latent_dim
+        self.fc1 = nn.Linear(input_dim, 400)
+        self.fc2 = nn.Linear(400, latent_dim)
+        self.relu1 = nn.ReLU()
+        self.relu2 = nn.ReLU()
+
+    def forward(self, x):
+        x = self.relu1(self.fc1(x))
+        x = self.relu2(self.fc2(x))
+        return x 
+        
+
+class Decoder(nn.Module):
+    """
+    """
+    def __init__(self):
+        super(Decoder, self).__init__()
+        self.latent_dim = latent_dim
+        self.outpu_dim = ouput_dim
+        self.fc1 = nn.Linear(latent_dim, )
+        self.fc2 = nn.Linear()
+        self.relu1 = nn.ReLU()
+        self.relu2 = nn.ReLU()
+
+    def forward(self, x):
+        x = self.relu1(self.fc1(x))
+        x = self.relu2(self.fc2(x))
+        return x
+
+
+class ConvEncoder28x28(nn.Module):
+    """
+    """
+
+    def __init__(self,
+                in_channels: int,
+                latent_dim: int,
+                hidden_dims = None,
+                **kwargs) -> None:
+        super(ConvEncoder28x28, self).__init__()
+            
+        
+        self.latent_dim = latent_dim
+
+        modules = []
+        #pdb.set_trace()
+        if hidden_dims is None:
+            #hidden_dims = [32, 64, 128, 256, 512]
+            hidden_dims = [32, 64, 128, 256]
+        
+        self.hidden_dims = hidden_dims
+
+        for h_dim in self.hidden_dims:
+            modules.append(
+                nn.Sequential(
+                    nn.Conv2d(in_channels, out_channels=h_dim,
+                                kernel_size=3, stride=2, padding=1),
+                    nn.BatchNorm2d(h_dim),
+                    nn.LeakyReLU()
+                )
+            )
+            in_channels = h_dim
+        
+        self.encoder = nn.Sequential(*modules)
+
+    def forward(self, input: Tensor) -> Tensor:
+        output = self.encoder(input)
+        output = torch.flatten(output, start_dim=1)
+        return output
+
+
+class ConvDecoder28x28(nn.Module):
+    """
+    """
+    
+    def __init__(self,
+                latent_dim: int,
+                hidden_dims = None,
+                **kwargs) -> None:
+        super(ConvDecoder28x28, self).__init__()
+        
+        if hidden_dims is None:
+            #hidden_dims = [32, 64, 128, 256, 512]
+            hidden_dims = [32, 64, 128, 256]
+        
+        modules = []
+
+        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1]*4)
+
+        hidden_dims.reverse()
+        
+
+        for i in range(len(hidden_dims) - 1):
+            modules.append(
+                nn.Sequential(
+                    nn.ConvTranspose2d(hidden_dims[i],
+                                        hidden_dims[i + 1],
+                                        kernel_size=3,
+                                        stride=2,
+                                        padding=1,
+                                        output_padding=1),
+                    nn.BatchNorm2d(hidden_dims[i + 1]),
+                    nn.LeakyReLU()
+                )
+            )
+        
+        self.decoder = nn.Sequential(*modules)
+
+        #self.final_layer = nn.Sequential(
+        #                        nn.ConvTranspose2d(hidden_dims[-1],
+        #                                            hidden_dims[-1],
+        #                                            kernel_size=3,
+        #                                            stride=2,
+        #                                            padding=1),
+        #                        nn.BatchNorm2d(hidden_dims[-1]),
+        #                        nn.LeakyReLU(),
+        #                        nn.Conv2d(hidden_dims[-1], out_channels=1,
+        #                                kernel_size=3, padding=1),
+        #                       nn.Tanh())
+        
+        self.final_layer = nn.Sequential(
+                                nn.ConvTranspose2d(hidden_dims[-1],
+                                                    out_channels=1,
+                                                    kernel_size=2,
+                                                    stride=2,
+                                                    padding=2),
+                                nn.BatchNorm2d(1),
+                                nn.LeakyReLU(),
+                                nn.Tanh())
+
+
+    def forward(self, input) -> Tensor:
+        x = self.decoder_input(input)
+        #x = x.view(-1, hidden_dims[1], 2, 2)
+        x = x.view(-1, 256, 2, 2)
+        #x = x.view(-1, 512, 1, 1)
+        x = self.decoder(x)
+        output = self.final_layer(x)
+        return output
+
+
+
+
+class ConvEncoder(nn.Module):
+    """
+    """
+    def __init__(self, latent_dim=None):
+        super(ConvEncoder, self).__init__()
+        self.latent_dim = latent_dim
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=4, stride=1)
+        self.relu1 = nn.ReLU()
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=1)
+        self.relu2 = nn.ReLU()
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=4, stride=2)
+        self.relu3 = nn.ReLU()
+        self.conv4 = nn.Conv2d(128, 256, kernel_size=4, stride=2)
+        self.relu4 = nn.ReLU()
+        self.flatten = Flatten()
+
+    def forward(self, x):
+        pdb.set_trace()
+        x = self.relu1(self.conv1(x))
+        x = self.relu2(self.conv2(x))
+        x = self.relu3(self.conv3(x))
+        x = self.relu4(self.conv4(x))
+        x = self.flatten(x)
+        return x
+
+class ConvDecoder(nn.Module):
+    """
+    """
+    def __init__(self, latent_dim=None):
+        super(ConvDecoder, self).__init__()
+        self.latent_dim = latent_dim
+        self.unflatten = UnFlatten()
+        self.conv1 = nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2)
+        self.relu1 = nn.ReLU()
+        self.conv2 = nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2)
+        self.relu2 = nn.ReLU()
+        self.conv3 = nn.ConvTranspose2d(64, 32, kernel_size=4, stride=1)
+        self.relu3 = nn.ReLU()
+        self.conv4 = nn.ConvTranspose2d(32, 1, kernel_size=4, stride=1)
+        self.sigmoid = nn.Sigmoid()
+        self.fc1 = nn.Linear(32, 4096)
+
+        self.mu = nn.Linear(4096, 32)
+        self.logvar = nn.Linear(4096, 32)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.unflatten(x)
+        x = self.relu1(self.conv1(x))
+        x = self.relu2(self.conv2(x))
+        x = self.relu3(self.conv3(x))
+        x = self.sigmoid(self.conv4(x))
+        #x = self.relu4(self.conv4(x))
+
+        return x 
+
+        #return self.mu(x), self.logvar(x)
+
+
+class Flatten(nn.Module):
+    """
+    """
+    def forward(self, input):
+        return input.view(input.size(0), -1)
+
+#class UnFlatten(nn.Module):
+#    """
+#    """
+#    def __init__(self, size=256):
+#        self.size = size
+#
+#    def forward(self, input):
+#        return input.view(input.size(0), self.size, 4, 4)
+
+
+class UnFlatten(nn.Module):
+    """
+    """
+    def forward(self, input):
+        return input.view(input.size(0), 256, 4, 4)
+
+
+
+class result_container:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+
+##################################
+#
+# Text Encoder and Decoder
+# from: https://github.com/wenxuanliu/multimodal-vae/blob/6bbcd474c8736f7c802ce7c6574a17d0c9ebe404/celeba/model.py#L199
+#
+##################################
+
+class AttributeEncoder(nn.Module):
+    """
+    """
+    def __init__(self, n_latents):
+        super(AttributeEncoder, self).__init__()
+    
+    def forward(self, z):
+        pass
+
+
+
+class AttributeDecoder(nn.Module):
+    """
+    """
+    def __init__(self, n_latents):
+        super(AttributeDecoder, self).__init__()
+    
+    def forward(self, z):
+        pass
+
+
+
+################################
+#
+# Product of Experts
+#
+################################
+
+class ProductOfExperts(nn.Module):
+    """Return parameters for product of independent experts.
+    See https://arxiv.org/pdf/1410.7827.pdf for equations.
+    :param mu: M x D for M experts
+    :param logvar: M x D for M experts
+    """
+    def forward(self, mu, logvar, eps=1e-8):
+        var = torch.exp(logvar) + eps
+        pd_mu = torch.sum(mu * var, dim=0) / torch.sum(var, dim=0)
+        pd_var = 1 / torch.sum(1 / var, dim=0)
+        pd_logvar = torch.log(pd_var)
+        return pd_mu, pd_logvar
+
+
+####################################
+#
+# Mixture of Experts
+# https://github.com/iffsid/mmvae/blob/d988793447453565122b6bab1fdf1df18d2f74e9/src/models/mmvae.py#L65
+#
+#####################################
