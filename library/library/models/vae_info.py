@@ -18,8 +18,6 @@ import torchvision.utils as vutils
 
 
 
-
-
 class InfoVae(VaeBase):
     """
     """
