@@ -151,7 +151,8 @@ class MMVaeBase(ReprLearner):
             img_decoder,
             text_encoder,
             text_decoder,
-            experts):
+            experts,
+            **kwargs):
         super(MMVaeBase, self).__init__(**kwargs)
         self.img_encoder = img_encoder
         self.img_decoder = img_decoder
