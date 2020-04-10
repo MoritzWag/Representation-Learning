@@ -131,4 +131,10 @@ dmypy.json
 
 
 ## additionally specified
+## data
 data/mnist/*
+
+
+## mlruns
+*mlruns*
+
