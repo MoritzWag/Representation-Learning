@@ -27,10 +27,10 @@ def get_data(args):
     trainset = torchvision.datasets.MNIST(root=data_path, train=True, download=True, transform=transform)
     testset = torchvision.datasets.MNIST(root=data_path, train=False, download=True, transform=transform)
 
-    X_train = trainset.data.unsqueeze(1)
+    X_train = trainset.data.unsqueeze(1) / 255.
     Y_train = pd.DataFrame(trainset.targets, columns=['labels'])
     
-    X_test = testset.data.unsqueeze(1)
+    X_test = testset.data.unsqueeze(1)/ 255.
     Y_test = pd.DataFrame(testset.targets, columns=['labels'])
 
     # store the data as .npy ndarray
@@ -43,7 +43,7 @@ def get_data(args):
 
 
     # something here is not working: command 'rm' is unrecognized!
-    os.system('rm {}/processed; rm -rf {}/raw'.format(data_path, data_path))
+    os.system('rmdir {}/processed; rmdir -rf {}/raw'.format(data_path, data_path))
     print('Stored mnist data')
 
 if __name__ == "__main__":

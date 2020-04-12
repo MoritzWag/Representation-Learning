@@ -1,4 +1,3 @@
-#from library.models2 import vae_gaussian2, 
 from library.models2.vae_gaussian2 import *
 from library.architectures import *
 import pdb 

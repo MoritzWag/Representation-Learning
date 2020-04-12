@@ -5,12 +5,10 @@ architecture:
   img_encoder: 'ConvEncoder28x28'
   img_decoder: 'ConvDecoder28x28'
 
-
 architecture_params:
   in_channels: 1
   latent_dim: 32
   num_attr: 100
-
 
 exp_params:
   dataset: 'mnist'
@@ -23,7 +21,7 @@ exp_params:
 
 trainer_params:
   gpus: 0
-  epochs: 20
+  max_epochs: 1
 
 logging_params:
   save_dir: "logs/"

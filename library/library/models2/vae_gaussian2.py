@@ -74,6 +74,7 @@ class VaeGaussian(VaeBase):
         kld_weight = 32 / 40000
 
         # should figure out how to properly weight the losses 
-        loss = kld_weight * lat_loss + recon_loss 
+        loss = kld_weight * lat_loss + recon_loss
 
-        return {'loss': loss, 'lat_loss': lat_loss, 'recon_loss': recon_loss}
+        return {'loss': loss.to(torch.double), 'lat_loss': lat_loss.to(torch.double), 'recon_loss': recon_loss.to(torch.double)}
+        #return {'loss': loss.to(torch.DoubleTensor), 'lat_loss': lat_loss.to(torch.DoubleTensor), 'recon_loss': recon_loss.to(torch.DoubleTensor)}

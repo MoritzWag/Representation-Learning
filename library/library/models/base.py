@@ -11,7 +11,6 @@ from torch import nn, optim, Tensor
 from torch.nn import functional as F
 from torchvision import datasets, transforms
 import torchvision.utils as vutils
-#from torchvision.utils import save_image, vutils
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
