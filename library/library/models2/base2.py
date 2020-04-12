@@ -170,38 +170,4 @@ class VaeBase(ReprLearner):
             pass
     
         del test_input, reconstruction
-
-    
-    #def _sample_images(self,
-    #                model,
-    #                val_gen,
-    #                path,
-    #                epoch,
-    #                experiment_name):
-    #    test_input, test_label = next(iter(val_gen))
-    #    #test_input = test_input.to(current_device)
-    #
-    #    # check whether path already exists
-    #    path = os.path.expanduser(path)
-    #    storage_path = f"{path}{experiment_name}/"
-    #    if not os.path.exists(storage_path):
-    #        os.makedirs(storage_path)
-    #
-    #    recons = model._generate(model, test_input)
-    #    vutils.save_image(recons.data, 
-    #                    f"{storage_path}recon_{epoch}.png",
-    #                    normalize=True,
-    #                    nrow=12)
-    #    
-    #    try:
-    #        samples = model._sample(model, num_samples=32)
-    #        vutils.save_image(samples.data,
-    #                        f"{storage_path}sample_{epoch}.png",
-    #                        normalize=True,
-    #                        nrow=12)
-    #    except:
-    #        pass
-    #    
-    #
-    #     del test_input, recons
-    
+   
