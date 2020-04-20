@@ -119,69 +119,6 @@ class ConvDecoder28x28(nn.Module):
         return output
 
 
-
-
-class ConvEncoder(nn.Module):
-    """
-    """
-    def __init__(self, latent_dim=None):
-        super(ConvEncoder, self).__init__()
-        self.latent_dim = latent_dim
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=4, stride=1)
-        self.relu1 = nn.ReLU()
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=1)
-        self.relu2 = nn.ReLU()
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=4, stride=2)
-        self.relu3 = nn.ReLU()
-        self.conv4 = nn.Conv2d(128, 256, kernel_size=4, stride=2)
-        self.relu4 = nn.ReLU()
-        self.flatten = Flatten()
-
-    def forward(self, x):
-        x = self.relu1(self.conv1(x))
-        x = self.relu2(self.conv2(x))
-        x = self.relu3(self.conv3(x))
-        x = self.relu4(self.conv4(x))
-        x = self.flatten(x)
-        return x
-
-class ConvDecoder(nn.Module):
-    """
-    """
-    def __init__(self, latent_dim=None):
-        super(ConvDecoder, self).__init__()
-        self.latent_dim = latent_dim
-        self.unflatten = UnFlatten()
-        self.conv1 = nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2)
-        self.relu1 = nn.ReLU()
-        self.conv2 = nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2)
-        self.relu2 = nn.ReLU()
-        self.conv3 = nn.ConvTranspose2d(64, 32, kernel_size=4, stride=1)
-        self.relu3 = nn.ReLU()
-        self.conv4 = nn.ConvTranspose2d(32, 1, kernel_size=4, stride=1)
-        self.sigmoid = nn.Sigmoid()
-        self.fc1 = nn.Linear(32, 4096)
-
-        self.mu = nn.Linear(4096, 32)
-        self.logvar = nn.Linear(4096, 32)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.unflatten(x)
-        x = self.relu1(self.conv1(x))
-        x = self.relu2(self.conv2(x))
-        x = self.relu3(self.conv3(x))
-        x = self.sigmoid(self.conv4(x))
-        #x = self.relu4(self.conv4(x))
-
-        return x 
-
-        #return self.mu(x), self.logvar(x)
-
-
-
-
-
 ##################################
 #
 # Text Encoder and Decoder
