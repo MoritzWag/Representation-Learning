@@ -1,5 +1,6 @@
 import torch
 import torch.utils.data
+from torch.autograd import Variable
 from torch import nn, optim
 from torch.nn import functional as F
 from torchvision import datasets, transforms
@@ -58,7 +59,6 @@ class ConvEncoder28x28(nn.Module):
         self.latent_dim = latent_dim
 
         modules = []
-        #pdb.set_trace()
         if hidden_dims is None:
             #hidden_dims = [32, 64, 128, 256, 512]
             hidden_dims = [32, 64, 128, 256]
@@ -173,7 +173,6 @@ class ConvEncoder(nn.Module):
         self.flatten = Flatten()
 
     def forward(self, x):
-        pdb.set_trace()
         x = self.relu1(self.conv1(x))
         x = self.relu2(self.conv2(x))
         x = self.relu3(self.conv3(x))
@@ -255,22 +254,38 @@ class result_container:
 class AttributeEncoder(nn.Module):
     """
     """
-    def __init__(self, n_latents):
+    def __init__(self, num_attr):
         super(AttributeEncoder, self).__init__()
+        self.num_attr = num_attr
+        self.net = nn.Sequential(
+                    nn.Embedding(10, 50),
+                    nn.BatchNorm1d(50),
+                    nn.ReLU(),
+        )
     
-    def forward(self, z):
-        pass
+    def forward(self, x):
+        x = self.net(x)
+        return x
 
 
 
 class AttributeDecoder(nn.Module):
     """
     """
-    def __init__(self, n_latents):
+    def __init__(self, num_attr):
         super(AttributeDecoder, self).__init__()
+        self.num_attr = num_attr
+        self.net = nn.Sequential(
+                    nn.Linear(num_attr, 10),
+                    nn.BatchNorm1d(10),
+                    nn.ReLU(),
+                    nn.Linear(10, 10)
+
+        )
     
     def forward(self, z):
-        pass
+        z = self.net(z)
+        return F.log_softmax(z)
 
 
 
@@ -292,6 +307,23 @@ class ProductOfExperts(nn.Module):
         pd_var = 1 / torch.sum(1 / var, dim=0)
         pd_logvar = torch.log(pd_var)
         return pd_mu, pd_logvar
+
+
+def prior_experts(size, use_cuda=False):
+    """Universal prior expert. Here we use a spherical G
+    Gaussian: N(0, 1).
+
+    Args:
+        size: {integer} dimensionality of Gaussian
+        use_cuda: {boolena} cast CUDA on variables
+    """
+
+    mu = Variable(torch.zeros(size))
+    logvar = Variable(torch.log(torch.ones(size)))
+    if use_cuda:
+        mu, logvar = mu.cuda(), logvar.cuda()
+    return mu, logvar
+
 
 
 ####################################

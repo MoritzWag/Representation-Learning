@@ -11,8 +11,7 @@ import pdb
 
 def parse_args():
     parser = argparse.ArgumentParser(description='mnist')
-    parser.add_argument('--path', type=str, default = '.',
-
+    parser.add_argument('--path', type=str, default='.',
                         help='path to store data')
     args = parser.parse_args()
     return args
