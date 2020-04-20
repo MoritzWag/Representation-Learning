@@ -4,6 +4,8 @@ import pdb
 import logging
 import os
 
+from library.architectures import prior_experts
+
 import torch
 import torch.utils.data
 from torch.nn import functional as F
@@ -78,49 +80,87 @@ class MMVaeBase(ReprLearner):
             img_decoder,
             text_encoder,
             text_decoder,
-            experts,
+            expert,
             **kwargs):
         super(MMVaeBase, self).__init__(**kwargs)
         self.img_encoder = img_encoder
         self.img_decoder = img_decoder
         self.text_encoder = text_encoder
         self.text_decoder = text_decoder
-        self.experts = experts
+        self.expert = expert
 
     def _reparameterization(self, x):
         pass
-        
+
     def forward(self, image=None, attrs=None):
         assert image is not None or attrs is not None
-        if image is not None and attrs is not None:
-            image_mu, image_logvar = self.img_encoder(image)
-            attrs_mu, attrs_logvar = self.text_encoder(attrs)
-            self.mu = torch.stack((image_mu, attrs_mu), dim=0)
-            self.logvar = torch.stack((image_logvar, attr_logvar), dim=0)
-        elif image is not None:
-            mu, logvar = self.img_encoder(image)
-            mu, logvar = mu.unsqueeze(0), logvar.unsqueeze(0)
-        elif attrs is not None:
-            mu, logvar = self.text_encoder(attrs)
-            mu, logvar = mu.unsqueeze(0), logvar.unsqueeze(0)
-        if self.img_encoder and self.text_encoder is not None:
-            mu, logvar = self.experts(mu, logvar)
-            
-        z = self._reparameterization(mu, logvar)
-            
-        if self.img_encoder and self.text_encoder is not None:
-            image_recon = self.img_decoder(z)
-            attrs_recon = self.attrs_decoder(z)
-            return image_recon, attrs_recon, mu, logvar
-        elif image is not None:
-            image_recon = self.img_decoder(z)
-            return image_recon, mu, logvar
-        elif attrs is not None:
-            attrs_recon = self.attrs_decoder(z)
-            return attrs_recon, mu, logvar
 
-    def _sample_img_attrs(self):
-        pass
+        batch_size = image.size(0) if image is not None else attrs.size(0)
+        
+        mu, logvar = prior_experts((1, batch_size, 10))
+
+
+        if image is not None and attrs is not None:
+            img_henc = self.img_encoder(image)
+            attrs_henc = self.text_encoder(attrs.to(torch.int64))
+
+            image_mu, image_logvar = self._parameterize(img_henc, img=True)
+            mu = torch.cat((mu, image_mu.unsqueeze(0)), dim=0)
+            logvar = torch.cat((logvar, image_logvar.unsqueeze(0)), dim=0)
+
+            attr_mu, attr_logvar = self._parameterize(attrs_henc, attrs=True)
+            mu = torch.cat((mu, attr_mu.unsqueeze(0)), dim=0)
+            logvar = torch.cat((logvar, attr_logvar.unsqueeze(0)), dim=0)
+
+        elif image is not None:
+            img_henc = self.img_encoder(image)
+            image_mu, image_logvar = self._parameterize(img_henc, img=True)
+            mu = torch.cat((mu, image_mu.unsqueeze(0)), dim=0)
+            logvar = torch.cat((logvar, image_logvar.unsqueeze(0)), dim=0)
+
+        elif attrs is not None:
+            attr_henc = self.text_encoder(attrs.to(torch.int64))
+            attr_mu, attr_logvar = self._parameterize(attr_henc, attrs=True)
+            mu = torch.cat((mu, attr_mu.unsqueeze(0)), dim=0)
+            logvar = torch.cat((logvar, attr_logvar.unsqueeze(0)), dim=0)
+
+        mu, logvar = self.expert(mu, logvar)
+
+        z = self._mm_reparameterization(mu, logvar)
+
+        image_recon = self.img_decoder(z)
+        attr_recon = self.text_decoder(z)
+
+        return {'recon_image': image_recon, 'recon_text': attr_recon, 'mu': mu, 'logvar': logvar}
+
+
+    def _sample_images(self,
+                    val_gen,
+                    epoch,
+                    path, 
+                    experiment_name):
+        
+        test_input, test_label = next(iter(val_gen))
+        path = os.path.expanduser(path)
+        storage_path = f"{path}{experiment_name}/"
+        if not os.path.exists(storage_path):
+            os.makedirs(storage_path)
+        
+        reconstruction = self._generate(test_input)
+        vutils.save_image(reconstruction['recon_image'].data,
+                        f"{storage_path}recon_{epoch}.png",
+                        normalize=True,
+                        nrow=12)
+        try:
+            samples = self._sample(num_samples=32)
+            vutils.save_image(samples.data,
+                            f"{storage_path}sample_{epoch}.png",
+                           normalize=True,
+                            nrow=12)
+        except:
+            pass
+    
+        del test_input, reconstruction
 
 
 
@@ -160,7 +200,6 @@ class VaeBase(ReprLearner):
                         normalize=True,
                         nrow=12)
         try:
-            #pdb.set_trace()
             samples = self._sample(num_samples=32)
             vutils.save_image(samples.data,
                             f"{storage_path}sample_{epoch}.png",

@@ -5,6 +5,7 @@ import logging
 import os
 from library import architectures
 from library.architectures import ConvEncoder, ConvDecoder
+from library.models2.helpers import *
 
 #from library.models.base import VaeBase
 from library.models2 import base2
@@ -19,9 +20,9 @@ from torchvision import datasets, transforms
 import torchvision.utils as vutils
 #from torchvision.utils import save_image, vutils
 
+# class VaeGaussian(VaeBase)
 
-
-class VaeGaussian(VaeBase):
+class VaeGaussian(nn.Module):
     """
     """
     def __init__(self, 
@@ -33,7 +34,14 @@ class VaeGaussian(VaeBase):
         self.hidden_dim = self.img_encoder.hidden_dims
         self.mu = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
         self.logvar = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
-        
+
+        #if self.__base__ == MMVaeBase:
+        #    self.attr_mu = nn.Linear(50, self.attr_encoder.latent_dim)
+        #    self.attr_logvar = nn.Linear(50, self.attr_encoder.latent_dim)
+        self.attr_mu = nn.Linear(50, self.text_encoder.num_attr)
+        self.attr_logvar = nn.Linear(50, self.text_encoder.num_attr)
+
+    # here I need some check whether reparameterization for attr or image 
     def _reparameterization(self, h_enc):
         """Reparameterization trick to sample from N(mu, var) from 
         N(0,1).
@@ -46,35 +54,61 @@ class VaeGaussian(VaeBase):
         """
         ## Gaussian reparameterization: mu + epsilon*sigma
         mu = self.mu(h_enc)
-        log_sigma = self.logvar(h_enc)
+        logvar = self.logvar(h_enc)
 
         std = torch.exp(0.5*log_sigma)
         eps = torch.randn_like(std)
 
         # store loss items
-        self.loss_item['z_mean'] = mu
-        self.loss_item['z_sigma'] = log_sigma
+        self.loss_item['mu'] = mu
+        self.loss_item['logvar'] = logvar
+
+        return eps * std * mu
+    
+    def _parameterize(self, h_enc, img=None, attrs=None):
+
+        if img:
+            mu = self.mu(h_enc)
+            log_sigma = self.logvar(h_enc)
+        else:
+            mu = self.attr_mu(h_enc)
+            log_sigma = self.attr_mu(h_enc)
+        
+        return mu, log_sigma
+
+    
+    def _mm_reparameterization(self, mu, logvar):
+        std = torch.exp(0.5*logvar)
+        eps = torch.randn_like(std)
 
         return eps * std * mu
 
+    def _loss_function(self, image=None, text=None, recon_image=None, 
+                        recon_text=None, mu=None, logvar=None):
 
-    def _loss_function(self, x: Tensor, recon_x: Tensor, z_mean: Tensor, z_sigma: Tensor):
-        # latent loss: KL divergence
-        def latent_loss(z_mean, z_sigma):
-            return torch.mean(-0.5 * torch.sum(1 + z_sigma - z_mean ** 2 - z_sigma.exp(), dim=1), dim=0)
+        if recon_image is not None and image is not None:
+            image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
         
-        # reconstruction loss 
-        def reconstruction_loss(recon_x, x):
-            return F.mse_loss(recon_x, x)
-            #return F.binary_cross_entropy(recon_x, x)
+        if recon_text is not None and text is not None:
+            text_recon_loss = F.nll_loss(recon_text, text.to(torch.long)).to(torch.float64)
+        
+        #latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar + mu ** 2 - logvar.exp(), dim=1), dim=0)
+        latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
-        lat_loss = latent_loss(z_mean, z_sigma)
-        recon_loss = reconstruction_loss(recon_x, x.float())
-
-        kld_weight = 32 / 40000
-
-        # should figure out how to properly weight the losses 
-        loss = kld_weight * lat_loss + recon_loss
-
-        return {'loss': loss.to(torch.double), 'lat_loss': lat_loss.to(torch.double), 'recon_loss': recon_loss.to(torch.double)}
-        #return {'loss': loss.to(torch.DoubleTensor), 'lat_loss': lat_loss.to(torch.DoubleTensor), 'recon_loss': recon_loss.to(torch.DoubleTensor)}
+        #kld_weight = 32/ 40000
+        kld_weight = 32 / 400
+        #loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss
+        #pdb.set_trace()
+        if recon_text is not None and text is not None:
+            loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss 
+            return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
+                    'image_recon_loss': image_recon_loss.to(torch.double), 'text_recon_loss': text_recon_loss.to(torch.double)}
+            #return {'loss': loss, 'latent_loss': latent_loss,
+            #       'image_recon_loss': image_recon_loss, 'text_recon_loss': text_recon_loss}
+        else:
+            loss = kld_weight * latent_loss + image_recon_loss 
+            #return {'loss': loss, 'latent_loss': latent_loss, 
+            #        'image_recon_loss': image_recon_loss}
+            return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
+                    'image_recon_loss': image_recon_loss.to(torch.double)}
+        

@@ -1,6 +1,7 @@
 
 import pandas as pd
 import numpy as np 
+import collections, functools, operator
 from library.visualizations import plot_train_progress
 
 import torch
@@ -11,6 +12,9 @@ from library import utils
 import pytorch_lightning as pl 
 from torchvision import transforms 
 from torch.utils.data import DataLoader
+from torch.autograd import Variable
+
+
 
 class RlExperiment(pl.LightningModule):
 
@@ -25,41 +29,74 @@ class RlExperiment(pl.LightningModule):
         self.val_history = pd.DataFrame()
         self.test_score = None
         self.experiment_name = "VaeGaussian"
-    
         #self.logger.experiment.log_param()
         #self.logger.experiment.log_hyperparams(self.params)
 
-    def forward(self, input, **kwargs):
-        return self.model(input, **kwargs)
+    def forward(self, *args, **kwargs):
+        return self.model(*args, **kwargs)
 
     def training_step(self, batch, batch_idx, optimizer_idx=0):
+        image, attribute = batch
+        image, attribute = Variable(image), Variable(attribute)
 
-        X, Y = batch
-    
-        reconstruction = self.forward(X.float())
-        self.model.loss_item['recon_x'] = reconstruction
+        if self.model.text_encoder and self.model.img_encoder is not None:
+            #print("Yes")
+            reconstruction1 = self.forward(image=image.float(), attrs=attribute)
+            reconstruction2 = self.forward(image=image.float())
+            reconstruction3 = self.forward(attrs=attribute)
 
-        train_loss = self.model._loss_function(X.float(), **self.model.loss_item)
-        #for item in train_loss.items():
-        #    self.logger.experiment.log_metric(key=item[0], 
-        #                                    value=item[1].float(),
-        #                                    run_id=self.logger.run_id)
+            train_loss1 = self.model._loss_function(image.float(), attribute, **reconstruction1)
+            train_loss2 = self.model._loss_function(image.float(), attribute, **reconstruction2)
+            train_loss3 = self.model._loss_function(image.float(), attribute, **reconstruction3)
+            
+            train_loss_dict = [train_loss1, train_loss2, train_loss3]
+            counter = collections.Counter()
+            for d in train_loss_dict:
+                counter.update(d)
+            
+            train_loss = dict(counter)
+            print(train_loss)
+
+        else:
+            reconstruction = self.forward(X.float())
+            self.model.loss_item['recon_image'] = reconstruction
+            train_loss = self.model._loss_function(X.float(), **self.model.loss_item)
+
         
         train_history = pd.DataFrame([[value.detach().numpy() for value in train_loss.values()]],
-                                    columns=[key for key in train_loss.keys()])
-        
+                                    columns=[key for key in train_loss.keys()])   
+            
         self.train_history = self.train_history.append(train_history, ignore_index=True)
-
-        # here some visualization functionality 
 
         return train_loss
 
-    def validation_step(self, batch, batch_idx):
-        X, Y = batch
 
-        reconstruction = self.forward(X.float())
-        self.model.loss_item['recon_x'] = reconstruction
-        val_loss = self.model._loss_function(X.float(), **self.model.loss_item)
+
+    def validation_step(self, batch, batch_idx):
+        image, attribute = batch
+        image, attribute = Variable(image), Variable(attribute)
+
+        if self.model.text_encoder and self.model.img_encoder is not None:
+            reconstruction1 = self.forward(image=image.float(), attrs=attribute)
+            reconstruction2 = self.forward(image=image.float())
+            reconstruction3 = self.forward(attrs=attribute)
+
+            val_loss1 = self.model._loss_function(image, attribute, **reconstruction1)
+            val_loss2 = self.model._loss_function(image, attribute, **reconstruction2)
+            val_loss3 = self.model._loss_function(image, attribute, **reconstruction3)
+
+
+            val_loss_dict = [val_loss1, val_loss2, val_loss3]
+            counter = collections.Counter()
+            for d in test_loss_dict:
+                counter.update(d)
+            
+            val_loss = dict(counter)
+
+        else:
+            reconstruction = self.forward(image.float())
+            self.model.loss_item['recon_image'] = reconstruction
+            val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
 
         #for item in val_loss.items():
         #    self.logger.experiment.log_metric(key=item[0],
@@ -89,12 +126,30 @@ class RlExperiment(pl.LightningModule):
         return {'val_loss': avg_loss}    
 
     def test_step(self, batch, batch_idx):
-        X, Y = batch
-        reconstruction = self.forward(X.float())
-        self.model.loss_item['recon_x'] = reconstruction
-        test_loss = self.model._loss_function(X.float(), **self.model.loss_item)
+        image, attribute = batch
 
-        self.test_score = test_loss   
+        if self.model.text_encoder and self.model.img_encoder is not None:
+            reconstruction1 = self.forward(image=image.float(), attrs=attribute)
+            reconstruction2 = self.forward(image=image.float())
+            reconstruction3 = self.forward(attrs=attribute)
+
+            test_loss1 = self.model._loss_function(image, attribute, **reconstruction1)
+            test_loss2 = self.model._loss_function(image, attribute, **reconstruction2)
+            test_loss3 = self.model._loss_function(image, attribute, **reconstruction3)
+
+
+            test_loss_dict = [test_loss1, test_loss2, test_loss3]
+            counter = collections.Counter()
+            for d in test_loss_dict:
+                counter.update(d)
+            
+            test_loss = dict(counter)
+            
+        
+        else:
+            reconstruction = self.forward(image.float())
+            self.model.loss_item['recon_image'] = reconstruction
+            test_loss = self.model._loss_function(image.float(), **self.model.loss_item)
 
         return test_loss
 

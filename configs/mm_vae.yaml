@@ -1,15 +1,20 @@
 model_params:
   name: 'GaussianVae'
-  base: 'VaeBase'
+  base: 'MMVaeBase'
 
 architecture:
   img_encoder: 'ConvEncoder28x28'
   img_decoder: 'ConvDecoder28x28'
+  text_encoder: 'AttrEncoder'
+  text_decoder: 'AttrDecoder'
+  expert: 'expert'
 
-architecture_params:
+img_arch_params:
   in_channels: 1
   latent_dim: 10
-  num_attr: 100
+
+text_arch_params:
+  num_attr: 10
 
 exp_params:
   dataset: 'mnist'
@@ -22,7 +27,7 @@ exp_params:
 
 trainer_params:
   gpus: 0
-  max_epochs: 1
+  max_epochs: 10
 
 logging_params:
   save_dir: "logs/"
