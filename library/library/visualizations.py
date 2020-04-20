@@ -14,8 +14,6 @@ def plot_train_progress(history,
     training/validation history.
 
     """
-
-
     num_metrics = len(history.columns)
     plt.close()
     plt.figure(figsize=(20, 12))

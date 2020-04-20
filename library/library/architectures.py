@@ -8,41 +8,6 @@ from torchvision.utils import save_image
 from torch import Tensor
 import pdb
 
-class Encoder(nn.Module):
-    """
-    """
-    def __init__(self, input_dim, latent_dim):
-        super(Encoder, self).__init__()
-        self.input_dim = input_dim
-        self.latent_dim = latent_dim
-        self.fc1 = nn.Linear(input_dim, 400)
-        self.fc2 = nn.Linear(400, latent_dim)
-        self.relu1 = nn.ReLU()
-        self.relu2 = nn.ReLU()
-
-    def forward(self, x):
-        x = self.relu1(self.fc1(x))
-        x = self.relu2(self.fc2(x))
-        return x 
-        
-
-class Decoder(nn.Module):
-    """
-    """
-    def __init__(self):
-        super(Decoder, self).__init__()
-        self.latent_dim = latent_dim
-        self.outpu_dim = ouput_dim
-        self.fc1 = nn.Linear(latent_dim, )
-        self.fc2 = nn.Linear()
-        self.relu1 = nn.ReLU()
-        self.relu2 = nn.ReLU()
-
-    def forward(self, x):
-        x = self.relu1(self.fc1(x))
-        x = self.relu2(self.fc2(x))
-        return x
-
 
 class ConvEncoder28x28(nn.Module):
     """
@@ -214,33 +179,6 @@ class ConvDecoder(nn.Module):
         #return self.mu(x), self.logvar(x)
 
 
-class Flatten(nn.Module):
-    """
-    """
-    def forward(self, input):
-        return input.view(input.size(0), -1)
-
-#class UnFlatten(nn.Module):
-#    """
-#    """
-#    def __init__(self, size=256):
-#        self.size = size
-#
-#    def forward(self, input):
-#        return input.view(input.size(0), self.size, 4, 4)
-
-
-class UnFlatten(nn.Module):
-    """
-    """
-    def forward(self, input):
-        return input.view(input.size(0), 256, 4, 4)
-
-
-
-class result_container:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
 
 
 
