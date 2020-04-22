@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np 
 import collections, functools, operator
-from library.visualizations import plot_train_progress
+from library.viz_helpers import plot_train_progress
 
 import torch
 import pdb 
@@ -58,9 +58,9 @@ class RlExperiment(pl.LightningModule):
             print(train_loss)
 
         else:
-            reconstruction = self.forward(X.float())
+            reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
-            train_loss = self.model._loss_function(X.float(), **self.model.loss_item)
+            train_loss = self.model._loss_function(image.float(), **self.model.loss_item)
 
         
         train_history = pd.DataFrame([[value.detach().numpy() for value in train_loss.values()]],
