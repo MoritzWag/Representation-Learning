@@ -4,10 +4,9 @@ import pdb
 import logging
 import os
 from library import architectures
-from library.architectures import ConvEncoder, ConvDecoder
+from library.architectures import ConvEncoder28x28, ConvDecoder28x28
 from library.models2.helpers import *
 
-#from library.models.base import VaeBase
 from library.models2 import base2
 from library.models2.base2 import VaeBase
 
@@ -18,9 +17,7 @@ from torch import nn, optim, Tensor
 from torch.nn import functional as F
 from torchvision import datasets, transforms
 import torchvision.utils as vutils
-#from torchvision.utils import save_image, vutils
 
-# class VaeGaussian(VaeBase)
 
 class VaeGaussian(nn.Module):
     """
@@ -35,11 +32,11 @@ class VaeGaussian(nn.Module):
         self.mu = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
         self.logvar = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
 
-        #if self.__base__ == MMVaeBase:
-        #    self.attr_mu = nn.Linear(50, self.attr_encoder.latent_dim)
-        #    self.attr_logvar = nn.Linear(50, self.attr_encoder.latent_dim)
-        self.attr_mu = nn.Linear(50, self.text_encoder.num_attr)
-        self.attr_logvar = nn.Linear(50, self.text_encoder.num_attr)
+        try:
+            self.attr_mu = nn.Linear(50, self.text_encoder.num_attr)
+            self.attr_logvar = nn.Linear(50, self.text_encoder.num_attr)
+        except:
+            pass
 
     # here I need some check whether reparameterization for attr or image 
     def _reparameterization(self, h_enc):
@@ -56,7 +53,7 @@ class VaeGaussian(nn.Module):
         mu = self.mu(h_enc)
         logvar = self.logvar(h_enc)
 
-        std = torch.exp(0.5*log_sigma)
+        std = torch.exp(0.5*logvar)
         eps = torch.randn_like(std)
 
         # store loss items
@@ -103,12 +100,10 @@ class VaeGaussian(nn.Module):
             loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss 
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
                     'image_recon_loss': image_recon_loss.to(torch.double), 'text_recon_loss': text_recon_loss.to(torch.double)}
-            #return {'loss': loss, 'latent_loss': latent_loss,
-            #       'image_recon_loss': image_recon_loss, 'text_recon_loss': text_recon_loss}
+                    
         else:
             loss = kld_weight * latent_loss + image_recon_loss 
-            #return {'loss': loss, 'latent_loss': latent_loss, 
-            #        'image_recon_loss': image_recon_loss}
+
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
                     'image_recon_loss': image_recon_loss.to(torch.double)}
         

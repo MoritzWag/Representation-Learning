@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np 
 import collections, functools, operator
-from library.visualizations import plot_train_progress
+from library.viz_helpers import plot_train_progress
 
 import torch
 import pdb 
@@ -39,7 +39,8 @@ class RlExperiment(pl.LightningModule):
         image, attribute = batch
         image, attribute = Variable(image), Variable(attribute)
 
-        if self.model.text_encoder and self.model.img_encoder is not None:
+        #if self.model.text_encoder and self.model.img_encoder is not None:
+        try:
             #print("Yes")
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
             reconstruction2 = self.forward(image=image.float())
@@ -57,10 +58,10 @@ class RlExperiment(pl.LightningModule):
             train_loss = dict(counter)
             print(train_loss)
 
-        else:
-            reconstruction = self.forward(X.float())
+        except:
+            reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
-            train_loss = self.model._loss_function(X.float(), **self.model.loss_item)
+            train_loss = self.model._loss_function(image.float(), **self.model.loss_item)
 
         
         train_history = pd.DataFrame([[value.detach().numpy() for value in train_loss.values()]],
@@ -76,7 +77,8 @@ class RlExperiment(pl.LightningModule):
         image, attribute = batch
         image, attribute = Variable(image), Variable(attribute)
 
-        if self.model.text_encoder and self.model.img_encoder is not None:
+        #if self.model.text_encoder and self.model.img_encoder is not None:
+        try:
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
@@ -88,12 +90,12 @@ class RlExperiment(pl.LightningModule):
 
             val_loss_dict = [val_loss1, val_loss2, val_loss3]
             counter = collections.Counter()
-            for d in test_loss_dict:
+            for d in val_loss_dict:
                 counter.update(d)
             
             val_loss = dict(counter)
 
-        else:
+        except:
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
@@ -115,6 +117,14 @@ class RlExperiment(pl.LightningModule):
                                 epoch=self.current_epoch,
                                 experiment_name='VaeExperiment')
 
+        self.model.traversals(embedding=self.model.img_encoder(image.float()),
+                            is_reorder_latents=False,
+                            n_per_latent=8,
+                            n_latents=None,
+                            epoch=self.current_epoch,
+                            experiment_name='VaeExperiment',
+                            path='images/')
+
         return val_loss
 
     def validation_epoch_end(self, outputs):
@@ -128,7 +138,8 @@ class RlExperiment(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         image, attribute = batch
 
-        if self.model.text_encoder and self.model.img_encoder is not None:
+        #if self.model.text_encoder and self.model.img_encoder is not None:
+        try:
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
@@ -137,7 +148,6 @@ class RlExperiment(pl.LightningModule):
             test_loss2 = self.model._loss_function(image, attribute, **reconstruction2)
             test_loss3 = self.model._loss_function(image, attribute, **reconstruction3)
 
-
             test_loss_dict = [test_loss1, test_loss2, test_loss3]
             counter = collections.Counter()
             for d in test_loss_dict:
@@ -145,8 +155,7 @@ class RlExperiment(pl.LightningModule):
             
             test_loss = dict(counter)
             
-        
-        else:
+        except:
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             test_loss = self.model._loss_function(image.float(), **self.model.loss_item)

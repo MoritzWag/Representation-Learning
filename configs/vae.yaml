@@ -6,10 +6,9 @@ architecture:
   img_encoder: 'ConvEncoder28x28'
   img_decoder: 'ConvDecoder28x28'
 
-architecture_params:
+img_arch_params:
   in_channels: 1
-  latent_dim: 10
-  num_attr: 100
+  latent_dim: 10 
 
 exp_params:
   dataset: 'mnist'

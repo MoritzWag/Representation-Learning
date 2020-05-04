@@ -5,6 +5,7 @@ import logging
 import os
 
 from library.architectures import prior_experts
+from library.visualizer import Visualizer
 
 import torch
 import torch.utils.data
@@ -16,13 +17,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class ReprLearner(nn.Module):
+class ReprLearner(Visualizer):
     """Representation Learner with PyTorch base functionality.
     """
 
     def __init__(self, **kwargs):
         super(ReprLearner, self).__init__(**kwargs)
-        ## what kind of attributes are needed here!?
         self.loss_item = {}
     
     def _generate(self, x):
@@ -36,8 +36,6 @@ class ReprLearner(nn.Module):
             {Tensor} [B x C H x W]
         """
         return self.forward(x.float())
-        #return model(x.float())
-
 
     def _sample(self, num_samples):
         """Samples from the latent space and return the corresponding
@@ -50,18 +48,19 @@ class ReprLearner(nn.Module):
         """
         z = torch.randn(num_samples, 
                         self.latent_dim)
-
-        #z = z.to(current_device)
         
         samples = self.img_decoder(z)
-        #samples = model.img_decoder(z)
+
         return samples
 
-    def _rep_evaluation(self, x):
-        pass
-    
-    def any_other_function(self):
-        pass 
+    def _embedding(self, embedding):
+        """
+        """
+        mu = self.mu(embedding)
+        logvar = self.logvar(embedding)
+
+        return mu, logvar, embedding
+
 
 
 ###########################################
@@ -99,7 +98,6 @@ class MMVaeBase(ReprLearner):
         
         mu, logvar = prior_experts((1, batch_size, 10))
 
-
         if image is not None and attrs is not None:
             img_henc = self.img_encoder(image)
             attrs_henc = self.text_encoder(attrs.to(torch.int64))
@@ -134,33 +132,33 @@ class MMVaeBase(ReprLearner):
         return {'recon_image': image_recon, 'recon_text': attr_recon, 'mu': mu, 'logvar': logvar}
 
 
-    def _sample_images(self,
-                    val_gen,
-                    epoch,
-                    path, 
-                    experiment_name):
-        
-        test_input, test_label = next(iter(val_gen))
-        path = os.path.expanduser(path)
-        storage_path = f"{path}{experiment_name}/"
-        if not os.path.exists(storage_path):
-            os.makedirs(storage_path)
-        
-        reconstruction = self._generate(test_input)
-        vutils.save_image(reconstruction['recon_image'].data,
-                        f"{storage_path}recon_{epoch}.png",
-                        normalize=True,
-                        nrow=12)
-        try:
-            samples = self._sample(num_samples=32)
-            vutils.save_image(samples.data,
-                            f"{storage_path}sample_{epoch}.png",
-                           normalize=True,
-                            nrow=12)
-        except:
-            pass
-    
-        del test_input, reconstruction
+    #def _sample_images(self,
+    #                val_gen,
+    #                epoch,
+    #                path, 
+    #                experiment_name):
+    #    
+    #    test_input, test_label = next(iter(val_gen))
+    #    path = os.path.expanduser(path)
+    #    storage_path = f"{path}{experiment_name}/"
+    #    if not os.path.exists(storage_path):
+    #        os.makedirs(storage_path)
+    #    
+    #    reconstruction = self._generate(test_input)
+    #    vutils.save_image(reconstruction['recon_image'].data,
+    #                    f"{storage_path}recon_{epoch}.png",
+    #                    normalize=True,
+    #                    nrow=12)
+    #    try:
+    #        samples = self._sample(num_samples=32)
+    #        vutils.save_image(samples.data,
+    #                        f"{storage_path}sample_{epoch}.png",
+    #                       normalize=True,
+    #                        nrow=12)
+    #    except:
+    #        pass 
+    # 
+    #    del test_input, reconstruction
 
 
 
@@ -182,31 +180,31 @@ class VaeBase(ReprLearner):
         x = self.img_decoder(x)
         return x
 
-    def _sample_images(self,
-                    val_gen,
-                    epoch,
-                    path, 
-                    experiment_name):
-        
-        test_input, test_label = next(iter(val_gen))
-        path = os.path.expanduser(path)
-        storage_path = f"{path}{experiment_name}/"
-        if not os.path.exists(storage_path):
-            os.makedirs(storage_path)
-        
-        reconstruction = self._generate(test_input)
-        vutils.save_image(reconstruction.data,
-                        f"{storage_path}recon_{epoch}.png",
-                        normalize=True,
-                        nrow=12)
-        try:
-            samples = self._sample(num_samples=32)
-            vutils.save_image(samples.data,
-                            f"{storage_path}sample_{epoch}.png",
-                           normalize=True,
-                            nrow=12)
-        except:
-            pass
-    
-        del test_input, reconstruction
+    #def _sample_images(self,
+    #                val_gen,
+    #                epoch,
+    #                path, 
+    #                experiment_name):
+    #    
+    #    test_input, test_label = next(iter(val_gen))
+    #    path = os.path.expanduser(path)
+    #    storage_path = f"{path}{experiment_name}/"
+    #    if not os.path.exists(storage_path):
+    #        os.makedirs(storage_path)
+    #    
+    #    reconstruction = self._generate(test_input)
+    #    vutils.save_image(reconstruction.data,
+    #                    f"{storage_path}recon_{epoch}.png",
+    #                    normalize=True,
+    #                    nrow=12)
+    #    try:
+    #        samples = self._sample(num_samples=32)
+    #        vutils.save_image(samples.data,
+    #                        f"{storage_path}sample_{epoch}.png",
+    #                       normalize=True,
+    #                        nrow=12)
+    #    except:
+    #        pass
+    #
+    #    del test_input, reconstruction
    

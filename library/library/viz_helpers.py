@@ -31,3 +31,7 @@ def plot_train_progress(history,
         plt.savefig(f"{storage_path}.png")
 
 
+
+def sort_list_by_other(to_sort, other, reverse=True):
+    """Sort a list by an other."""
+    return [el for _, el in sorted(zip(other, to_sort), reverse=reverse)]
