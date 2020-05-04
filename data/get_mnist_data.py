@@ -21,7 +21,7 @@ def get_data(args):
     storage_path = '{}/mnist/'.format(data_path)
     if not os.path.exists(storage_path):
         os.mkdir(storage_path)
-
+    
     transform = transforms.Compose([transforms.ToTensor()])
     trainset = torchvision.datasets.MNIST(root=data_path, train=True, download=True, transform=transform)
     testset = torchvision.datasets.MNIST(root=data_path, train=False, download=True, transform=transform)

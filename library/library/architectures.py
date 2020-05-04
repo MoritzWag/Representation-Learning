@@ -3,7 +3,7 @@ import torch.utils.data
 from torch.autograd import Variable
 from torch import nn, optim
 from torch.nn import functional as F
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms, models
 from torchvision.utils import save_image
 from torch import Tensor
 import pdb
@@ -163,6 +163,45 @@ class AttributeDecoder(nn.Module):
         return F.log_softmax(z)
 
 
+#########################################
+#
+#
+# Mulit-Attributes Encoder/Decoder
+#
+##########################################
+
+
+class MultiAttrEncoder(nn.Module):
+    """
+    """
+    def __init__(self,
+                list_num_categories,
+                list_num_attributes):
+        super(MultiAttrEncoder, self).__init__()
+        self.list_num_categories = list_num_categories
+        self.list_num_attributes = list_num_attributes
+        self.net = nn.Sequential()
+
+    def forward(self):
+        pass
+
+
+class MultiAttrDecoder(nn.Module):
+    """
+    """
+    def __init__(self,
+                list_num_categories,
+                list_num_attributes):
+        super(MultiAttrDecoder, self).__init__()
+        self.list_num_categories = list_num_categories
+        self.list_num_attributes = list_num_attributes
+        self.net = nn.Sequential()
+
+    
+    def forward(self):
+        pass
+
+
 
 ################################
 #
@@ -207,3 +246,25 @@ def prior_experts(size, use_cuda=False):
 # https://github.com/iffsid/mmvae/blob/d988793447453565122b6bab1fdf1df18d2f74e9/src/models/mmvae.py#L65
 #
 #####################################
+
+
+
+
+
+
+
+
+##############################################################
+#
+#
+# pre-trained ResNet 101 on ImageNet (adjusted)
+#
+#
+###############################################################
+
+
+def resnet_101():
+    """returns ResNet 101 with adjusted final output layer
+    """
+
+    model = models.resnet101()

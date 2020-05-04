@@ -134,6 +134,10 @@ dmypy.json
 ## data
 data/mnist/*
 data/celeba/*
+data/adidas/*
+
+## logs 
+logs/*
 
 
 ## mlruns

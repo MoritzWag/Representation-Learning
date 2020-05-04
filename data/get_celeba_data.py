@@ -49,6 +49,18 @@ def get_data(args):
     
         download_file_from_google_drive("0B7EVK8r0v71pZjFTYXZWM3FlRnM",
                                         root=storage_path, filename='img_align_celeba.zip')
+        
+        #download_file_from_google_drive("0B7EVK8r0v71peklHb0pGdDl6R28",
+        #                                root=storage_path, filename='img_align_celeba.zip')
+
+
+        ###############################
+
+
+
+
+
+        ############################### 
 
         img_path = 'celeba/img/'
         if not os.path.exists(img_path):
@@ -99,9 +111,12 @@ def get_data(args):
                                         transforms.CenterCrop(64),
                                         transforms.ToTensor()])
 
-
+    
     X_train = np.empty(shape=[0, 3, 64, 64])    
+    
     for index in range(len(image_paths_train)):
+        if index % 100:
+            print(index / len(image_paths_train))
         img_path = os.path.join('celeba/img/img_align_celeba/', image_paths_train[index])
         img = Image.open(img_path)
         img = img.convert('RGB')
