@@ -8,6 +8,7 @@ from torchvision.utils import save_image
 from torch import Tensor
 import pdb
 
+torch.set_default_dtype(torch.float64)
 
 class ConvEncoder28x28(nn.Module):
     """
@@ -27,6 +28,7 @@ class ConvEncoder28x28(nn.Module):
         if hidden_dims is None:
             #hidden_dims = [32, 64, 128, 256, 512]
             hidden_dims = [32, 64, 128, 256]
+            #hidden_dims [32, 64, 128]
         
         self.hidden_dims = hidden_dims
 
@@ -62,6 +64,7 @@ class ConvDecoder28x28(nn.Module):
         if hidden_dims is None:
             #hidden_dims = [32, 64, 128, 256, 512]
             hidden_dims = [32, 64, 128, 256]
+            #hidden_dims = [32, 64, 128]
         
         modules = []
 
@@ -105,7 +108,9 @@ class ConvDecoder28x28(nn.Module):
                                                     stride=2,
                                                     padding=2),
                                 nn.BatchNorm2d(1),
-                                nn.LeakyReLU(),
+                                #nn.LeakyReLU(),
+                                #nn.Conv2d(hidden_dims[-1], out_channels=1, 
+                                #       kernel_size=3, padding=1),
                                 nn.Tanh())
 
 

@@ -14,7 +14,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 
-
+torch.set_default_dtype(torch.float64)
 
 class RlExperiment(pl.LightningModule):
 
@@ -29,6 +29,7 @@ class RlExperiment(pl.LightningModule):
         self.val_history = pd.DataFrame()
         self.test_score = None
         self.experiment_name = "VaeGaussian"
+        
         #self.logger.experiment.log_param()
         #self.logger.experiment.log_hyperparams(self.params)
 
@@ -39,9 +40,7 @@ class RlExperiment(pl.LightningModule):
         image, attribute = batch
         image, attribute = Variable(image), Variable(attribute)
 
-        #if self.model.text_encoder and self.model.img_encoder is not None:
         try:
-            #print("Yes")
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
@@ -62,22 +61,22 @@ class RlExperiment(pl.LightningModule):
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             train_loss = self.model._loss_function(image.float(), **self.model.loss_item)
-
         
         train_history = pd.DataFrame([[value.detach().numpy() for value in train_loss.values()]],
                                     columns=[key for key in train_loss.keys()])   
             
         self.train_history = self.train_history.append(train_history, ignore_index=True)
 
+
         return train_loss
 
 
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx, optimizer_idx=0):
+
         image, attribute = batch
         image, attribute = Variable(image), Variable(attribute)
 
-        #if self.model.text_encoder and self.model.img_encoder is not None:
         try:
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
             reconstruction2 = self.forward(image=image.float())
@@ -110,21 +109,6 @@ class RlExperiment(pl.LightningModule):
 
         self.val_history = self.val_history.append(val_history, ignore_index=True)
 
-        # here some visualization functionality 
-        # sample and reconstruct images for visualization
-        self.model._sample_images(self.val_gen,
-                                path='images/',
-                                epoch=self.current_epoch,
-                                experiment_name='VaeExperiment')
-
-        self.model.traversals(embedding=self.model.img_encoder(image.float()),
-                            is_reorder_latents=False,
-                            n_per_latent=8,
-                            n_latents=None,
-                            epoch=self.current_epoch,
-                            experiment_name='VaeExperiment',
-                            path='images/')
-
         return val_loss
 
     def validation_epoch_end(self, outputs):
@@ -133,12 +117,29 @@ class RlExperiment(pl.LightningModule):
         #                                value=avg_loss,
         #                                run_id=self.logger.run_id)
 
+        self.model._sample_images(self.val_gen,
+                                path='images/',
+                                epoch=self.current_epoch,
+                                experiment_name='VaeExperiment')
+
+        self.model.traversals(data=self.val_gen,
+                            is_reorder_latents=False,
+                            n_per_latent=8,
+                            n_latents=None,
+                            epoch=self.current_epoch,
+                            experiment_name='VaeExperiment',
+                            path='images/')
+
+        self.model._cluster(data=self.val_gen,
+                            path='images/',
+                            epoch=self.current_epoch,
+                            experiment_name='VaeExperiment')
+
         return {'val_loss': avg_loss}    
 
     def test_step(self, batch, batch_idx):
         image, attribute = batch
 
-        #if self.model.text_encoder and self.model.img_encoder is not None:
         try:
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
             reconstruction2 = self.forward(image=image.float())
@@ -169,6 +170,7 @@ class RlExperiment(pl.LightningModule):
 
         # here should be the call of the visualization function
         # for train_history and val_history. 
+        # call logging_params from yaml file
         plot_train_progress(self.train_history,
                             storage_path=f"logs/{self.experiment_name}/training/")
         plot_train_progress(self.val_history,
@@ -186,7 +188,7 @@ class RlExperiment(pl.LightningModule):
         optims.append(optimizer)
         try:
             if self.params['scheduler_gamma'] is not None:
-                scheduler = optim.lr_scheduler.ExponentialLR(optimizer,
+                scheduler = optim.lr_scheduler.ExponentialLR(optims[0],
                                                             gamma=self.params['scheduler_gamma'])
                 
                 scheds.append(scheduler)
@@ -200,10 +202,12 @@ class RlExperiment(pl.LightningModule):
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
         
-        train_rawdata, _ = utils.img_to_npy(path=path,
+        #path = f"data/{self.params['dataset']}"
+        
+        train_rawdata, val_rawdata = utils.img_to_npy(path=path,
                                             train=True,
                                             val_split_ratio=0.2)
-
+        #self.val_rawdata = val_rawdata
         train_data = utils.ImageData(rawdata=train_rawdata)
 
         train_gen = DataLoader(dataset=train_data,
@@ -217,16 +221,19 @@ class RlExperiment(pl.LightningModule):
 
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
+        
+        #path = f"data/{self.params['dataset']}"
 
         #transform = self.data_transforms()
         _, val_rawdata = utils.img_to_npy(path=path,
                                         train=True,
                                         val_split_ratio=0.2)
+        
 
         val_data = utils.ImageData(rawdata=val_rawdata)
         self.val_gen = DataLoader(dataset=val_data,
                             batch_size=self.params['batch_size'],
-                            shuffle=False)
+                            shuffle=True)
 
         return self.val_gen
 
@@ -234,14 +241,16 @@ class RlExperiment(pl.LightningModule):
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
         
+        #path = f"data/{self.params['dataset']}"
+        
         test_rawdata = utils.img_to_npy(path=path,
                                         train=False)
         test_data = utils.ImageData(rawdata=test_rawdata)
-        test_gen = DataLoader(dataset=test_data,
+        self.test_gen = DataLoader(dataset=test_data,
                             batch_size=self.params['batch_size'],
                             shuffle=False)
 
-        return test_gen
+        return self.test_gen
 
     def data_transforms(self):
         pass

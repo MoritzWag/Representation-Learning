@@ -69,7 +69,6 @@ def img_to_npy(path, train=True, val_split_ratio=0.0):
 	for idx in range(len(classes)):
 		np.place(Y, Y == classes[idx], idx)
 	Y = Y.astype(int)
-
 	if val_split_ratio > 0.0:
 		# split in val and train data
 		idx_train = np.random.choice(a=X.shape[0],

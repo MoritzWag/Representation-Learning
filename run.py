@@ -10,6 +10,8 @@ from experiment import RlExperiment
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import MLFlowLogger
 
+torch.set_default_dtype(torch.float64)
+
 parser = argparse.ArgumentParser(description='Generic runner for Representation Learning with VAE')
 parser.add_argument('--config', '-c',
                     dest='filename',
