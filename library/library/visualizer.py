@@ -158,7 +158,8 @@ class Visualizer(nn.Module):
         features_labels = np.concatenate(features_labels)
 
         ## t-SNE:
-        tsne_results = TSNE(n_components=2, verbose=1, metric='euclidean').fit_transform(features_extracted)
+        tsne_results = TSNE(n_components=2, verbose=1, metric='euclidean',
+                            perplexity=50, n_iter=1000, learning_rate=200).fit_transform(features_extracted)
 
         ## plot t-SNE results:
         plt.close()
