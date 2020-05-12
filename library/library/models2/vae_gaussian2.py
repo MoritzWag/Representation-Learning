@@ -19,6 +19,8 @@ from torchvision import datasets, transforms
 import torchvision.utils as vutils
 
 
+torch.set_default_dtype(torch.float64)
+
 class VaeGaussian(nn.Module):
     """
     """
@@ -49,6 +51,7 @@ class VaeGaussian(nn.Module):
         Returns:
             {Tensor} {B x D}
         """
+
         ## Gaussian reparameterization: mu + epsilon*sigma
         mu = self.mu(h_enc)
         logvar = self.logvar(h_enc)
@@ -59,8 +62,8 @@ class VaeGaussian(nn.Module):
         # store loss items
         self.loss_item['mu'] = mu
         self.loss_item['logvar'] = logvar
-
-        return eps * std * mu
+        z = eps * std + mu
+        return z
     
     def _parameterize(self, h_enc, img=None, attrs=None):
 
@@ -78,7 +81,7 @@ class VaeGaussian(nn.Module):
         std = torch.exp(0.5*logvar)
         eps = torch.randn_like(std)
 
-        return eps * std * mu
+        return eps * std + mu
 
     def _loss_function(self, image=None, text=None, recon_image=None, 
                         recon_text=None, mu=None, logvar=None):
@@ -89,18 +92,15 @@ class VaeGaussian(nn.Module):
         if recon_text is not None and text is not None:
             text_recon_loss = F.nll_loss(recon_text, text.to(torch.long)).to(torch.float64)
         
-        #latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar + mu ** 2 - logvar.exp(), dim=1), dim=0)
         latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
-        #kld_weight = 32/ 40000
-        kld_weight = 32 / 400
-        #loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss
-        #pdb.set_trace()
+        kld_weight = 32 / 40000
+
         if recon_text is not None and text is not None:
             loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss 
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
                     'image_recon_loss': image_recon_loss.to(torch.double), 'text_recon_loss': text_recon_loss.to(torch.double)}
-                    
+
         else:
             loss = kld_weight * latent_loss + image_recon_loss 
 

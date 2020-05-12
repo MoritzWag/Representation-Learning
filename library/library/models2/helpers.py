@@ -1,4 +1,5 @@
 from library.models2.vae_gaussian2 import *
+from library.models2.vae_info2 import *
 from library.models2.base2 import *
 from library.architectures import *
 from library.models2.vae_beta import *
@@ -8,7 +9,8 @@ base_models = {'VaeBase': VaeBase,
             'MMVaeBase': MMVaeBase}
 
 vae_models = {'GaussianVae': VaeGaussian,
-                'VaeBeta': VaeBeta}
+            'VaeBeta': VaeBeta}
+            'InfoVae': InfoVae}
 
 
 vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,

@@ -16,6 +16,7 @@ import torchvision.utils as vutils
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+torch.set_default_dtype(torch.float64)
 
 class ReprLearner(Visualizer):
     """Representation Learner with PyTorch base functionality.
@@ -49,18 +50,19 @@ class ReprLearner(Visualizer):
         z = torch.randn(num_samples, 
                         self.latent_dim)
         
-        samples = self.img_decoder(z)
+        samples = self.img_decoder(z.float())
 
         return samples
 
-    def _embedding(self, embedding):
+    def _embedding(self, data):
         """
         """
+        embedding = self.img_encoder(data.float())
         mu = self.mu(embedding)
         logvar = self.logvar(embedding)
+        z = self._reparameterization(embedding)
 
         return mu, logvar, embedding
-
 
 
 ###########################################
@@ -132,36 +134,6 @@ class MMVaeBase(ReprLearner):
         return {'recon_image': image_recon, 'recon_text': attr_recon, 'mu': mu, 'logvar': logvar}
 
 
-    #def _sample_images(self,
-    #                val_gen,
-    #                epoch,
-    #                path, 
-    #                experiment_name):
-    #    
-    #    test_input, test_label = next(iter(val_gen))
-    #    path = os.path.expanduser(path)
-    #    storage_path = f"{path}{experiment_name}/"
-    #    if not os.path.exists(storage_path):
-    #        os.makedirs(storage_path)
-    #    
-    #    reconstruction = self._generate(test_input)
-    #    vutils.save_image(reconstruction['recon_image'].data,
-    #                    f"{storage_path}recon_{epoch}.png",
-    #                    normalize=True,
-    #                    nrow=12)
-    #    try:
-    #        samples = self._sample(num_samples=32)
-    #        vutils.save_image(samples.data,
-    #                        f"{storage_path}sample_{epoch}.png",
-    #                       normalize=True,
-    #                        nrow=12)
-    #    except:
-    #        pass 
-    # 
-    #    del test_input, reconstruction
-
-
-
 
 class VaeBase(ReprLearner):
     """ Create Base class for VAE which inherits the architecture.
@@ -174,37 +146,10 @@ class VaeBase(ReprLearner):
     def _reparameterization(self, x):
         pass
 
-    def forward(self, x):
-        h_enc = self.img_encoder(x)
+    def forward(self, image):
+        #pdb.set_trace()
+        h_enc = self.img_encoder(image)
         x = self._reparameterization(h_enc)
         x = self.img_decoder(x)
         return x
 
-    #def _sample_images(self,
-    #                val_gen,
-    #                epoch,
-    #                path, 
-    #                experiment_name):
-    #    
-    #    test_input, test_label = next(iter(val_gen))
-    #    path = os.path.expanduser(path)
-    #    storage_path = f"{path}{experiment_name}/"
-    #    if not os.path.exists(storage_path):
-    #        os.makedirs(storage_path)
-    #    
-    #    reconstruction = self._generate(test_input)
-    #    vutils.save_image(reconstruction.data,
-    #                    f"{storage_path}recon_{epoch}.png",
-    #                    normalize=True,
-    #                    nrow=12)
-    #    try:
-    #        samples = self._sample(num_samples=32)
-    #        vutils.save_image(samples.data,
-    #                        f"{storage_path}sample_{epoch}.png",
-    #                       normalize=True,
-    #                        nrow=12)
-    #    except:
-    #        pass
-    #
-    #    del test_input, reconstruction
-   

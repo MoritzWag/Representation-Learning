@@ -4,9 +4,10 @@ import pdb
 import logging
 import os
 from library import architectures
-from library.architectures import ConvEncoder, ConvDecoder
+from library.architectures import ConvEncoder28x28, ConvDecoder28x28
+from library.models2.helpers import *
 
-from library.models.base import VaeBase
+from library.models2.base2 import VaeBase
 
 
 import torch
@@ -47,11 +48,17 @@ class InfoVae(VaeBase):
 
         self.mu = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
         self.logvar = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
+
+        try:
+            self.attr_mu = nn.Linear(50, self.text_encoder.num_attr)
+            self.attr_logvar = nn.Linear(50, self.text_encoder.num_attr)
+        except:
+            pass
     
-    def _reparameterization(self, henc):
+    def _reparameterization(self, h_enc):
        
-        mu = self.mu(henc)
-        logvar = self.logvar(henc)
+        mu = self.mu(h_enc)
+        logvar = self.logvar(h_enc)
 
         std = torch.exp(0.5*logvar)
         eps = torch.randn_like(std)
@@ -64,22 +71,53 @@ class InfoVae(VaeBase):
 
         return z
     
-    def _loss_function(self, x, recon_x, z, mu, logvar):
+    def _parameterize(self, h_enc, img=None, attrs=None):
 
+        if img:
+            mu = self.mu(h_enc)
+            log_sigma = self.logvar(h_enc)
+        else:
+            mu = self.attr_mu(h_enc)
+            log_sigma = self.logvar(h_enc)
+        
+        return mu, log_sigma
+    
+    def _mm_reparameterization(self, mu, logvar):
+        std = torch.exp(0.5*logvar)
+        eps = torch.randn_like(std)
+
+        return eps * std + mu
+    
+    def _loss_function(self, image=None, text=None, recon_image=None,
+                        recon_text=None, mu=None, logvar=None, z=None, **kwargs):
+        
         batch_size = 32
         bias_corr = batch_size * (batch_size - 1)
         kld_weight = 32 / 40000
 
-        recon_loss = F.mse_loss(recon_x, x)
-        mmd_loss = self.compute_mmd(z).to(torch.double)
-        kld_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
-
-        loss = self.beta* recon_loss + \
-                (1. -  self.alpha) * kld_weight * kld_loss + \
-                (self.alpha + self.reg_weight - 1.) / bias_corr * mmd_loss
+        if recon_image is not None and image is not None:
+            image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
         
-        return {'loss': loss, 'lat_loss': kld_loss, 'recon_loss': recon_loss, 'mmd_loss': mmd_loss}
-    
+        if recon_text is not None and text is not None:
+            text_recon_loss = F.nll_loss(recon_text, text.to(torch.long)).to(torch.float64)
+        
+        latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
+        mmd_loss = self.compute_mmd(z).to(torch.double)
+        
+        if recon_text is not None and text is not None:
+            loss = self.beta*(image_recon_loss + text_recon_loss) + \
+                    (1. - self.alpha) * kld_weight * latent_loss + \
+                    (self.alpha + self.reg_weight -1.)/bias_corr * mmd_loss
+            return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double),
+                    'image_recon_loss': image_recon_loss.to(torch.double), 'text_recon_loss': text_recon_loss.to(torch.double),
+                    'mmd_loss': mmd_loss.to(torch.double)}
+        else: 
+            loss = self.beta*(image_recon_loss) + \
+                    (1. - self.alpha) * kld_weight * latent_loss + \
+                    (self.alpha + self.reg_weight -1.)/bias_corr * mmd_loss
+            return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double),
+                    'image_recon_loss': image_recon_loss.to(torch.double), 'mmd_loss': mmd_loss.to(torch.double)}
+
     def compute_kernel(self,
                        x1: Tensor,
                        x2: Tensor) -> Tensor:

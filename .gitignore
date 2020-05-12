@@ -138,6 +138,7 @@ data/adidas/*
 
 ## logs 
 logs/*
+images/*
 
 
 ## mlruns

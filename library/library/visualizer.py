@@ -9,6 +9,11 @@ import pdb
 import torchvision.utils as vutils
 from library.viz_helpers import sort_list_by_other
 
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+
+torch.set_default_dtype(torch.float64)
+
 class Visualizer(nn.Module):
 
     def __init__(self, **kwargs):
@@ -30,25 +35,28 @@ class Visualizer(nn.Module):
         
         return (-1 * max_traversal, max_traversal)
     
-    def _traverse_line(self, idx, n_samples, embedding=None):
+    def _traverse_line(self, idx, n_samples, data=None):
         """
         Args:
             embedding: {torch} represents the 
         """
 
-        if embedding is None:
+        if data is None:
             samples = torch.zeros(n_samples, self.latent_dim)
             traversals = torch.linspace(*self._get_traversal_range(), steps=n_samples)
         else:
-            if embedding.size(0) > 1:
-                #raise ValueError('Every value should be sampled from the same posterior, but {} datapoints given'.format(data.size(0)))
-                embedding = embedding[0,:]
             with torch.no_grad():
-                # here, distinction between VaeBase and MMVaeBase must be made!
-                mu, logvar, embed = self._embedding(embedding)
+                image, attribute = next(iter(data))
+                mu, logvar, embed = self._embedding(image.float())
+
+                if embed.size(0) > 1:
+                #raise ValueError('Every value should be sampled from the same posterior, but {} datapoints given'.format(data.size(0)))
+                    embed = embed[0, :]
+                    mu = mu[0, :]
+                    logvar = logvar[0, :]
                 mu = mu.unsqueeze(0)
                 logvar = logvar.unsqueeze(0)
-                samples = self._reparameterization(embed)
+                samples = self._reparameterization(h_enc=embed)
                 samples = samples.repeat(n_samples, 1)
                 post_mean_idx = mu[0, idx]
                 post_std_idx = torch.exp(logvar / 2)[0, idx]
@@ -66,13 +74,13 @@ class Visualizer(nn.Module):
                 epoch,
                 experiment_name,
                 path,
-                embedding=None,
+                data=None,
                 is_reorder_latents=False,
                 n_per_latent=8,
                 n_latents=None):
 
         n_latents = n_latents if n_latents is not None else self.latent_dim
-        latent_samples = [self._traverse_line(dim, n_per_latent, embedding=embedding) for
+        latent_samples = [self._traverse_line(dim, n_per_latent, data=data) for
                             dim in range(self.latent_dim)]
         decoded_traversals = self.img_decoder(torch.cat(latent_samples, dim=0))
 
@@ -98,7 +106,6 @@ class Visualizer(nn.Module):
                     epoch,
                     path,
                     experiment_name):
-
         test_input, test_label = next(iter(val_gen))
         path = os.path.expanduser(path)
         storage_path = f"{path}{experiment_name}/"
@@ -113,10 +120,59 @@ class Visualizer(nn.Module):
         try:
             samples = self._sample(num_samples=32)
             vutils.save_image(samples.data,
-                        f"{storage_path}recon_{epoch}.png",
+                        f"{storage_path}sample_{epoch}.png",
                         normalize=True,
                         nrow=12)
         except:
-            pass
+            print("could not sample images!")
 
         del test_input, reconstruction
+
+    def _cluster(self,
+                data,
+                path, 
+                epoch,
+                experiment_name,
+                num_batches=10):
+        """Clustering algorithm with t-SNE visualization capability
+        Args:
+            feature_list {}: 
+            path {str}:
+            experiment_name {}:
+        """
+        
+        indices = np.random.choice(a=len(data),
+                                    size=int(num_batches),
+                                    replace=False)
+        features_extracted = []
+        features_labels = []
+        for batch, (image, attribute) in enumerate(data):
+            if batch in indices:
+                h_enc = self.img_encoder(image.float())
+                z = self._reparameterization(h_enc)
+                features_extracted.append(z)
+                features_labels.append(attribute)
+            else:
+                pass
+        features_extracted = np.vstack(features_extracted)
+        features_labels = np.concatenate(features_labels)
+
+        ## t-SNE:
+        tsne_results = TSNE(n_components=2, verbose=1, metric='euclidean',
+                            perplexity=50, n_iter=1000, learning_rate=200).fit_transform(features_extracted)
+
+        ## plot t-SNE results:
+        plt.close()
+        colormap = plt.cm.get_cmap('coolwarm')
+        scatter_plot = plt.scatter(tsne_results[:, 0], tsne_results[:,1], 
+                                c=features_labels, cmap=colormap)
+        plt.colorbar(scatter_plot)
+ 
+        path = os.path.expanduser(path)
+        storage_path = f"{path}{experiment_name}/"
+        if not os.path.exists(storage_path):
+            os.makedirs(storage_path)
+
+        img_storage_path =  f"{storage_path}/cluster_{epoch}"
+        plt.tight_layout()
+        plt.savefig(img_storage_path)
