@@ -9,7 +9,7 @@ base_models = {'VaeBase': VaeBase,
             'MMVaeBase': MMVaeBase}
 
 vae_models = {'GaussianVae': VaeGaussian,
-            'VaeBeta': VaeBeta}
+            'VaeBeta': VaeBeta,
             'InfoVae': InfoVae}
 
 
