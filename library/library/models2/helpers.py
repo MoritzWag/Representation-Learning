@@ -2,12 +2,14 @@ from library.models2.vae_gaussian2 import *
 from library.models2.vae_info2 import *
 from library.models2.base2 import *
 from library.architectures import *
+from library.models2.vae_beta import *
 import pdb 
 
 base_models = {'VaeBase': VaeBase,
             'MMVaeBase': MMVaeBase}
 
 vae_models = {'GaussianVae': VaeGaussian,
+            'VaeBeta': VaeBeta,
             'InfoVae': InfoVae}
 
 
