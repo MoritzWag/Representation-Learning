@@ -21,7 +21,6 @@ class ConvEncoder28x28(nn.Module):
                 **kwargs) -> None:
         super(ConvEncoder28x28, self).__init__()
             
-        
         self.latent_dim = latent_dim
 
         modules = []
