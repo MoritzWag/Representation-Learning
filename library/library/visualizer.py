@@ -47,6 +47,8 @@ class Visualizer(nn.Module):
         else:
             with torch.no_grad():
                 image, attribute = next(iter(data))
+                if torch.cuda.is_available():
+                    image, attribute = image.cuda(), attribute.cuda()
                 mu, logvar, embed = self._embedding(image.float())
 
                 if embed.size(0) > 1:
@@ -106,7 +108,12 @@ class Visualizer(nn.Module):
                     epoch,
                     path,
                     experiment_name):
+
         test_input, test_label = next(iter(val_gen))
+
+        if torch.cuda.is_available():
+            test_input, test_label = test_input.cuda(), test_label.cuda()
+
         path = os.path.expanduser(path)
         storage_path = f"{path}{experiment_name}/"
         if not os.path.exists(storage_path):
@@ -115,6 +122,10 @@ class Visualizer(nn.Module):
         reconstruction = self._generate(test_input)
         vutils.save_image(reconstruction.data,
                         f"{storage_path}recon_{epoch}.png",
+                        normalize=True,
+                        nrow=12)
+        vutils.save_image(test_input.data,
+                        f"{storage_path}real_{epoch}.png",
                         normalize=True,
                         nrow=12)
         try:
@@ -148,8 +159,11 @@ class Visualizer(nn.Module):
         features_labels = []
         for batch, (image, attribute) in enumerate(data):
             if batch in indices:
+                if torch.cuda.is_available():
+                    image = image.cuda()
                 h_enc = self.img_encoder(image.float())
                 z = self._reparameterization(h_enc)
+                z = z.cpu().detach().numpy()
                 features_extracted.append(z)
                 features_labels.append(attribute)
             else:

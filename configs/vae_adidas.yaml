@@ -1,0 +1,29 @@
+model_params:
+  name: 'GaussianVae'
+  base: 'VaeBase'
+
+architecture:
+  img_encoder: 'ConvEncoder224x224'
+  img_decoder: 'ConvDecoder224x224'
+
+img_arch_params:
+  in_channels: 3
+  latent_dim: 130
+
+exp_params:
+  dataset: 'adidas'
+  data_path: "data/"
+  img_size: 28
+  batch_size: 64
+  learning_rate: 0.005
+  weight_decay: 0.0
+  scheduler_gamma: 0.95
+
+trainer_params:
+  gpus: 1
+  max_epochs: 30
+
+logging_params:
+  save_dir: "logs/"
+  name: "GaussianVae"
+  manual_seed: 1265

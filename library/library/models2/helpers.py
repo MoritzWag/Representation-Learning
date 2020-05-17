@@ -13,9 +13,14 @@ vae_models = {'GaussianVae': VaeGaussian,
 
 vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
                 'ConvDecoder28x28': ConvDecoder28x28,
+                'ConvEncoder64x64': ConvEncoder64x64,
+                'ConvDecoder64x64': ConvDecoder64x64,
+                'ConvEncoder224x224': ConvEncoder224x224,
+                'ConvDecoder224x224': ConvDecoder224x224,
                 'AttrEncoder': AttributeEncoder,
                 'AttrDecoder': AttributeDecoder,
-                'expert': ProductOfExperts}
+                'expert': ProductOfExperts,
+                'CustomizedResNet101': CustomizedResNet101}
 
 
 def createClass(vae_model, base_model):

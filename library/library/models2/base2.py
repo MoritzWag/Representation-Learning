@@ -4,7 +4,7 @@ import pdb
 import logging
 import os
 
-from library.architectures import prior_experts
+from library.architectures import prior_experts, CustomizedResNet101
 from library.visualizer import Visualizer
 
 import torch
@@ -36,6 +36,9 @@ class ReprLearner(Visualizer):
         Returns:
             {Tensor} [B x C H x W]
         """
+
+        if torch.cuda.is_available():
+            x = x.cuda()
         return self.forward(x.float())
 
     def _sample(self, num_samples):
@@ -50,6 +53,9 @@ class ReprLearner(Visualizer):
         z = torch.randn(num_samples, 
                         self.latent_dim)
         
+        if torch.cuda.is_available():
+            z = z.cuda()
+
         samples = self.img_decoder(z.float())
 
         return samples
@@ -57,6 +63,9 @@ class ReprLearner(Visualizer):
     def _embedding(self, data):
         """
         """
+        #x = self.resnet(data.float())
+        if torch.cuda.is_available():
+            data = data.cuda()
         embedding = self.img_encoder(data.float())
         mu = self.mu(embedding)
         logvar = self.logvar(embedding)
@@ -142,14 +151,16 @@ class VaeBase(ReprLearner):
         super(VaeBase, self).__init__(**kwargs)
         self.img_encoder = img_encoder
         self.img_decoder = img_decoder
+        #self.resnet = CustomizedResNet101()
 
     def _reparameterization(self, x):
         pass
 
     def forward(self, image):
-        #pdb.set_trace()
+        #image = self.resnet(image)
         h_enc = self.img_encoder(image)
         x = self._reparameterization(h_enc)
         x = self.img_decoder(x)
+
         return x
 

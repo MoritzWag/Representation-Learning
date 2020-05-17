@@ -38,6 +38,7 @@ class RlExperiment(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx=0):
         image, attribute = batch
+        self.curr_device = image.device
         image, attribute = Variable(image), Variable(attribute)
 
         try:
@@ -62,7 +63,7 @@ class RlExperiment(pl.LightningModule):
             self.model.loss_item['recon_image'] = reconstruction
             train_loss = self.model._loss_function(image.float(), **self.model.loss_item)
         
-        train_history = pd.DataFrame([[value.detach().numpy() for value in train_loss.values()]],
+        train_history = pd.DataFrame([[value.cpu().detach().numpy() for value in train_loss.values()]],
                                     columns=[key for key in train_loss.keys()])   
             
         self.train_history = self.train_history.append(train_history, ignore_index=True)
@@ -75,7 +76,9 @@ class RlExperiment(pl.LightningModule):
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
 
         image, attribute = batch
+        self.curr_device = image.device
         image, attribute = Variable(image), Variable(attribute)
+        image, attribute = image.cuda(), attribute.cuda()
 
         try:
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
@@ -95,6 +98,7 @@ class RlExperiment(pl.LightningModule):
             val_loss = dict(counter)
 
         except:
+            #pdb.set_trace()
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
@@ -104,7 +108,7 @@ class RlExperiment(pl.LightningModule):
         #                                    value=item[1],
         #                                    run_id=self.logger.run_id)
         
-        val_history = pd.DataFrame([[value.detach().numpy() for value in val_loss.values()]],
+        val_history = pd.DataFrame([[value.cpu().detach().numpy() for value in val_loss.values()]],
                                     columns=[key for key in val_loss.keys()])
 
         self.val_history = self.val_history.append(val_history, ignore_index=True)
@@ -139,6 +143,7 @@ class RlExperiment(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         image, attribute = batch
+        image, attribute = image.to(self.curr_device), attribute.to(self.curr_device)
 
         try:
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
@@ -197,10 +202,13 @@ class RlExperiment(pl.LightningModule):
             return optims
 
     def train_dataloader(self):
-        #transform = self.data_transforms()
+        transform = self.data_transforms()
 
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
+        
+        if self.params['dataset'] == 'adidas':
+            path = '/home/ubuntu/data/adidas/Data/'
         
         #path = f"data/{self.params['dataset']}"
         
@@ -208,7 +216,7 @@ class RlExperiment(pl.LightningModule):
                                             train=True,
                                             val_split_ratio=0.2)
         #self.val_rawdata = val_rawdata
-        train_data = utils.ImageData(rawdata=train_rawdata)
+        train_data = utils.ImageData(rawdata=train_rawdata, transform=transform)
 
         train_gen = DataLoader(dataset=train_data,
                                 batch_size=self.params['batch_size'],
@@ -219,8 +227,12 @@ class RlExperiment(pl.LightningModule):
 
     def val_dataloader(self):
 
+        transform = self.data_transforms()
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
+        
+        if self.params['dataset'] == 'adidas':
+            path = '/home/ubuntu/data/adidas/Data/'
         
         #path = f"data/{self.params['dataset']}"
 
@@ -230,22 +242,27 @@ class RlExperiment(pl.LightningModule):
                                         val_split_ratio=0.2)
         
 
-        val_data = utils.ImageData(rawdata=val_rawdata)
+        val_data = utils.ImageData(rawdata=val_rawdata, transform=transform)
         self.val_gen = DataLoader(dataset=val_data,
                             batch_size=self.params['batch_size'],
-                            shuffle=True)
+                            shuffle=False)
 
         return self.val_gen
 
     def test_dataloader(self):
+
+        transform = self.data_transforms()
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
+
+        if self.params['dataset'] == 'adidas':
+            path = '/home/ubuntu/data/adidas/Data/'
         
         #path = f"data/{self.params['dataset']}"
         
         test_rawdata = utils.img_to_npy(path=path,
                                         train=False)
-        test_data = utils.ImageData(rawdata=test_rawdata)
+        test_data = utils.ImageData(rawdata=test_rawdata, transform=transform)
         self.test_gen = DataLoader(dataset=test_data,
                             batch_size=self.params['batch_size'],
                             shuffle=False)
@@ -253,8 +270,18 @@ class RlExperiment(pl.LightningModule):
         return self.test_gen
 
     def data_transforms(self):
-        pass
+        
+        SetRange = transforms.Lambda(lambda X: 2 * X - 1.)
+        SetScale = transforms.Lambda(lambda X: X/X.sum(0).expand_as(X))
 
-
-    def any_other_function(self):
-        pass
+        if self.params['dataset'] == 'adidas':
+            transform = transforms.Compose([transforms.ToPILImage(),
+                                            transforms.RandomHorizontalFlip(),
+                                            transforms.CenterCrop(148),
+                                            transforms.Resize(224),
+                                            transforms.ToTensor(),
+                                            SetRange])
+        else:
+            return None
+            
+        return transform

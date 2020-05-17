@@ -1,5 +1,6 @@
 
 from torch.utils import data
+from PIL import Image
 
 import numpy as np 
 import pandas as pd 
@@ -43,14 +44,18 @@ class ImageData(data.Dataset):
 		y = self.rawdata[1][idx]
 
 		if self.transform:
-			x = self.transform(x)
-		
+			#x = Image.fromarray((x*255).astype(np.uint8))
+			#x = self.transform(x)
+			x = self.transform(np.uint8(x))
+			#x = x / 255.
+			#x = x * 255
+			#x = x
 		return x, y
 
 
 
 
-def img_to_npy(path, train=True, val_split_ratio=0.0):
+def img_to_npy(path, train=True, val_split_ratio=0.0, data_suffix='standard_view'):
 	"""
 	Args:
 		path: {string} path to the dataset
@@ -62,8 +67,9 @@ def img_to_npy(path, train=True, val_split_ratio=0.0):
 
 	suffix = 'train' if train else 'test'
 
-	X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
-	Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values 
+	X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
+	Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
+
 
 	classes = np.unique(Y)
 	for idx in range(len(classes)):

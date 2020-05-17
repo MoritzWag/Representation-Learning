@@ -111,9 +111,8 @@ def get_data(args):
                                         transforms.CenterCrop(64),
                                         transforms.ToTensor()])
 
-    
-    X_train = np.empty(shape=[0, 3, 64, 64])    
-    
+      
+    X_train = []
     for index in range(len(image_paths_train)):
         if index % 100:
             print(index / len(image_paths_train))
@@ -121,31 +120,40 @@ def get_data(args):
         img = Image.open(img_path)
         img = img.convert('RGB')
         img = img_transforms(img).unsqueeze(0).numpy()
-        X_train = np.vstack((X_train, img))
-
-
+        X_train.append(img)
     
-    X_val = np.empty(shape=[0, 3, 64, 64])
+    X_train = np.stack(X_train)
+    X_train = np.squeeze(X_train)
+
+
+    X_val = []
     for index in range(len(image_paths_val)):
         img_path = os.path.join('celeba/img/img_align_celeba/', image_paths_val[index])
         img = Image.open(img_path)
         img = img.convert('RGB')
         img = img_transforms(img).unsqueeze(0).numpy()
-        X_val = np.vstack((X_val, img))
+        X_val.append(img)
+    
+    X_val = np.stack(X_val)
+    X_val = np.squeeze(X_val)
 
 
-
-    X_test = np.empty(shape=[0, 3, 64, 64])
+    X_test = []
     for index in range(len(image_paths_val)):
         img_path = os.path.join('celeba/img/img_align_celeba', image_paths_test[index])
         img = Image.open(img_path)
         img = img.convert('RGB')
         img = img_transforms(img).unsqueeze(0).numpy()
-        X_test = np.vstack((X_test, img))
+        X_test.append(img)
+
+    X_test = np.stack(X_test)
+    X_test = np.squeeze(X_test)
 
 
     np.save(file='{}X_train.npy'.format(storage_path), arr=X_train)
+    np.save(file='{}X_val.npy'.format(storage_path), arr=X_val)
     np.save(file='{}X_test.npy'.format(storage_path), arr=X_test)
+
 
 
     def load_attributes(paths, partition):

@@ -26,9 +26,7 @@ class ConvEncoder28x28(nn.Module):
 
         modules = []
         if hidden_dims is None:
-            #hidden_dims = [32, 64, 128, 256, 512]
             hidden_dims = [32, 64, 128, 256]
-            #hidden_dims [32, 64, 128]
         
         self.hidden_dims = hidden_dims
 
@@ -62,9 +60,7 @@ class ConvDecoder28x28(nn.Module):
         super(ConvDecoder28x28, self).__init__()
         
         if hidden_dims is None:
-            #hidden_dims = [32, 64, 128, 256, 512]
             hidden_dims = [32, 64, 128, 256]
-            #hidden_dims = [32, 64, 128]
         
         modules = []
 
@@ -116,12 +112,249 @@ class ConvDecoder28x28(nn.Module):
 
     def forward(self, input) -> Tensor:
         x = self.decoder_input(input)
-        #x = x.view(-1, hidden_dims[1], 2, 2)
         x = x.view(-1, 256, 2, 2)
-        #x = x.view(-1, 512, 1, 1)
         x = self.decoder(x)
         output = self.final_layer(x)
         return output
+
+
+
+class ConvEncoder64x64(nn.Module):
+    """
+    """
+
+    def __init__(self,
+                in_channels: int,
+                latent_dim: int,
+                hidden_dims = None,
+                **kwargs) -> None:
+        super(ConvEncoder64x64, self).__init__()
+            
+        
+        self.latent_dim = latent_dim
+
+        modules = []
+        if hidden_dims is None:
+            hidden_dims = [32, 64, 128, 256, 512]
+        
+        self.hidden_dims = hidden_dims
+
+        for h_dim in self.hidden_dims:
+            modules.append(
+                nn.Sequential(
+                    nn.Conv2d(in_channels, out_channels=h_dim,
+                                kernel_size=3, stride=2, padding=1),
+                    nn.BatchNorm2d(h_dim),
+                    nn.LeakyReLU()
+                )
+            )
+            in_channels = h_dim
+        
+        self.encoder = nn.Sequential(*modules)
+
+    def forward(self, input: Tensor) -> Tensor:
+        output = self.encoder(input)
+        output = torch.flatten(output, start_dim=1)
+        return output
+
+
+
+
+class ConvDecoder64x64(nn.Module):
+    """
+    """
+    
+    def __init__(self,
+                latent_dim: int,
+                hidden_dims = None,
+                **kwargs) -> None:
+        super(ConvDecoder64x64, self).__init__()
+        
+        if hidden_dims is None:
+            hidden_dims = [32, 64, 128, 256, 512]
+        
+        modules = []
+
+        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1]*4)
+
+        hidden_dims.reverse()
+        
+
+        for i in range(len(hidden_dims) - 1):
+            modules.append(
+                nn.Sequential(
+                    nn.ConvTranspose2d(hidden_dims[i],
+                                        hidden_dims[i + 1],
+                                        kernel_size=3,
+                                        stride=2,
+                                        padding=1,
+                                        output_padding=1),
+                    nn.BatchNorm2d(hidden_dims[i + 1]),
+                    nn.LeakyReLU()
+                )
+            )
+        
+        self.decoder = nn.Sequential(*modules)
+
+        self.final_layer = nn.Sequential(
+                                nn.ConvTranspose2d(hidden_dims[-1],
+                                                    hidden_dims[-1],
+                                                    kernel_size=3,
+                                                    stride=2,
+                                                    padding=1,
+                                                    output_padding=1),
+                                nn.BatchNorm2d(hidden_dims[-1]),
+                                nn.LeakyReLU(),
+                                nn.Conv2d(hidden_dims[-1], out_channels=3,
+                                        kernel_size=3, padding=1),
+                                nn.Tanh())
+        
+        self.final_layer224x224 = nn.Sequential(
+                                    nn.ConvTranspose2d(3,
+                                                    3,
+                                                    kernel_size=3,
+                                                    stride=3, 
+                                                    padding=1),
+                                    nn.BatchNorm2d(3),
+                                    #nn.LeakyReLU(),
+                                    #nn.ConvTranspose2d(3,
+                                    #                3,
+                                    #                kernel_size=3,
+                                    #                stride=3,
+                                    #                padding=1),
+                                    #nn.BatchNorm2d(3),
+                                    nn.Tanh())
+
+    def forward(self, input) -> Tensor:
+        pdb.set_trace()
+        x = self.decoder_input(input)
+        x = x.view(-1, 512, 2, 2)
+        x = self.decoder(x)
+        output = self.final_layer(x)
+        output = self.final_layer224x224(output)
+        return output
+
+
+
+class ConvEncoder224x224(nn.Module):
+    """
+    """
+
+    def __init__(self, 
+                in_channels: int,
+                latent_dim: int,
+                hidden_dims = None,
+                **kwargs) -> None:
+        super(ConvEncoder224x224, self).__init__()
+
+        self.latent_dim = latent_dim
+        
+        modules = []
+        if hidden_dims is None:
+            hidden_dims = [8, 16, 32, 64, 128, 256, 512]
+        
+        self.hidden_dims = hidden_dims
+
+        for h_dim in self.hidden_dims:
+            modules.append(
+                nn.Sequential(
+                    nn.Conv2d(in_channels, out_channels=h_dim,
+                                kernel_size=3, stride=2, padding=1),
+                    nn.BatchNorm2d(h_dim),
+                    nn.LeakyReLU()
+                )
+            )
+            in_channels = h_dim 
+        
+        self.encoder = nn.Sequential(*modules)
+    
+    def forward(self, input: Tensor) -> Tensor:
+        output = self.encoder(input)
+        output = torch.flatten(output, start_dim=1)
+        return output
+
+
+
+
+
+class ConvDecoder224x224(nn.Module):
+    """
+    """
+    def __init__(self,
+                latent_dim: int,
+                hidden_dims = None,
+                **kwargs) -> None:
+        super(ConvDecoder224x224, self).__init__()
+
+        if hidden_dims is None:
+            hidden_dims = [8, 16, 32, 64, 128, 256, 512]
+        
+        modules = []
+
+        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1]*4)
+
+        hidden_dims.reverse()
+
+        for i in range(len(hidden_dims) - 1):
+            modules.append(
+                nn.Sequential(
+                    nn.ConvTranspose2d(hidden_dims[i],
+                                        hidden_dims[i + 1],
+                                        kernel_size=3,
+                                        stride=2,
+                                        padding=1,
+                                        output_padding=1),
+                    nn.BatchNorm2d(hidden_dims[i + 1]),
+                    nn.LeakyReLU()
+                )
+            )
+        
+        # 128x128
+        self.decoder = nn.Sequential(*modules)
+
+        self.final_layer1 = nn.Sequential(
+                                    nn.ConvTranspose2d(hidden_dims[-1],
+                                                        hidden_dims[-1],
+                                                        kernel_size=3,
+                                                        stride=2,
+                                                        padding=1),
+                                    nn.BatchNorm2d(hidden_dims[-1]),
+                                    nn.LeakyReLU())
+
+        self.final_layer2 = nn.Sequential(
+                                nn.Conv2d(hidden_dims[-1], out_channels=3,
+                                        kernel_size=32),
+                                nn.Tanh())
+
+    def forward(self, input: Tensor) -> Tensor:
+        x = self.decoder_input(input)
+        x = x.view(-1, 512, 2, 2)
+        x = self.decoder(x)
+        output = self.final_layer1(x)
+        output = self.final_layer2(output)
+        return output
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ##################################
@@ -268,8 +501,27 @@ def prior_experts(size, use_cuda=False):
 ###############################################################
 
 
-def resnet_101():
-    """returns ResNet 101 with adjusted final output layer
+class CustomizedResNet101(nn.Module):
     """
+    """
+    def __init__(self, pretrained=True):
+        super(CustomizedResNet101, self).__init__()
 
-    model = models.resnet101()
+        if pretrained:
+            resnet101 = models.resnet101(pretrained=True)
+            modules = list(resnet101.children())[:-2]
+            self.resnet101 = nn.Sequential(*modules)
+            for p in self.resnet101.parameters():
+                p.requires_grad = False
+
+        self.linear = nn.Linear(2048*7*7, 12288)
+
+    def forward(self, x):
+        output = self.resnet101(x)
+        output = torch.flatten(output, 1)
+        output = self.linear(output)
+        output = output.view(32, 3, 64, 64)
+        return output
+
+
+    
