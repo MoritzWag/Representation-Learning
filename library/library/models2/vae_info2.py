@@ -82,6 +82,40 @@ class InfoVae(VaeBase):
         
         return mu, log_sigma
     
+    def _sample(self, num_samples):
+        """Samples from the latent space and return the corresponding
+        image space map.
+
+        Should be defined as a one-step or multistep sampling scheme depending on the stochastic nodes in the architecture
+        
+        Args:
+            num_samples {int}: number of samples
+        Returns:
+            {Tensor}
+        """ 
+        z = torch.randn(num_samples, 
+                        self.latent_dim)
+        
+        if torch.cuda.is_available():
+            z = z.cuda()
+
+        samples = self.img_decoder(z.float())
+
+        return samples
+
+    def _embedding(self, data):
+        """
+        """
+        #x = self.resnet(data.float())
+        if torch.cuda.is_available():
+            data = data.cuda()
+        embedding = self.img_encoder(data.float())
+        mu = self.mu(embedding)
+        logvar = self.logvar(embedding)
+        z = self._reparameterization(embedding)
+
+        return mu, logvar, embedding
+
     def _mm_reparameterization(self, mu, logvar):
         std = torch.exp(0.5*logvar)
         eps = torch.randn_like(std)

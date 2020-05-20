@@ -1,5 +1,6 @@
 from library.models2.vae_gaussian2 import *
 from library.models2.vae_info2 import *
+from library.models2.cat_vae import *
 from library.models2.base2 import *
 from library.architectures import *
 from library.models2.vae_beta import *
@@ -10,7 +11,8 @@ base_models = {'VaeBase': VaeBase,
 
 vae_models = {'GaussianVae': VaeGaussian,
             'VaeBeta': VaeBeta,
-            'InfoVae': InfoVae}
+            'InfoVae': InfoVae,
+            'CatVae': CatVae}
 
 
 vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
@@ -41,10 +43,12 @@ def makeWithMixins(cls, mixins):
 
 def parse_model_config(config):
     model_params = config.get('model_params')
+    hyper_params = config.get('model_hyperparams')
     vae_instance = vae_models[model_params['name']]
     base_instance = base_models[model_params['base']]
     vae_instance.__bases__ = (base_instance, )
     model_dict = parse_architecture_config(config)
+    model_dict.update(hyper_params)
     model = vae_instance(**model_dict)
     return model
 
@@ -58,7 +62,7 @@ def parse_architecture_config(config):
                 'text_encoder': vae_architectures.get(architecture.get('text_encoder', None), None),
                 'text_decoder': vae_architectures.get(architecture.get('text_decoder', None), None),
                 'expert': vae_architectures.get(architecture.get('expert', None), None)}
-    
+
     model_dict = {}
     for instance in arch_dict.items():
         if instance[1] is not None:

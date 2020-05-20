@@ -78,7 +78,9 @@ class RlExperiment(pl.LightningModule):
         image, attribute = batch
         self.curr_device = image.device
         image, attribute = Variable(image), Variable(attribute)
-        image, attribute = image.cuda(), attribute.cuda()
+        
+        if torch.cuda.is_available():
+            image, attribute = image.cuda(), attribute.cuda()
 
         try:
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
@@ -126,13 +128,13 @@ class RlExperiment(pl.LightningModule):
                                 epoch=self.current_epoch,
                                 experiment_name='VaeExperiment')
 
-        self.model.traversals(data=self.val_gen,
-                            is_reorder_latents=False,
-                            n_per_latent=8,
-                            n_latents=None,
-                            epoch=self.current_epoch,
-                            experiment_name='VaeExperiment',
-                            path='images/')
+        #self.model.traversals(data=self.val_gen,
+        #                    is_reorder_latents=False,
+        #                    n_per_latent=8,
+        #                    n_latents=None,
+        #                    epoch=self.current_epoch,
+        #                    experiment_name='VaeExperiment',
+        #                    path='images/')
 
         self.model._cluster(data=self.val_gen,
                             path='images/',

@@ -36,16 +36,21 @@ class VaeBeta(nn.Module):
         )
         self.latent_dim = self.img_encoder.latent_dim
         self.hidden_dim = self.img_encoder.hidden_dims
-        self.mu = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
-        self.logvar = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
+        self.output_dim = self.img_encoder.enc_output_dim
+
+        # Define the affine linear transformations from laster layer of encoder to space of parametrization
+        self.mu = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
+        self.logvar = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
+
+        # Hyperparameters
         self.beta = beta
         self.c_max = torch.Tensor([max_capacity])
         self.c_stop_iter = capacity_max_iter
         self.restrict_capacity = restrict_capacity
 
         try:
-            self.attr_mu = nn.Linear(50, self.text_encoder.num_attr)
-            self.attr_logvar = nn.Linear(50, self.text_encoder.num_attr)
+            self.attr_mu = nn.Linear(50, self.text_encoder.num_attr) #hard-coded
+            self.attr_logvar = nn.Linear(50, self.text_encoder.num_attr) #hard-coded
         except:
             pass
 
@@ -87,6 +92,39 @@ class VaeBeta(nn.Module):
         
         return mu, log_sigma
 
+    def _sample(self, num_samples):
+        """Samples from the latent space and return the corresponding
+        image space map.
+
+        Should be defined as a one-step or multistep sampling scheme depending on the stochastic nodes in the architecture
+        
+        Args:
+            num_samples {int}: number of samples
+        Returns:
+            {Tensor}
+        """ 
+        z = torch.randn(num_samples, 
+                        self.latent_dim)
+        
+        if torch.cuda.is_available():
+            z = z.cuda()
+
+        samples = self.img_decoder(z.float())
+
+        return samples
+
+    def _embedding(self, data):
+        """
+        """
+        #x = self.resnet(data.float())
+        if torch.cuda.is_available():
+            data = data.cuda()
+        embedding = self.img_encoder(data.float())
+        mu = self.mu(embedding)
+        logvar = self.logvar(embedding)
+        z = self._reparameterization(embedding)
+
+        return mu, logvar, embedding
     
     def _mm_reparameterization(self, mu, logvar):
         std = torch.exp(0.5*logvar)

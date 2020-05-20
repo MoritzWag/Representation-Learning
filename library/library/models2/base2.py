@@ -6,6 +6,7 @@ import os
 
 from library.architectures import prior_experts, CustomizedResNet101
 from library.visualizer import Visualizer
+from abc import ABC, abstractmethod
 
 import torch
 import torch.utils.data
@@ -41,37 +42,25 @@ class ReprLearner(Visualizer):
             x = x.cuda()
         return self.forward(x.float())
 
-    def _sample(self, num_samples):
+    @abstractmethod
+    def _sample(self):
         """Samples from the latent space and return the corresponding
         image space map.
+
+        Should be defined as a one-step or multistep sampling scheme depending on the stochastic nodes in the architecture
         
         Args:
             num_samples {int}: number of samples
         Returns:
             {Tensor}
-        """
-        z = torch.randn(num_samples, 
-                        self.latent_dim)
-        
-        if torch.cuda.is_available():
-            z = z.cuda()
+        """ 
+        pass
 
-        samples = self.img_decoder(z.float())
-
-        return samples
-
-    def _embedding(self, data):
+    @abstractmethod
+    def _embedding(self):
         """
         """
-        #x = self.resnet(data.float())
-        if torch.cuda.is_available():
-            data = data.cuda()
-        embedding = self.img_encoder(data.float())
-        mu = self.mu(embedding)
-        logvar = self.logvar(embedding)
-        z = self._reparameterization(embedding)
-
-        return mu, logvar, embedding
+        pass
 
 
 ###########################################

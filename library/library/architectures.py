@@ -15,14 +15,16 @@ class ConvEncoder28x28(nn.Module):
     """
 
     def __init__(self,
-                in_channels: int,
-                latent_dim: int,
+                in_channels: float,
+                latent_dim: float,
                 hidden_dims = None,
                 **kwargs) -> None:
         super(ConvEncoder28x28, self).__init__()
             
         self.latent_dim = latent_dim
-
+        self.in_channels = in_channels
+        #self.enc_output_dim = None
+        
         modules = []
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256]
@@ -39,13 +41,19 @@ class ConvEncoder28x28(nn.Module):
                 )
             )
             in_channels = h_dim
-        
-        self.encoder = nn.Sequential(*modules)
 
+        self.encoder = nn.Sequential(*modules)
+        
     def forward(self, input: Tensor) -> Tensor:
         output = self.encoder(input)
         output = torch.flatten(output, start_dim=1)
         return output
+
+    @property
+    def enc_output_dim(self):
+        dimensions = self.encoder(torch.ones(1, self.in_channels, 28, 28, requires_grad=False)).size()
+        flattend_output_dimensions = dimensions[2] * dimensions[3]
+        return flattend_output_dimensions
 
 
 class ConvDecoder28x28(nn.Module):
@@ -55,16 +63,21 @@ class ConvDecoder28x28(nn.Module):
     def __init__(self,
                 latent_dim: int,
                 hidden_dims = None,
+                categorical_dim = None,
                 **kwargs) -> None:
         super(ConvDecoder28x28, self).__init__()
         
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256]
-        
+
         modules = []
-
-        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1]*4)
-
+        
+        if categorical_dim is None:
+            self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1]*4)
+        else:
+            self.categorical_dim = categorical_dim
+            self.decoder_input = nn.Linear(latent_dim * categorical_dim, hidden_dims[-1]*4)
+        
         hidden_dims.reverse()
         
 
