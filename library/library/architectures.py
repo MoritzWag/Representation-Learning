@@ -43,6 +43,7 @@ class ConvEncoder28x28(nn.Module):
         self.encoder = nn.Sequential(*modules)
 
     def forward(self, input: Tensor) -> Tensor:
+        #pdb.set_trace()
         output = self.encoder(input)
         output = torch.flatten(output, start_dim=1)
         return output
@@ -98,11 +99,11 @@ class ConvDecoder28x28(nn.Module):
         
         self.final_layer = nn.Sequential(
                                 nn.ConvTranspose2d(hidden_dims[-1],
-                                                    out_channels=1,
+                                                    out_channels=3,
                                                     kernel_size=2,
                                                     stride=2,
                                                     padding=2),
-                                nn.BatchNorm2d(1),
+                                nn.BatchNorm2d(3),
                                 #nn.LeakyReLU(),
                                 #nn.Conv2d(hidden_dims[-1], out_channels=1, 
                                 #       kernel_size=3, padding=1),
@@ -222,10 +223,11 @@ class ConvDecoder64x64(nn.Module):
                                     #                stride=3,
                                     #                padding=1),
                                     #nn.BatchNorm2d(3),
-                                    nn.Tanh())
+                                    #nn.Tanh())
+                                    nn.Sigmoid())
 
     def forward(self, input) -> Tensor:
-        pdb.set_trace()
+        #pdb.set_trace()
         x = self.decoder_input(input)
         x = x.view(-1, 512, 2, 2)
         x = self.decoder(x)
