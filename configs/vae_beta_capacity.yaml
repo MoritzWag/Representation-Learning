@@ -2,6 +2,12 @@ model_params:
   name: 'VaeBeta'
   base: 'VaeBase'
 
+model_hyperparams:
+  beta: 4
+  restrict_capacity: True
+  capacity_max_iter: 10000
+  max_capacity: 25
+
 architecture:
   img_encoder: 'ConvEncoder28x28'
   img_decoder: 'ConvDecoder28x28'
@@ -18,10 +24,7 @@ exp_params:
   learning_rate: 0.005
   weight_decay: 0.0
   scheduler_gamma: 0.95
-  beta: 4
-  restrict_capacity: False
-  capacity_max_iter: 10000
-  max_capacity: 25
+
 
   
 

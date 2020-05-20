@@ -56,8 +56,9 @@ class ImageData(data.Dataset):
 
 
 
-
-def img_to_npy(path, train=True, val_split_ratio=0.0, data_suffix='standard_view'):
+# For adidas
+#def img_to_npy(path, train=True, val_split_ratio=0.0, data_suffix='standard_view'):
+def img_to_npy(path, train=True, val_split_ratio=0.0):
 	"""
 	Args:
 		path: {string} path to the dataset
@@ -68,11 +69,15 @@ def img_to_npy(path, train=True, val_split_ratio=0.0, data_suffix='standard_view
 	"""
 
 	suffix = 'train' if train else 'test'
+	# For adidas
+	#X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
+	#Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
+
 
 	#X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
 	#Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
 	X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
-	Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values 
+	Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values
 
 
 	classes = np.unique(Y)
