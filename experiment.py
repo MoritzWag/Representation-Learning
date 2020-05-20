@@ -210,6 +210,9 @@ class RlExperiment(pl.LightningModule):
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
         
+        if self.params['dataset'] == 'cifar10':
+            path = '/home/ubuntu/data/cifar10/'
+        
         #path = f"data/{self.params['dataset']}"
         
         train_rawdata, val_rawdata = utils.img_to_npy(path=path,
@@ -234,6 +237,9 @@ class RlExperiment(pl.LightningModule):
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
         
+        if self.params['dataset'] == 'cifar10':
+            path = '/home/ubuntu/data/cifar10/'
+        
         #path = f"data/{self.params['dataset']}"
 
         #transform = self.data_transforms()
@@ -257,9 +263,12 @@ class RlExperiment(pl.LightningModule):
 
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
+
+        if self.params['dataset'] == 'cifar10':
+            path = '/home/ubuntu/data/cifar10/'
         
         #path = f"data/{self.params['dataset']}"
-        
+
         test_rawdata = utils.img_to_npy(path=path,
                                         train=False)
         test_data = utils.ImageData(rawdata=test_rawdata, transform=transform)
@@ -274,13 +283,18 @@ class RlExperiment(pl.LightningModule):
         SetRange = transforms.Lambda(lambda X: 2 * X - 1.)
         SetScale = transforms.Lambda(lambda X: X/X.sum(0).expand_as(X))
 
-        if self.params['dataset'] == 'adidas':
+        if self.params['dataset'] == 'test':
             transform = transforms.Compose([transforms.ToPILImage(),
                                             transforms.RandomHorizontalFlip(),
                                             transforms.CenterCrop(148),
                                             transforms.Resize(224),
                                             transforms.ToTensor(),
                                             SetRange])
+        elif self.params['dataset'] == 'test2':
+            transform = transforms.Compose([transforms.ToPILImage(),
+                                            transforms.CenterCrop(28),
+                                            transforms.ToTensor()])
+        
         else:
             return None
             
