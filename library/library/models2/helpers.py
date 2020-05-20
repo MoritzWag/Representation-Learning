@@ -43,12 +43,16 @@ def makeWithMixins(cls, mixins):
 
 def parse_model_config(config):
     model_params = config.get('model_params')
-    hyper_params = config.get('model_hyperparams')
+    try:
+        hyper_params = config.get('model_hyperparams')
+    except:
+        pass
     vae_instance = vae_models[model_params['name']]
     base_instance = base_models[model_params['base']]
     vae_instance.__bases__ = (base_instance, )
     model_dict = parse_architecture_config(config)
-    model_dict.update(hyper_params)
+    if hyper_params is not None:
+        model_dict.update(hyper_params)
     model = vae_instance(**model_dict)
     return model
 
