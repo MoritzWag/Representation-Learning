@@ -43,11 +43,13 @@ class ImageData(data.Dataset):
 		x = self.rawdata[0][idx, :, :, :]
 		y = self.rawdata[1][idx]
 
-		if self.transform:
+		if self.transform is None:
 			#x = Image.fromarray((x*255).astype(np.uint8))
 			#x = self.transform(x)
-			x = self.transform(np.uint8(x))
-			#x = x / 255.
+			#x = self.transform(np.uint8(x))
+			x = x / 255.
+			#x = cropND(x, (28, 28))
+			x = crop_center(x, 28, 28)
 			#x = x * 255
 			#x = x
 		return x, y
@@ -71,7 +73,9 @@ def img_to_npy(path, train=True, val_split_ratio=0.0):
 	#X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
 	#Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
 
-	# For mnist
+
+	#X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
+	#Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
 	X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
 	Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values
 
@@ -129,3 +133,15 @@ class Transform2(object):
 
 
 	
+def cropND(img, bounding):
+    start = tuple(map(lambda a, da: a//2-da//2, img.shape, bounding))
+    end = tuple(map(operator.add, start, bounding))
+    slices = tuple(map(slice, start, end))
+    return img[slices]
+
+
+def crop_center(img, cropx, cropy):
+    _, y, x = img.shape
+    startx = x // 2 - (cropx // 2)
+    starty = y // 2 - (cropy // 2)
+    return img[:, starty:starty + cropy, startx:startx + cropx]

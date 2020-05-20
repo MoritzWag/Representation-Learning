@@ -146,6 +146,7 @@ class VaeBase(ReprLearner):
         pass
 
     def forward(self, image):
+        #pdb.set_trace()
         #image = self.resnet(image)
         h_enc = self.img_encoder(image)
         x = self._reparameterization(h_enc)

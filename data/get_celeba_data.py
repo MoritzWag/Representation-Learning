@@ -13,7 +13,6 @@ import random
 import numpy as np
 from PIL import Image
 from random import shuffle
-from scipy.misc import imresize
 
 
 
@@ -29,7 +28,7 @@ import pdb
 
 def parse_args():
     parser = argparse.ArgumentParser(description='celeba')
-    parser.add_argument('--path', type=str, default='.',
+    parser.add_argument('--path', type=str, default='/home/ubuntu/data',
                         help='path to store data')
     args = parser.parse_args()
     return args
@@ -39,7 +38,7 @@ def get_data(args):
     data_path = os.path.expanduser(args.path)
     storage_path = '{}/celeba/'.format(data_path)
     if not os.path.exists(storage_path):
-        os.mkdir(storage_path)
+        os.makedirs(storage_path)
 
         download_file_from_google_drive("0B7EVK8r0v71pY0NSMzRuSXJEVkk",
                                         root=storage_path, filename='list_eval_partition.txt')
@@ -64,9 +63,9 @@ def get_data(args):
 
         img_path = 'celeba/img/'
         if not os.path.exists(img_path):
-            os.mkdir(img_path)
+            os.makedirs(img_path)
             
-        with zipfile.ZipFile('celeba/img_align_celeba.zip', "r") as f:
+        with zipfile.ZipFile('/home/ubuntu/data/celeba/img_align_celeba.zip', "r") as f:
             f.extractall(img_path)
 
 
