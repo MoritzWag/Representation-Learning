@@ -24,7 +24,22 @@ from torch.distributions import Categorical
 torch.set_default_dtype(torch.float64)
 
 class CatVae(nn.Module):
-    """
+    """ Implementation of CatVae paper: 
+
+    Args:
+        categorical_dim: {int} number of categories
+        latent_dim: {int} number of latent dimensions to sample from 
+        hidden_dim: {int} number of hidden dims
+        ouput_dim: {int} flattened output dimension of the output dimension
+        categorical_dim: {}
+        temperature: {}
+        anneal_rate: {}
+        anneal_interval: {}
+        alpha: {}
+        probability: {}
+    
+    Returns:
+
     """
     def __init__(self,
                 categorical_dim: int = 10,
@@ -74,6 +89,7 @@ class CatVae(nn.Module):
         z = self.latents(h_enc)
         # Transformation of tenfor from [Batch x Latents*Cats] to [Batch x Latents x Categories]
         z = z.view(-1, self.latent_dim, self.categorical_dim)
+        self.loss_item['code'] = z 
 
         # Sample from Gumbel Distribution
         uniform_samples = torch.rand_like(z)
@@ -85,7 +101,7 @@ class CatVae(nn.Module):
         output_flattend = output.view(-1, self.latent_dim * self.categorical_dim)
 
         # store probabilities in tensor shape as loss item
-        self.loss_item['code'] = output
+        #self.loss_item['code'] = output
 
         return output_flattend
     
@@ -112,42 +128,45 @@ class CatVae(nn.Module):
         
         z = z.view(num_samples, self.latent_dim * self.categorical_dim)
 
-        return self.img_decoder(z.float())
+        if torch.cuda.is_available():
+            z = z.cuda()
+
+        samples = self.img_decoder(z.float())
 
         return samples
 
-    def _embedding(self, data):
+    def _embed(self, data):
         """
         """
         #x = self.resnet(data.float())
         if torch.cuda.is_available():
             data = data.cuda()
         embedding = self.img_encoder(data.float())
-        encoding = self.latens(embedding)
-        z = self._reparameterization(encoding)
+        z = self._reparameterization(embedding)
 
-        return mu, logvar, embedding
+        return embedding, z 
 
     def _parameterize(self):
         pass
 
     def _loss_function(self, image=None, text=None, recon_image=None, 
-                        recon_text=None, code=None, *args, **kwargs):
+                        recon_text=None, code=None, batch_idx=None, *args, **kwargs):
 
         # Compute the reconstruction loss
         if recon_image is not None and image is not None:
             image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
 
-        try:
-            batch_idx = kwargs['batch_idx']
-
-        
-            # Anneal the temperature at regular intervals
-            if self.batch_idx % self.anneal_interval == 0 and self.training:
-                self.temp = np.maximum(self.temp * np.exp(- self.anneal_rate * batch_idx),
-                self.min_temp)
-        except:
-            pass
+        #try:
+        #    #pdb.set_trace()
+        #    #batch_idx = kwargs['batch_idx']
+        #    batch_idx = batch_idx
+        #
+        #    # Anneal the temperature at regular intervals
+        #    if self.batch_idx % self.anneal_interval == 0 and self.training:
+        #        self.temp = np.maximum(self.temp * np.exp(- self.anneal_rate * batch_idx),
+        #        self.min_temp)
+        #except:
+        #    pass
 
 
         # Compute the KL-Divergence between the categorical distribution and  
@@ -156,6 +175,8 @@ class CatVae(nn.Module):
         # between the prior and the posterior w.r.t. posterior
         # Compute the Entropy
         eps = 1e-7
+
+        code = F.softmax(code, dim=-1)
         ent = code * torch.log(code + eps)
 
         # Compute the Cross-Entropy
@@ -171,7 +192,6 @@ class CatVae(nn.Module):
         )
 
         kld_weight = 1.2 #seems pretty arbitrary....
-        pdb.set_trace()
         loss = kld_weight * latent_loss + self.alpha * image_recon_loss 
 
         return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 

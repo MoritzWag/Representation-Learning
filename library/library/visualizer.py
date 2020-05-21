@@ -49,16 +49,16 @@ class Visualizer(nn.Module):
                 image, attribute = next(iter(data))
                 if torch.cuda.is_available():
                     image, attribute = image.cuda(), attribute.cuda()
-                mu, logvar, embed = self._embedding(image.float())
+                mu, logvar, embedding = self._embed(image.float())
 
-                if embed.size(0) > 1:
+                if embedding.size(0) > 1:
                 #raise ValueError('Every value should be sampled from the same posterior, but {} datapoints given'.format(data.size(0)))
-                    embed = embed[0, :]
+                    embedding = embedding[0, :]
                     mu = mu[0, :]
                     logvar = logvar[0, :]
                 mu = mu.unsqueeze(0)
                 logvar = logvar.unsqueeze(0)
-                samples = self._reparameterization(h_enc=embed)
+                samples = self._reparameterization(h_enc=embedding)
                 samples = samples.repeat(n_samples, 1)
                 post_mean_idx = mu[0, idx]
                 post_std_idx = torch.exp(logvar / 2)[0, idx]
@@ -81,6 +81,7 @@ class Visualizer(nn.Module):
                 n_per_latent=8,
                 n_latents=None):
 
+        #if experiment_name is not 
         n_latents = n_latents if n_latents is not None else self.latent_dim
         latent_samples = [self._traverse_line(dim, n_per_latent, data=data) for
                             dim in range(self.latent_dim)]
@@ -101,7 +102,22 @@ class Visualizer(nn.Module):
         vutils.save_image(decoded_traversals.data,
                         f"{storage_path}traversal_{epoch}.png",
                         normalize=True,
-                        nrow=10)
+                        nrow=n_per_latent)
+
+        
+        # CatVae traversals:
+        # Example: latent_dim = 5, cat_dim = 5
+        # 1.) image, attribute next(iter(data))
+        # 2.) embedding, z = self._emebd(img.float())
+        # 3.) dim(z) = 32, 5*5 => (32, 25)
+        # 4.) z = z[0, :] => dim(z) = (1, 25)
+        # 4.) for lat_dim in self.latent_dim:
+        #        for cat_dim in self.cat_dim:
+        #            z[lat_dim*cat_dim] = 1 
+        #            z
+
+
+
 
     def _sample_images(self,
                     val_gen,

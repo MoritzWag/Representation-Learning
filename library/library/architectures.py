@@ -62,11 +62,13 @@ class ConvDecoder28x28(nn.Module):
     """
     
     def __init__(self,
+                in_channels: float,
                 latent_dim: int,
                 hidden_dims = None,
                 categorical_dim = None,
                 **kwargs) -> None:
         super(ConvDecoder28x28, self).__init__()
+        self.in_channels = in_channels
         
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256]
@@ -112,11 +114,11 @@ class ConvDecoder28x28(nn.Module):
         
         self.final_layer = nn.Sequential(
                                 nn.ConvTranspose2d(hidden_dims[-1],
-                                                    out_channels=3,
+                                                    out_channels=self.in_channels,
                                                     kernel_size=2,
                                                     stride=2,
                                                     padding=2),
-                                nn.BatchNorm2d(3),
+                                nn.BatchNorm2d(self.in_channels),
                                 #nn.LeakyReLU(),
                                 #nn.Conv2d(hidden_dims[-1], out_channels=1, 
                                 #       kernel_size=3, padding=1),

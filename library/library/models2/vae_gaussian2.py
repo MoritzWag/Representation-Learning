@@ -17,7 +17,7 @@ from torch import nn, optim, Tensor
 from torch.nn import functional as F
 from torchvision import datasets, transforms
 import torchvision.utils as vutils
-from torchsummary import summary
+#from torchsummary import summary
 
 
 
@@ -91,7 +91,7 @@ class VaeGaussian(nn.Module):
 
         return samples
 
-    def _embedding(self, data):
+    def _embed(self, data):
         """
         """
         #x = self.resnet(data.float())
@@ -134,7 +134,7 @@ class VaeGaussian(nn.Module):
         latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
         #kld_weight = 32 / 40000
-        kld_weight = 32 / 400000
+        kld_weight = 32 / 40000
         if recon_text is not None and text is not None:
             loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss 
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 

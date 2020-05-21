@@ -113,7 +113,7 @@ class VaeBeta(nn.Module):
 
         return samples
 
-    def _embedding(self, data):
+    def _embed(self, data):
         """
         """
         #x = self.resnet(data.float())
@@ -165,7 +165,8 @@ class VaeBeta(nn.Module):
         
         # beta-VAE with increased capacity with every iteration
         else:
-            self.c_max = self.c_max.to(input.device)
+            
+            #self.c_max = self.c_max.to(input.device)
             capacity = torch.clamp(self.c_max/self.c_stop_iter * self.num_iter, 0, self.c_max.data[0])
 
             if recon_text is not None and text is not None:
@@ -175,7 +176,7 @@ class VaeBeta(nn.Module):
                         'image_recon_loss': image_recon_loss.to(torch.double), 'text_recon_loss': text_recon_loss.to(torch.double)}
                         
             else:
-                loss = image_recon_loss + self.beta * kld_weight * (kld_loss - capacity).abs()
+                loss = image_recon_loss + self.beta * kld_weight * (latent_loss - capacity).abs()
 
                 return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
                         'image_recon_loss': image_recon_loss.to(torch.double)}

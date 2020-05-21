@@ -24,9 +24,10 @@ class ImageData(data.Dataset):
 		initiates the dataset object with instance attributes needed later
 	"""
 
-	def __init__(self, rawdata, transform=None):
+	def __init__(self, rawdata, transform=None, dataset=None):
 		'Characterizes a dataset for PyTorch'
 		self.rawdata = rawdata
+		self.dataset = dataset
 		self.nclasses = len(np.unique(self.rawdata[1]))
 		self.height = self.rawdata[0].shape[1]
 		self.width = self.rawdata[0].shape[2]
@@ -43,22 +44,29 @@ class ImageData(data.Dataset):
 		x = self.rawdata[0][idx, :, :, :]
 		y = self.rawdata[1][idx]
 
-		if self.transform is None:
-			#x = Image.fromarray((x*255).astype(np.uint8))
-			#x = self.transform(x)
-			#x = self.transform(np.uint8(x))
+		if self.transform is not None:
+			x = self.transform(x)
+
+		if self.dataset == 'cifar10':
 			x = x / 255.
-			#x = cropND(x, (28, 28))
-			x = crop_center(x, 28, 28)
-			#x = x * 255
-			#x = x
+		
+		if self.dataset == 'adidas':
+			x = x / 255.
+		#if self.transform is notNone:
+		#	#x = Image.fromarray((x*255).astype(np.uint8))
+		#	#x = self.transform(x)
+		#	#x = self.transform(np.uint8(x))
+		#	x = x / 255.
+		#	#x = cropND(x, (28, 28))
+		#	x = crop_center(x, 28, 28)
+		#	#x = x * 255
+		#	#x = x
 		return x, y
 
 
 
 # For adidas
-#def img_to_npy(path, train=True, val_split_ratio=0.0, data_suffix='standard_view'):
-def img_to_npy(path, train=True, val_split_ratio=0.0):
+def img_to_npy(path, train=True, val_split_ratio=0.0, data_suffix=None):
 	"""
 	Args:
 		path: {string} path to the dataset
@@ -70,14 +78,16 @@ def img_to_npy(path, train=True, val_split_ratio=0.0):
 
 	suffix = 'train' if train else 'test'
 	# For adidas
+	if data_suffix is not None:
+		X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
+		Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
+	else:
+		X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
+		Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values
+
 	#X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
 	#Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
 
-
-	#X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
-	#Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
-	X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
-	Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values
 
 
 	classes = np.unique(Y)

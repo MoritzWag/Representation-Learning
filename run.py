@@ -45,7 +45,8 @@ mlflow_logger = MLFlowLogger(
 
 ## build experiment
 experiment = RlExperiment(model,
-                        params=config['exp_params'])
+                        params=config['exp_params'],
+                        experiment_name=args.experiment_name)
 
 
 ## build trainer

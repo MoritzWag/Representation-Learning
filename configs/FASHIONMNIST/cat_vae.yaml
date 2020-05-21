@@ -1,12 +1,13 @@
 model_params:
-  name: 'VaeBeta'
+  name: 'CatVae'
   base: 'VaeBase'
 
 model_hyperparams:
-  beta: 4
-  restrict_capacity: True
-  capacity_max_iter: 10000
-  max_capacity: 25
+  temperature: 0.5
+  anneal_rate: 0.00003
+  anneal_interval: 100
+  alpha: 30.
+  probability: True
 
 architecture:
   img_encoder: 'ConvEncoder28x28'
@@ -14,10 +15,11 @@ architecture:
 
 img_arch_params:
   in_channels: 1
-  latent_dim: 10 
+  latent_dim: 2
+  categorical_dim: 5
 
 exp_params:
-  dataset: 'mnist'
+  dataset: 'fashionmnist'
   data_path: "data/"
   img_size: 28
   batch_size: 32
@@ -27,9 +29,9 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 1
+  max_epochs: 6
 
 logging_params:
   save_dir: "logs/"
-  name: "GaussianVae"
+  name: "CatVae"
   manual_seed: 1265

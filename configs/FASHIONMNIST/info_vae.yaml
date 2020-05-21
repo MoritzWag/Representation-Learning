@@ -1,12 +1,6 @@
 model_params:
-  name: 'VaeBeta'
+  name: 'InfoVae'
   base: 'VaeBase'
-
-model_hyperparams:
-  beta: 4
-  restrict_capacity: True
-  capacity_max_iter: 10000
-  max_capacity: 25
 
 architecture:
   img_encoder: 'ConvEncoder28x28'
@@ -14,10 +8,10 @@ architecture:
 
 img_arch_params:
   in_channels: 1
-  latent_dim: 10 
+  latent_dim: 20
 
 exp_params:
-  dataset: 'mnist'
+  dataset: 'fashionmnist'
   data_path: "data/"
   img_size: 28
   batch_size: 32
@@ -27,9 +21,9 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 1
+  max_epochs: 20
 
 logging_params:
   save_dir: "logs/"
-  name: "GaussianVae"
+  name: "InfoVae"
   manual_seed: 1265

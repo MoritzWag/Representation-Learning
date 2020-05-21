@@ -20,7 +20,8 @@ class RlExperiment(pl.LightningModule):
 
     def __init__(self, 
                 model: ReprLearner,
-                params):
+                params, 
+                experiment_name):
         super(RlExperiment, self).__init__()
         self.model = model.float()
         self.params = params
@@ -28,7 +29,7 @@ class RlExperiment(pl.LightningModule):
         self.train_history = pd.DataFrame()
         self.val_history = pd.DataFrame()
         self.test_score = None
-        self.experiment_name = "VaeGaussian"
+        self.experiment_name = experiment_name
         
         #self.logger.experiment.log_param()
         #self.logger.experiment.log_hyperparams(self.params)
@@ -37,6 +38,8 @@ class RlExperiment(pl.LightningModule):
         return self.model(*args, **kwargs)
 
     def training_step(self, batch, batch_idx, optimizer_idx=0):
+
+        batch_idx = {'batch_idx': batch_idx}
         image, attribute = batch
         self.curr_device = image.device
         image, attribute = Variable(image), Variable(attribute)
@@ -46,9 +49,9 @@ class RlExperiment(pl.LightningModule):
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
 
-            train_loss1 = self.model._loss_function(image.float(), attribute, **reconstruction1)
-            train_loss2 = self.model._loss_function(image.float(), attribute, **reconstruction2)
-            train_loss3 = self.model._loss_function(image.float(), attribute, **reconstruction3)
+            train_loss1 = self.model._loss_function(image.float(), attribute, **batch_idx, **reconstruction1)
+            train_loss2 = self.model._loss_function(image.float(), attribute, **batch_idx, **reconstruction2)
+            train_loss3 = self.model._loss_function(image.float(), attribute, **batch_idx, **reconstruction3)
             
             train_loss_dict = [train_loss1, train_loss2, train_loss3]
             counter = collections.Counter()
@@ -74,7 +77,9 @@ class RlExperiment(pl.LightningModule):
 
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
+        #pdb.set_trace()
 
+        batch_idx = {'batch_idx': batch_idx}
         image, attribute = batch
         self.curr_device = image.device
         image, attribute = Variable(image), Variable(attribute)
@@ -87,9 +92,9 @@ class RlExperiment(pl.LightningModule):
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
 
-            val_loss1 = self.model._loss_function(image, attribute, **reconstruction1)
-            val_loss2 = self.model._loss_function(image, attribute, **reconstruction2)
-            val_loss3 = self.model._loss_function(image, attribute, **reconstruction3)
+            val_loss1 = self.model._loss_function(image, attribute, **batch_idx, **reconstruction1)
+            val_loss2 = self.model._loss_function(image, attribute, **batch_idx, **reconstruction2)
+            val_loss3 = self.model._loss_function(image, attribute, **batch_idx, **reconstruction3)
 
 
             val_loss_dict = [val_loss1, val_loss2, val_loss3]
@@ -100,7 +105,6 @@ class RlExperiment(pl.LightningModule):
             val_loss = dict(counter)
 
         except:
-            #pdb.set_trace()
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
@@ -124,22 +128,24 @@ class RlExperiment(pl.LightningModule):
         #                                run_id=self.logger.run_id)
 
         self.model._sample_images(self.val_gen,
-                                path='images/',
+                                path=f"images/{self.params['dataset']}/",
                                 epoch=self.current_epoch,
-                                experiment_name='VaeExperiment')
-
-        #self.model.traversals(data=self.val_gen,
-        #                    is_reorder_latents=False,
-        #                    n_per_latent=8,
-        #                    n_latents=None,
-        #                    epoch=self.current_epoch,
-        #                    experiment_name='VaeExperiment',
-        #                    path='images/')
+                                experiment_name=self.experiment_name)
+        try:
+            self.model.traversals(data=self.val_gen,
+                                is_reorder_latents=False,
+                                n_per_latent=8,
+                                n_latents=None,
+                                epoch=self.current_epoch,
+                                experiment_name=self.experiment_name,
+                                path=f'images/{self.params['dataset']}/')
+        except:
+            pass
 
         self.model._cluster(data=self.val_gen,
-                            path='images/',
+                            path=f"images/{self.params['dataset']}/",
                             epoch=self.current_epoch,
-                            experiment_name='VaeExperiment')
+                            experiment_name=self.experiment_name)
 
         return {'val_loss': avg_loss}    
 
@@ -175,9 +181,6 @@ class RlExperiment(pl.LightningModule):
 
         ## log everything with mlflow
 
-        # here should be the call of the visualization function
-        # for train_history and val_history. 
-        # call logging_params from yaml file
         plot_train_progress(self.train_history,
                             storage_path=f"logs/{self.experiment_name}/training/")
         plot_train_progress(self.val_history,
@@ -208,20 +211,27 @@ class RlExperiment(pl.LightningModule):
 
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
+            data_suffix=None
+        
+        if self.params['dataset'] == 'fashionmnist':
+            path = 'data/fashionmnist/'
+            data_suffix=None
         
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
+            data_suffix = 'standard_view'
         
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
-        
-        #path = f"data/{self.params['dataset']}"
+            data_suffix=None
         
         train_rawdata, val_rawdata = utils.img_to_npy(path=path,
                                             train=True,
-                                            val_split_ratio=0.2)
-        #self.val_rawdata = val_rawdata
-        train_data = utils.ImageData(rawdata=train_rawdata, transform=transform)
+                                            val_split_ratio=0.2,
+                                            data_suffix=data_suffix)
+
+        train_data = utils.ImageData(rawdata=train_rawdata, transform=transform,
+                                    dataset=self.params['dataset'])
 
         train_gen = DataLoader(dataset=train_data,
                                 batch_size=self.params['batch_size'],
@@ -235,22 +245,29 @@ class RlExperiment(pl.LightningModule):
         transform = self.data_transforms()
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
+            data_suffix=None
+        
+        if self.params['dataset'] == 'fashionmnist':
+            path = 'data/fashionmnist/'
+            data_suffix=None
         
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
+            data_suffix='standard_view'
         
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
-        
-        #path = f"data/{self.params['dataset']}"
+            data_suffix=None
 
         #transform = self.data_transforms()
         _, val_rawdata = utils.img_to_npy(path=path,
                                         train=True,
-                                        val_split_ratio=0.2)
+                                        val_split_ratio=0.2,
+                                        data_suffix=data_suffix)
         
 
-        val_data = utils.ImageData(rawdata=val_rawdata, transform=transform)
+        val_data = utils.ImageData(rawdata=val_rawdata, transform=transform,
+                                    dataset=self.params['dataset'])
         self.val_gen = DataLoader(dataset=val_data,
                             batch_size=self.params['batch_size'],
                             shuffle=False)
@@ -262,18 +279,26 @@ class RlExperiment(pl.LightningModule):
         transform = self.data_transforms()
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
+            data_suffix=None
+        
+        if self.params['dataset'] == 'fashionmnist':
+            path = 'data/fashionmnist/'
+            data_suffix=None
 
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
+            data_suffix='standard_view'
 
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
+            data_suffix=None
         
-        #path = f"data/{self.params['dataset']}"
 
         test_rawdata = utils.img_to_npy(path=path,
-                                        train=False)
-        test_data = utils.ImageData(rawdata=test_rawdata, transform=transform)
+                                        train=False,
+                                        data_suffix=data_suffix)
+        test_data = utils.ImageData(rawdata=test_rawdata, transform=transform,
+                                    dataset=self.params['dataset'])
         self.test_gen = DataLoader(dataset=test_data,
                             batch_size=self.params['batch_size'],
                             shuffle=False)
@@ -292,7 +317,7 @@ class RlExperiment(pl.LightningModule):
                                             transforms.Resize(224),
                                             transforms.ToTensor(),
                                             SetRange])
-        elif self.params['dataset'] == 'test2':
+        elif self.params['dataset'] == 'test1':
             transform = transforms.Compose([transforms.ToPILImage(),
                                             transforms.CenterCrop(28),
                                             transforms.ToTensor()])

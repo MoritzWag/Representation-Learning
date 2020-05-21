@@ -103,7 +103,7 @@ class InfoVae(VaeBase):
 
         return samples
 
-    def _embedding(self, data):
+    def _embed(self, data):
         """
         """
         #x = self.resnet(data.float())

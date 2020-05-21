@@ -13,7 +13,7 @@ img_arch_params:
 exp_params:
   dataset: 'adidas'
   data_path: "data/"
-  img_size: 28
+  img_size: 224
   batch_size: 64
   learning_rate: 0.005
   weight_decay: 0.0
