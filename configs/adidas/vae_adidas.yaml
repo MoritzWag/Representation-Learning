@@ -3,25 +3,25 @@ model_params:
   base: 'VaeBase'
 
 architecture:
-  img_encoder: 'ConvEncoder28x28'
-  img_decoder: 'ConvDecoder28x28'
+  img_encoder: 'ConvEncoder224x224'
+  img_decoder: 'ConvDecoder224x224'
 
 img_arch_params:
   in_channels: 3
-  latent_dim: 100
+  latent_dim: 50
 
 exp_params:
-  dataset: 'cifar10'
+  dataset: 'adidas'
   data_path: "data/"
-  img_size: 28
-  batch_size: 32
+  img_size: 224
+  batch_size: 64
   learning_rate: 0.005
   weight_decay: 0.0
   scheduler_gamma: 0.95
 
 trainer_params:
   gpus: 1
-  max_epochs: 20
+  max_epochs: 50
 
 logging_params:
   save_dir: "logs/"

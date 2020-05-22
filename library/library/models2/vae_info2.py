@@ -127,7 +127,11 @@ class InfoVae(VaeBase):
         
         batch_size = 32
         bias_corr = batch_size * (batch_size - 1)
-        kld_weight = 32 / 40000
+
+        if image.shape[1] == 3:
+            kld_weight = 32 / 400000
+        else:
+            kld_weight = 32 / 40000
 
         if recon_image is not None and image is not None:
             image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)

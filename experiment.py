@@ -138,7 +138,7 @@ class RlExperiment(pl.LightningModule):
                                 n_latents=None,
                                 epoch=self.current_epoch,
                                 experiment_name=self.experiment_name,
-                                path=f'images/{self.params['dataset']}/')
+                                path=f"images/{self.params['dataset']}/")
         except:
             pass
 
@@ -182,9 +182,9 @@ class RlExperiment(pl.LightningModule):
         ## log everything with mlflow
 
         plot_train_progress(self.train_history,
-                            storage_path=f"logs/{self.experiment_name}/training/")
+                            storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/training/")
         plot_train_progress(self.val_history,
-                            storage_path=f"logs/{self.experiment_name}/validation/")
+                            storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/validation/")
 
         return {'avg_test_loss': avg_test_loss}
 

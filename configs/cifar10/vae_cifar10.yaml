@@ -1,25 +1,17 @@
 model_params:
-  name: 'CatVae'
+  name: 'GaussianVae'
   base: 'VaeBase'
-
-model_hyperparams:
-  temperature: 0.5
-  anneal_rate: 0.00003
-  anneal_interval: 100
-  alpha: 30.
-  probability: True
 
 architecture:
   img_encoder: 'ConvEncoder28x28'
   img_decoder: 'ConvDecoder28x28'
 
 img_arch_params:
-  in_channels: 1
-  latent_dim: 10
-  categorical_dim: 5
+  in_channels: 3
+  latent_dim: 100
 
 exp_params:
-  dataset: 'mnist'
+  dataset: 'cifar10'
   data_path: "data/"
   img_size: 28
   batch_size: 32
@@ -29,9 +21,9 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 20
+  max_epochs: 50
 
 logging_params:
   save_dir: "logs/"
-  name: "CatVae"
+  name: "GaussianVae"
   manual_seed: 1265
