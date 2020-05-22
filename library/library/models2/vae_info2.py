@@ -37,7 +37,7 @@ class InfoVae(VaeBase):
         )
 
         self.latent_dim = self.img_encoder.latent_dim
-        self.hidden_dim = self.img_encoder.hidden_dims
+        self.hidden_dim = self.img_encoder.enc_hidden_dims
         self.reg_weight = reg_weight
         self.kernel_type = kernel_type
         self.z_var = latent_var
