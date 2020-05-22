@@ -138,7 +138,7 @@ class RlExperiment(pl.LightningModule):
                                 n_latents=None,
                                 epoch=self.current_epoch,
                                 experiment_name=self.experiment_name,
-                                path=f'images/{self.params['dataset']}/')
+                                path=f"images/{self.params['dataset']}/")
         except:
             pass
 

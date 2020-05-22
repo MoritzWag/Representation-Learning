@@ -3,12 +3,21 @@ model_params:
   base: 'VaeBase'
 
 architecture:
-  img_encoder: 'ConvEncoder28x28'
-  img_decoder: 'ConvDecoder28x28'
+  img_encoder: 'ConvEncoderAutomatic'
+  img_decoder: 'ConvDecoderAutomatic'
 
 img_arch_params:
   in_channels: 1
+  in_dim: 28
   latent_dim: 10 
+  hidden_dim: [32, 64, 128, 256]
+  enc_kernel_size: [3, 3, 3, 3]
+  enc_stride: [2, 2, 2, 2]
+  enc_padding: [1, 1, 1, 1]
+  dec_kernel_size: [3, 3, 3, 2]
+  dec_stride: [2, 2, 2, 2]
+  dec_padding: [1, 1, 1, 2]
+  dec_out_padding: [1, 1, 1]
 
 exp_params:
   dataset: 'mnist'
@@ -20,7 +29,7 @@ exp_params:
   scheduler_gamma: 0.95
 
 trainer_params:
-  gpus: 1
+  gpus: 0
   max_epochs: 20
 
 logging_params:

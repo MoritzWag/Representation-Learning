@@ -3,6 +3,7 @@ from library.models2.vae_info2 import *
 from library.models2.cat_vae import *
 from library.models2.base2 import *
 from library.architectures import *
+from library.architectures_playground import *
 from library.models2.vae_beta import *
 import pdb 
 
@@ -24,7 +25,9 @@ vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
                 'AttrEncoder': AttributeEncoder,
                 'AttrDecoder': AttributeDecoder,
                 'expert': ProductOfExperts,
-                'CustomizedResNet101': CustomizedResNet101}
+                'CustomizedResNet101': CustomizedResNet101,
+                'ConvEncoderAutomatic': ConvEncoderAutomatic,
+                'ConvDecoderAutomatic': ConvDecoderAutomatic}
 
 
 def createClass(vae_model, base_model):
@@ -58,6 +61,7 @@ def parse_model_config(config):
     return model
 
 def parse_architecture_config(config):
+
     architecture = config.get('architecture')
     img_arch_params = config.get('img_arch_params')
     text_arch_params = config.get('text_arch_params')

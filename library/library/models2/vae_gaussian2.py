@@ -5,6 +5,8 @@ import logging
 import os
 from library import architectures
 from library.architectures import ConvEncoder28x28, ConvDecoder28x28
+from library.architectures_playground import ConvEncoderAutomatic, ConvDecoderAutomatic
+
 from library.models2.helpers import *
 
 from library.models2 import base2

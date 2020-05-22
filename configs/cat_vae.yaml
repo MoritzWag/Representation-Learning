@@ -15,8 +15,8 @@ architecture:
 
 img_arch_params:
   in_channels: 1
-  latent_dim: 2
-  categorical_dim: 5
+  latent_dim: 1
+  categorical_dim: 10
 
 exp_params:
   dataset: 'mnist'
