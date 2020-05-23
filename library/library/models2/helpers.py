@@ -3,7 +3,6 @@ from library.models2.vae_info2 import *
 from library.models2.cat_vae import *
 from library.models2.base2 import *
 from library.architectures import *
-from library.architectures_playground import *
 from library.models2.vae_beta import *
 import pdb 
 
@@ -75,7 +74,6 @@ def parse_architecture_config(config):
     model_dict = {}
     for instance in arch_dict.items():
         if instance[1] is not None:
-            model_dict[instance[0]] = instance[1](**img_arch_params)
             try: 
                 model_dict[instance[0]] = instance[1](**img_arch_params)
             except:
