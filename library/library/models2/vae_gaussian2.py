@@ -5,7 +5,6 @@ import logging
 import os
 from library import architectures
 from library.architectures import ConvEncoder28x28, ConvDecoder28x28
-from library.architectures_playground import ConvEncoderAutomatic, ConvDecoderAutomatic
 
 from library.models2.helpers import *
 
@@ -20,8 +19,6 @@ from torch.nn import functional as F
 from torchvision import datasets, transforms
 import torchvision.utils as vutils
 #from torchsummary import summary
-
-
 
 torch.set_default_dtype(torch.float64)
 

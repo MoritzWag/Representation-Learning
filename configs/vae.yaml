@@ -30,8 +30,8 @@ exp_params:
   scheduler_gamma: 0.95
 
 trainer_params:
-  gpus: 0
-  max_epochs: 20
+  gpus: 1
+  max_epochs: 50
 
 logging_params:
   save_dir: "logs/"

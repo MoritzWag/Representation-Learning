@@ -76,11 +76,11 @@ def parse_architecture_config(config):
     for instance in arch_dict.items():
         if instance[1] is not None:
             model_dict[instance[0]] = instance[1](**img_arch_params)
-            #try: 
-            #    model_dict[instance[0]] = instance[1](**img_arch_params)
-            #except:
-            #    try:
-            #        model_dict[instance[0]] = instance[1](**text_arch_params)
-            #    except: 
-            #        model_dict[instance[0]] = instance[1]()
+            try: 
+                model_dict[instance[0]] = instance[1](**img_arch_params)
+            except:
+                try:
+                    model_dict[instance[0]] = instance[1](**text_arch_params)
+                except: 
+                    model_dict[instance[0]] = instance[1]()
     return model_dict

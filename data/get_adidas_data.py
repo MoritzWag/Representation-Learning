@@ -28,7 +28,6 @@ def parse_args():
     return args
 
 def get_data(args):
-    #pdb.set_trace()
 
     url = "https://syncandshare.lrz.de/dl/fiGkTna5QwQtZRnWcPb8Ch9X/.zip"
     #url = "https://syncandshare.lrz.de/download/MlJiRHRvWkFZc3M1MngzdDNTcmE5/Data/Image_Dataset/image_tensors.zip"

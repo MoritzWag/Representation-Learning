@@ -4,9 +4,9 @@ model_params:
 
 model_hyperparams:
   beta: 4
-  restrict_capacity: False
-  capacity_max_iter: 1
-  max_capacity: 1
+  restrict_capacity: True
+  capacity_max_iter: 10000
+  max_capacity: 25
 
 architecture:
   img_encoder: 'ConvEncoderAutomatic'
@@ -15,7 +15,7 @@ architecture:
 img_arch_params:
   in_channels: 1
   in_dims: 28
-  latent_dim: 10
+  latent_dim: 10 
   enc_hidden_dims: [32, 64, 128, 256]
   enc_kernel_size: [3, 3, 3, 3]
   enc_stride: [2, 2, 2, 2]
@@ -34,13 +34,12 @@ exp_params:
   learning_rate: 0.005
   weight_decay: 0.0
   scheduler_gamma: 0.95
-  
 
 trainer_params:
   gpus: 1
-  max_epochs: 10
+  max_epochs: 2
 
 logging_params:
   save_dir: "logs/"
-  name: "GaussianVae"
+  name: "BetaVae_constr"
   manual_seed: 1265

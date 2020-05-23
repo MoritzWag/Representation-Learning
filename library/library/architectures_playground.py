@@ -13,7 +13,6 @@ from torch import Tensor
 
 torch.set_default_dtype(torch.float64)
 
-
 class ConvEncoderAutomatic(nn.Module):
     """
     """
@@ -76,6 +75,7 @@ class ConvEncoderAutomatic(nn.Module):
         self.encoder = nn.Sequential(*modules)
         
     def forward(self, input: Tensor) -> Tensor:
+        
         output = self.encoder(input)
         output = torch.flatten(output, start_dim=1)
         return output

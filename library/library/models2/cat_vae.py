@@ -53,6 +53,7 @@ class CatVae(nn.Module):
             **kwargs
         )
         self.latent_dim = self.img_encoder.latent_dim
+        #self.hidden_dim = self.img_encoder.hidden_dims
         self.hidden_dim = self.img_encoder.enc_hidden_dims
         self.output_dim = self.img_encoder.enc_output_dim
         self.categorical_dim = self.img_decoder.categorical_dim # Number of categories

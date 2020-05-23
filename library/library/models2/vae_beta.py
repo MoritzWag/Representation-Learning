@@ -35,6 +35,7 @@ class VaeBeta(nn.Module):
             **kwargs
         )
         self.latent_dim = self.img_encoder.latent_dim
+        #self.hidden_dim = self.img_encoder.hidden_dims
         self.hidden_dim = self.img_encoder.enc_hidden_dims
         self.output_dim = self.img_encoder.enc_output_dim
 
@@ -58,7 +59,7 @@ class VaeBeta(nn.Module):
 
     # here I need some check whether reparameterization for attr or image 
     def _reparameterization(self, h_enc):
-        #pdb.set_trace()
+        
         """Reparameterization trick to sample from N(mu, var) from 
         N(0,1).
 
@@ -134,8 +135,8 @@ class VaeBeta(nn.Module):
 
     def _loss_function(self, image=None, text=None, recon_image=None, 
                         recon_text=None, mu=None, logvar=None, *args, **kwargs):
-        
-        self.num_iter += 1
+        #pdb.set_trace()
+        self.num_iter += torch.tensor(1).float()
 
         if recon_image is not None and image is not None:
             image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
@@ -148,7 +149,6 @@ class VaeBeta(nn.Module):
 
         kld_weight = 32 / 40000
         #loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss
-        #pdb.set_trace()
         
         if self.restrict_capacity == False:
 
@@ -167,7 +167,11 @@ class VaeBeta(nn.Module):
         else:
             
             #self.c_max = self.c_max.to(input.device)
-            capacity = torch.clamp(self.c_max/self.c_stop_iter * self.num_iter, 0, self.c_max.data[0])
+            if torch.cuda.is_available():
+                capacity = torch.clamp(self.c_max/self.c_stop_iter * self.num_iter, 0, self.c_max.data[0]).cuda()
+            else:
+                capacity = torch.clamp(self.c_max/self.c_stop_iter * self.num_iter, 0, self.c_max.data[0])
+            
 
             if recon_text is not None and text is not None:
                 loss = image_recon_loss + text_recon_loss + self.beta * kld_weight * (kld_loss - capacity).abs()
