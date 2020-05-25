@@ -451,7 +451,7 @@ class InfoVae(VaeBase):
 
 
 
-class VaeBeta(VaeBase):
+class BetaVae(VaeBase):
     """
     """
     def __init__(self,
@@ -463,7 +463,7 @@ class VaeBeta(VaeBase):
                 latent_dim=None,
                 categorical_dim=None,
                 **kwargs):  
-        super(VaeBeta).__init__(
+        super(BetaVae).__init__(
             **kwargs
         )
 

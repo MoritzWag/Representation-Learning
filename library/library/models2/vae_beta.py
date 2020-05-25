@@ -19,7 +19,7 @@ from torchvision import datasets, transforms
 import torchvision.utils as vutils
 
 
-class VaeBeta(nn.Module):
+class BetaVae(nn.Module):
     """
     """
 
@@ -31,7 +31,7 @@ class VaeBeta(nn.Module):
                 restrict_capacity = False,
                 capacity_max_iter: int = 1e5,
                 **kwargs):
-        super(VaeBeta, self).__init__(
+        super(BetaVae, self).__init__(
             **kwargs
         )
         self.latent_dim = self.img_encoder.latent_dim

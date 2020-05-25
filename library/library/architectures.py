@@ -13,12 +13,12 @@ from torch import Tensor
 
 torch.set_default_dtype(torch.float64)
 
-class ConvEncoderAutomatic(nn.Module):
+class ConvEncoder(nn.Module):
     """
     """
 
     def __init__(self,
-                in_dims: float,
+                img_size: float,
                 in_channels: float,
                 latent_dim: float,
                 enc_padding: int,
@@ -26,11 +26,11 @@ class ConvEncoderAutomatic(nn.Module):
                 enc_kernel_size: int,
                 enc_hidden_dims: int,
                 **kwargs) -> None:
-        super(ConvEncoderAutomatic, self).__init__()
+        super(ConvEncoder, self).__init__()
             
         self.latent_dim = latent_dim
         self.in_channels = in_channels
-        self.in_dims = in_dims
+        self.img_size = img_size
 
         # Input check for padding
         #assertTrue(len(enc_hidden_dims) == len(enc_padding))
@@ -48,7 +48,7 @@ class ConvEncoderAutomatic(nn.Module):
 
         modules = []
         
-        output_dims = np.repeat(in_dims, len(self.enc_hidden_dims)+1)
+        output_dims = np.repeat(img_size, len(self.enc_hidden_dims)+1)
         for i in range(len(self.enc_hidden_dims)):
             if i == 0:
                 output_dims[i+1] = np.floor((output_dims[i+1] + 2*enc_padding[i] - enc_kernel_size[i])/enc_stride[i]) + 1
@@ -81,12 +81,12 @@ class ConvEncoderAutomatic(nn.Module):
         return output
 
 
-class ConvDecoderAutomatic(nn.Module):
+class ConvDecoder(nn.Module):
     """
     """
     
     def __init__(self,
-                in_dims: float,
+                img_size: float,
                 in_channels: float,
                 latent_dim: float,
                 dec_hidden_dims: int,
@@ -100,7 +100,7 @@ class ConvDecoderAutomatic(nn.Module):
                 enc_hidden_dims,
                 categorical_dim = None,
                 **kwargs) -> None:
-        super(ConvDecoderAutomatic, self).__init__()
+        super(ConvDecoder, self).__init__()
 
         self.latent_dim = latent_dim
         self.in_channels = in_channels
@@ -124,7 +124,7 @@ class ConvDecoderAutomatic(nn.Module):
 
         modules = []
         # Obtain output dimension of encoder
-        output_dims = np.repeat(in_dims, len(enc_hidden_dims)+1)
+        output_dims = np.repeat(img_size, len(enc_hidden_dims)+1)
 
         for i in range(len(enc_hidden_dims)):
             if i == 0:
@@ -293,7 +293,7 @@ class ConvDecoder28x28(nn.Module):
                                 #nn.LeakyReLU(),
                                 #nn.Conv2d(hidden_dims[-1], out_channels=1, 
                                 #       kernel_size=3, padding=1),
-                                nn.Tanh())
+                                nn.Sigmoid())
 
 
     def forward(self, input) -> Tensor:
@@ -396,7 +396,7 @@ class ConvDecoder64x64(nn.Module):
                                 nn.LeakyReLU(),
                                 nn.Conv2d(hidden_dims[-1], out_channels=3,
                                         kernel_size=3, padding=1),
-                                nn.Tanh())
+                                nn.Sigmoid())
         
         self.final_layer224x224 = nn.Sequential(
                                     nn.ConvTranspose2d(3,
@@ -518,7 +518,7 @@ class ConvDecoder224x224(nn.Module):
         self.final_layer2 = nn.Sequential(
                                 nn.Conv2d(hidden_dims[-1], out_channels=3,
                                         kernel_size=32),
-                                nn.Tanh())
+                                nn.Sigmoid())
 
     def forward(self, input: Tensor) -> Tensor:
         x = self.decoder_input(input)

@@ -1,21 +1,23 @@
 model_params:
-  name: 'VaeBeta'
+  name: 'CatVae'
   base: 'VaeBase'
 
-model_hyperparams:
-  beta: 1000
-  restrict_capacity: True
-  capacity_max_iter: 10000
-  max_capacity: 25
-
 architecture:
-  img_encoder: 'ConvEncoderAutomatic'
-  img_decoder: 'ConvDecoderAutomatic'
+  img_encoder: 'ConvEncoder'
+  img_decoder: 'ConvDecoder'
+
+model_hyperparams:
+  temperature: 0.5
+  anneal_rate: 0.00003
+  anneal_interval: 100
+  alpha: 50.
+  probability: True
 
 img_arch_params:
   in_channels: 3
-  in_dims: 224
-  latent_dim: 10
+  img_size: 224
+  latent_dim: 20
+  categorical_dim: 10
   enc_hidden_dims: [30, 60, 120, 150, 300, 400, 500]
   enc_kernel_size: [3, 3, 3, 3, 3, 3, 2]
   enc_stride: [2, 2, 2, 2, 2, 2, 2]
@@ -41,5 +43,5 @@ trainer_params:
 
 logging_params:
   save_dir: "logs/"
-  name: "BetaVae"
+  name: "GaussianVae"
   manual_seed: 1265

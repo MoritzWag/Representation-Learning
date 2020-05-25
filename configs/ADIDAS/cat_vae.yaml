@@ -1,0 +1,48 @@
+model_params:
+  name: 'CatVae'
+  base: 'VaeBase'
+
+
+model_hyperparams:
+  temperature: 0.5
+  anneal_rate: 0.00003
+  anneal_interval: 100
+  alpha: 50.
+  probability: True
+
+architecture:
+  img_encoder: 'ConvEncoder'
+  img_decoder: 'ConvDecoder'
+
+img_arch_params:
+  in_channels: 3
+  img_size: 224
+  latent_dim: 20
+  categorical_dim: 10
+  enc_hidden_dims: [8, 16, 32, 64, 128, 256, 512]
+  enc_kernel_size: [3, 3, 3, 3, 3, 3, 3]
+  enc_stride: [2, 2, 2, 2, 2, 2, 2]
+  enc_padding: [1, 1, 1, 1, 1, 1, 1]
+  dec_hidden_dims: [512, 256, 128, 64, 32, 16, 8, 8]
+  dec_kernel_size: [3, 3, 3, 3, 3, 3, 50, 50]
+  dec_stride: [2, 2, 2, 2, 2, 2, 1, 1]
+  dec_padding: [1, 1, 1, 1, 1, 1, 1, 0]
+  dec_out_padding: [1, 1, 1, 1, 1, 1, 0, 0]
+
+exp_params:
+  dataset: 'adidas'
+  data_path: "data/"
+  img_size: 224
+  batch_size: 32
+  learning_rate: 0.005
+  weight_decay: 0.0
+  scheduler_gamma: 0.95
+
+trainer_params:
+  gpus: 1
+  max_epochs: 50
+
+logging_params:
+  save_dir: "logs/"
+  name: "CatVae"
+  manual_seed: 1265

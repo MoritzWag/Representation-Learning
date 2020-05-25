@@ -10,7 +10,7 @@ base_models = {'VaeBase': VaeBase,
             'MMVaeBase': MMVaeBase}
 
 vae_models = {'GaussianVae': VaeGaussian,
-            'VaeBeta': VaeBeta,
+            'BetaVae': BetaVae,
             'InfoVae': InfoVae,
             'CatVae': CatVae}
 
@@ -25,8 +25,8 @@ vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
                 'AttrDecoder': AttributeDecoder,
                 'expert': ProductOfExperts,
                 'CustomizedResNet101': CustomizedResNet101,
-                'ConvEncoderAutomatic': ConvEncoderAutomatic,
-                'ConvDecoderAutomatic': ConvDecoderAutomatic}
+                'ConvEncoder': ConvEncoder,
+                'ConvDecoder': ConvDecoder}
 
 
 def createClass(vae_model, base_model):
@@ -81,4 +81,5 @@ def parse_architecture_config(config):
                     model_dict[instance[0]] = instance[1](**text_arch_params)
                 except: 
                     model_dict[instance[0]] = instance[1]()
+    #pdb.set_trace()
     return model_dict

@@ -3,12 +3,12 @@ model_params:
   base: 'VaeBase'
 
 architecture:
-  img_encoder: 'ConvEncoderAutomatic'
-  img_decoder: 'ConvDecoderAutomatic'
+  img_encoder: 'ConvEncoder'
+  img_decoder: 'ConvDecoder'
 
 img_arch_params:
   in_channels: 3
-  in_dims: 224
+  img_size: 224
   latent_dim: 20
   enc_hidden_dims: [30, 60, 120, 150, 300, 400, 500]
   enc_kernel_size: [41, 21, 11, 7, 3, 3, 3]

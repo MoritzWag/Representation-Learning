@@ -1,5 +1,5 @@
 model_params:
-  name: 'VaeBeta'
+  name: 'BetaVae'
   base: 'VaeBase'
 
 model_hyperparams:
@@ -9,12 +9,12 @@ model_hyperparams:
   max_capacity: 25
 
 architecture:
-  img_encoder: 'ConvEncoderAutomatic'
-  img_decoder: 'ConvDecoderAutomatic'
+  img_encoder: 'ConvEncoder'
+  img_decoder: 'ConvDecoder'
 
 img_arch_params:
   in_channels: 1
-  in_dims: 28
+  img_size: 28
   latent_dim: 10 
   enc_hidden_dims: [32, 64, 128, 256]
   enc_kernel_size: [3, 3, 3, 3]

@@ -1,28 +1,26 @@
 model_params:
-  name: 'CatVae'
+  name: 'BetaVae'
   base: 'VaeBase'
 
 model_hyperparams:
-  temperature: 0.5
-  anneal_rate: 0.00003
-  anneal_interval: 100
-  alpha: 30.
-  probability: True
+  beta: 4
+  restrict_capacity: False
+  capacity_max_iter: 1
+  max_capacity: 1
 
 architecture:
-  img_encoder: 'ConvEncoder28x28'
-  img_decoder: 'ConvDecoder28x28'
+  img_encoder: 'ConvEncoder'
+  img_decoder: 'ConvDecoder'
 
 img_arch_params:
   in_channels: 1
-  in_dims: 28
+  img_size: 28
   latent_dim: 10
-  categorical_dim: 3
-  enc_hidden_dims: [500, 400, 300, 256]
+  enc_hidden_dims: [32, 64, 128, 256]
   enc_kernel_size: [3, 3, 3, 3]
   enc_stride: [2, 2, 2, 2]
   enc_padding: [1, 1, 1, 1]
-  dec_hidden_dims: [465, 23, 567, 4]
+  dec_hidden_dims: [256, 128, 64, 32]
   dec_kernel_size: [3, 3, 3, 2]
   dec_stride: [2, 2, 2, 2]
   dec_padding: [1, 1, 1, 2]
@@ -36,12 +34,13 @@ exp_params:
   learning_rate: 0.005
   weight_decay: 0.0
   scheduler_gamma: 0.95
+  
 
 trainer_params:
   gpus: 1
-  max_epochs: 50
+  max_epochs: 10
 
 logging_params:
   save_dir: "logs/"
-  name: "CatVae"
+  name: "GaussianVae"
   manual_seed: 1265
