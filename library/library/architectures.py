@@ -47,7 +47,7 @@ class ConvEncoderAutomatic(nn.Module):
         self.enc_stride = enc_stride
 
         modules = []
-
+        
         output_dims = np.repeat(in_dims, len(self.enc_hidden_dims)+1)
         for i in range(len(self.enc_hidden_dims)):
             if i == 0:
@@ -80,6 +80,7 @@ class ConvEncoderAutomatic(nn.Module):
         output = torch.flatten(output, start_dim=1)
         return output
 
+
 class ConvDecoderAutomatic(nn.Module):
     """
     """
@@ -103,8 +104,6 @@ class ConvDecoderAutomatic(nn.Module):
 
         self.latent_dim = latent_dim
         self.in_channels = in_channels
-
-        #self.in_dims = in_dims maybe use for later in first dec layer
 
         # Input check for padding
         #assertTrue(len(dec_hidden_dims) == len(dec_padding))
@@ -217,6 +216,9 @@ class ConvEncoder28x28(nn.Module):
             in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
+    
+        dimensions = self.encoder(torch.ones(1, self.in_channels, 28, 28, requires_grad=False)).size()
+        self.enc_output_dim = dimensions[2] * dimensions[3] 
         
     def forward(self, input: Tensor) -> Tensor:
         #pdb.set_trace()
@@ -224,11 +226,6 @@ class ConvEncoder28x28(nn.Module):
         output = torch.flatten(output, start_dim=1)
         return output
 
-    @property
-    def enc_output_dim(self):
-        dimensions = self.encoder(torch.ones(1, self.in_channels, 28, 28, requires_grad=False)).size()
-        flattend_output_dimensions = dimensions[2] * dimensions[3]
-        return flattend_output_dimensions
 
 
 class ConvDecoder28x28(nn.Module):
@@ -321,6 +318,7 @@ class ConvEncoder64x64(nn.Module):
             
         
         self.latent_dim = latent_dim
+        self.in_channels = in_channels
 
         modules = []
         if hidden_dims is None:
@@ -341,12 +339,13 @@ class ConvEncoder64x64(nn.Module):
             in_channels = h_dim
         
         self.encoder = nn.Sequential(*modules)
+        dimensions = self.encoder(torch.ones(1, self.in_channels, 64, 64, requires_grad=False)).size()
+        self.enc_output_dim = dimensions[2] * dimensions[3]
 
     def forward(self, input: Tensor) -> Tensor:
         output = self.encoder(input)
         output = torch.flatten(output, start_dim=1)
         return output
-
 
 
 
@@ -439,7 +438,8 @@ class ConvEncoder224x224(nn.Module):
         super(ConvEncoder224x224, self).__init__()
 
         self.latent_dim = latent_dim
-        
+        self.in_channels = in_channels
+
         modules = []
         if hidden_dims is None:
             hidden_dims = [8, 16, 32, 64, 128, 256, 512]
@@ -457,15 +457,17 @@ class ConvEncoder224x224(nn.Module):
                 )
             )
             in_channels = h_dim 
-        
+
         self.encoder = nn.Sequential(*modules)
+
+        dimensions = self.encoder(torch.ones(1, self.in_channels, 224, 224, requires_grad=False)).size()
+        self.enc_output_dim = dimensions[2] * dimensions[3]
+
     
     def forward(self, input: Tensor) -> Tensor:
         output = self.encoder(input)
         output = torch.flatten(output, start_dim=1)
         return output
-
-
 
 
 

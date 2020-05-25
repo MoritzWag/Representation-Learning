@@ -1,0 +1,39 @@
+model_params:
+  name: 'GaussianVae'
+  base: 'VaeBase'
+
+architecture:
+  img_encoder: 'ConvEncoderAutomatic'
+  img_decoder: 'ConvDecoderAutomatic'
+
+img_arch_params:
+  in_channels: 3
+  in_dims: 224
+  latent_dim: 20
+  enc_hidden_dims: [30, 60, 120, 150, 300, 400, 500]
+  enc_kernel_size: [41, 21, 11, 7, 3, 3, 3]
+  enc_stride: [2, 2, 2, 2, 2, 2, 2]
+  enc_padding: [20, 10, 5, 3, 2, 2, 1]
+  dec_hidden_dims: [500, 400, 150, 120, 60, 30, 10]
+  dec_kernel_size: [2, 4, 6, 12, 16, 20, 22, 31]
+  dec_stride: [2, 2, 2, 2, 2, 2, 1, 1]
+  dec_padding: [1, 2, 2, 3, 3, 3, 3, 3]
+  dec_out_padding: [1, 1, 1, 1, 0, 0, 0, 0]
+
+exp_params:
+  dataset: 'adidas'
+  data_path: "data/"
+  img_size: 224
+  batch_size: 64
+  learning_rate: 0.005
+  weight_decay: 0.0
+  scheduler_gamma: 0.95
+
+trainer_params:
+  gpus: 1
+  max_epochs: 100
+
+logging_params:
+  save_dir: "logs/"
+  name: "GaussianVae"
+  manual_seed: 1265

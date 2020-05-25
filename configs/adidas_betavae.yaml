@@ -1,0 +1,45 @@
+model_params:
+  name: 'VaeBeta'
+  base: 'VaeBase'
+
+model_hyperparams:
+  beta: 1000
+  restrict_capacity: True
+  capacity_max_iter: 10000
+  max_capacity: 25
+
+architecture:
+  img_encoder: 'ConvEncoderAutomatic'
+  img_decoder: 'ConvDecoderAutomatic'
+
+img_arch_params:
+  in_channels: 3
+  in_dims: 224
+  latent_dim: 10
+  enc_hidden_dims: [30, 60, 120, 150, 300, 400, 500]
+  enc_kernel_size: [3, 3, 3, 3, 3, 3, 2]
+  enc_stride: [2, 2, 2, 2, 2, 2, 2]
+  enc_padding: [1, 1, 1, 1, 1, 1, 0]
+  dec_hidden_dims: [500, 400, 150, 120, 60, 30, 10]
+  dec_kernel_size: [3, 3, 5, 7, 9, 11, 13, 37]
+  dec_stride: [3, 3, 3, 2, 2, 2, 1, 1]
+  dec_padding: [2, 2, 1, 1, 1, 1, 1, 0]
+  dec_out_padding: [1, 1, 1, 1, 1, 1, 1, 0]
+
+exp_params:
+  dataset: 'adidas'
+  data_path: "data/"
+  img_size: 224
+  batch_size: 64
+  learning_rate: 0.005
+  weight_decay: 0.0
+  scheduler_gamma: 0.95
+
+trainer_params:
+  gpus: 1
+  max_epochs: 100
+
+logging_params:
+  save_dir: "logs/"
+  name: "BetaVae"
+  manual_seed: 1265

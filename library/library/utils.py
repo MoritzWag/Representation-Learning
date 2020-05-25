@@ -43,15 +43,15 @@ class ImageData(data.Dataset):
 		'Generates one sample of data'
 		x = self.rawdata[0][idx, :, :, :]
 		y = self.rawdata[1][idx]
-
+		
 		if self.transform is not None:
 			x = self.transform(x)
 
 		if self.dataset == 'cifar10':
 			x = x / 255.
 		
-		if self.dataset == 'adidas':
-			x = x / 255.
+		# if self.dataset == 'adidas':
+		# 	x = x / 255.
 		#if self.transform is notNone:
 		#	#x = Image.fromarray((x*255).astype(np.uint8))
 		#	#x = self.transform(x)

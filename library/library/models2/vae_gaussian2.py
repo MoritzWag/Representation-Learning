@@ -30,6 +30,7 @@ class VaeGaussian(nn.Module):
         super(VaeGaussian, self).__init__(
             **kwargs
         )
+
         self.latent_dim = self.img_encoder.latent_dim
         self.hidden_dim = self.img_encoder.enc_hidden_dims
         self.output_dim = self.img_encoder.enc_output_dim
@@ -123,7 +124,7 @@ class VaeGaussian(nn.Module):
 
     def _loss_function(self, image=None, text=None, recon_image=None, 
                         recon_text=None, mu=None, logvar=None):
-
+        #pdb.set_trace()
         if recon_image is not None and image is not None:
             image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
         
@@ -133,7 +134,7 @@ class VaeGaussian(nn.Module):
         latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
         #kld_weight = 32 / 40000
-        kld_weight = 32 / 40000
+        kld_weight = 64/10000
         if recon_text is not None and text is not None:
             loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss 
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
