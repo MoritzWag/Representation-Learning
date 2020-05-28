@@ -15,6 +15,7 @@ architecture:
 
 img_arch_params:
   in_channels: 1
+<<<<<<< HEAD:configs/xx_archive/cat_vae.yaml
   img_size: 28
   latent_dim: 10
   categorical_dim: 3
@@ -27,6 +28,10 @@ img_arch_params:
   dec_stride: [2, 2, 2, 2]
   dec_padding: [1, 1, 1, 2]
   dec_out_padding: [1, 1, 1]
+=======
+  latent_dim: 10
+  categorical_dim: 5
+>>>>>>> e1bf9a75934527ab51b1d8af923ad40d0da5af4a:configs/cat_vae.yaml
 
 exp_params:
   dataset: 'mnist'
@@ -39,7 +44,11 @@ exp_params:
 
 trainer_params:
   gpus: 1
+<<<<<<< HEAD:configs/xx_archive/cat_vae.yaml
   max_epochs: 50
+=======
+  max_epochs: 20
+>>>>>>> e1bf9a75934527ab51b1d8af923ad40d0da5af4a:configs/cat_vae.yaml
 
 logging_params:
   save_dir: "logs/"

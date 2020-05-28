@@ -468,6 +468,12 @@ class ConvEncoder224x224(nn.Module):
         output = self.encoder(input)
         output = torch.flatten(output, start_dim=1)
         return output
+    
+    @property
+    def enc_output_dim(self):
+        dimensions = self.encoder(torch.ones(1, self.in_channels, 224, 224, requires_grad=False)).size()
+        flattend_output_dimensions = dimensions[2] * dimensions[3]
+        return flattend_output_dimensions
 
 
 

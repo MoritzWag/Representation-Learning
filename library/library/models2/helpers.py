@@ -44,7 +44,6 @@ def makeWithMixins(cls, mixins):
     return cls
 
 def parse_model_config(config):
-    #pdb.set_trace()
     model_params = config.get('model_params')
     try:
         hyper_params = config.get('model_hyperparams')

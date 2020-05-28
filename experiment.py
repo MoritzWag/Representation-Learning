@@ -182,9 +182,9 @@ class RlExperiment(pl.LightningModule):
         ## log everything with mlflow
 
         plot_train_progress(self.train_history,
-                            storage_path=f"logs/{self.experiment_name}/training/")
+                            storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/training/")
         plot_train_progress(self.val_history,
-                            storage_path=f"logs/{self.experiment_name}/validation/")
+                            storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/validation/")
 
         return {'avg_test_loss': avg_test_loss}
 

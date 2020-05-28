@@ -48,6 +48,7 @@ class ImageData(data.Dataset):
 			x = self.transform(x)
 
 		if self.dataset == 'cifar10':
+			x = crop_center(x, 28, 28)
 			x = x / 255.
 		
 		# if self.dataset == 'adidas':

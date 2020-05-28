@@ -15,7 +15,7 @@ architecture:
 
 img_arch_params:
   in_channels: 1
-  latent_dim: 2
+  latent_dim: 10
   categorical_dim: 5
 
 exp_params:
@@ -29,7 +29,7 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 6
+  max_epochs: 20
 
 logging_params:
   save_dir: "logs/"

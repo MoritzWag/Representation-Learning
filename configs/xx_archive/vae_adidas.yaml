@@ -8,7 +8,11 @@ architecture:
 
 img_arch_params:
   in_channels: 3
+<<<<<<< HEAD:configs/xx_archive/vae_adidas.yaml
   latent_dim: 20
+=======
+  latent_dim: 50
+>>>>>>> e1bf9a75934527ab51b1d8af923ad40d0da5af4a:configs/adidas/vae_adidas.yaml
 
 exp_params:
   dataset: 'adidas'
@@ -21,7 +25,7 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 30
+  max_epochs: 50
 
 logging_params:
   save_dir: "logs/"
