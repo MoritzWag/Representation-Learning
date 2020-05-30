@@ -4,6 +4,7 @@ from library.models2.cat_vae import *
 from library.models2.base2 import *
 from library.architectures import *
 from library.models2.vae_beta import *
+from library.models2.autoencoder import *
 import pdb 
 
 base_models = {'VaeBase': VaeBase,
@@ -12,7 +13,8 @@ base_models = {'VaeBase': VaeBase,
 vae_models = {'GaussianVae': VaeGaussian,
             'BetaVae': BetaVae,
             'InfoVae': InfoVae,
-            'CatVae': CatVae}
+            'CatVae': CatVae, 
+            'Autoencoder': Autoencoder}
 
 
 vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,

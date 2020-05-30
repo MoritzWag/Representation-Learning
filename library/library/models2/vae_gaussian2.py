@@ -134,14 +134,11 @@ class VaeGaussian(nn.Module):
         latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
         #kld_weight = 32 / 40000
-<<<<<<< HEAD
-        kld_weight = 64/10000
-=======
         if image.shape[1] == 3:
             kld_weight = 32 / 400000
         else:
             kld_weight = 32 / 40000
->>>>>>> e1bf9a75934527ab51b1d8af923ad40d0da5af4a
+
         if recon_text is not None and text is not None:
             loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss 
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 

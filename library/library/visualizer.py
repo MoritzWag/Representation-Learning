@@ -116,9 +116,6 @@ class Visualizer(nn.Module):
         #            z[lat_dim*cat_dim] = 1 
         #            z
 
-
-
-
     def _sample_images(self,
                     val_gen,
                     epoch,
