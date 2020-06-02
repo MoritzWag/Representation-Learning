@@ -49,7 +49,7 @@ class Visualizer(nn.Module):
                 image, attribute = next(iter(data))
                 if torch.cuda.is_available():
                     image, attribute = image.cuda(), attribute.cuda()
-                mu, logvar, embedding = self._embed(image.float())
+                mu, logvar, embedding, _ = self._embed(image.float())
 
                 if embedding.size(0) > 1:
                 #raise ValueError('Every value should be sampled from the same posterior, but {} datapoints given'.format(data.size(0)))

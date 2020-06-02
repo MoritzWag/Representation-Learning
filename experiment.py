@@ -113,7 +113,8 @@ class RlExperiment(pl.LightningModule):
         #    self.logger.experiment.log_metric(key=item[0],
         #                                    value=item[1],
         #                                    run_id=self.logger.run_id)
-        
+        self.model._estimate_H_z(data=self.val_gen, n_samples=1000)
+
         val_history = pd.DataFrame([[value.cpu().detach().numpy() for value in val_loss.values()]],
                                     columns=[key for key in val_loss.keys()])
 
