@@ -80,7 +80,7 @@ class BetaVae(nn.Module):
         self.loss_item['mu'] = mu
         self.loss_item['logvar'] = logvar
 
-        return eps * std * mu
+        return eps * std + mu
     
     def _parameterize(self, h_enc, img=None, attrs=None):
 

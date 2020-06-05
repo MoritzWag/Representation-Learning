@@ -1,9 +1,9 @@
 model_params:
-  name: 'GaussianVae'
+  name: 'Autoencoder'
   base: 'VaeBase'
 
 model_hyperparams:
-  loss_type: "l2"
+  l1_reg: False
 
 architecture:
   img_encoder: 'ConvEncoder'
@@ -34,7 +34,7 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 1
+  max_epochs: 50
 
 logging_params:
   save_dir: "logs/"

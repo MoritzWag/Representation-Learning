@@ -41,6 +41,9 @@ class CatVae(nn.Module):
     Returns:
 
     """
+
+    num_iter = 0 # Global static variable to keep track of iterations
+
     def __init__(self,
                 categorical_dim: int = 10,
                 temperature: float = 0.5,
@@ -145,7 +148,7 @@ class CatVae(nn.Module):
         embedding = self.img_encoder(data.float())
         z = self._reparameterization(embedding)
 
-        return embedding, z 
+        return z 
 
     def _parameterize(self):
         pass
@@ -153,20 +156,18 @@ class CatVae(nn.Module):
     def _loss_function(self, image=None, text=None, recon_image=None, 
                         recon_text=None, code=None, batch_idx=None, *args, **kwargs):
 
+        self.num_iter += torch.tensor(1).float()
+
         # Compute the reconstruction loss
         if recon_image is not None and image is not None:
             image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
 
-        #try:
-        #    #pdb.set_trace()
-        #    #batch_idx = kwargs['batch_idx']
-        #    batch_idx = batch_idx
-        #
+        # try:        
         #    # Anneal the temperature at regular intervals
-        #    if self.batch_idx % self.anneal_interval == 0 and self.training:
-        #        self.temp = np.maximum(self.temp * np.exp(- self.anneal_rate * batch_idx),
+        #    if self.num_iter % self.anneal_interval == 0 and self.training:
+        #        self.temp = np.maximum(self.temp * np.exp(- self.anneal_rate * self.num_iter),
         #        self.min_temp)
-        #except:
+        # except:
         #    pass
 
 
