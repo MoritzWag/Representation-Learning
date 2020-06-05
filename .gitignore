@@ -135,6 +135,10 @@ dmypy.json
 data/mnist/*
 data/celeba/*
 data/adidas/*
+data/FashionMNIST/*
+data/fashionmnist/*
+data/MNIST/*
+data/mnist/*
 
 ## logs 
 logs/*
