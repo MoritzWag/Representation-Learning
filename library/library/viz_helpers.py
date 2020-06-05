@@ -19,7 +19,7 @@ def plot_train_progress(history,
     plt.figure(figsize=(20, 12))
     for metric in range(num_metrics):
         plt.subplot(num_metrics, 1, metric + 1)
-        plt.plot(history.iloc[:, metric])
+        plt.plot(history.iloc[20:, metric])
         plt.xlabel('training steps')
         plt.ylabel(history.columns[metric])
 

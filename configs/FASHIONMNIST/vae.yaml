@@ -2,6 +2,9 @@ model_params:
   name: 'GaussianVae'
   base: 'VaeBase'
 
+model_hyperparams:
+  loss_type: "l2"
+
 architecture:
   img_encoder: 'ConvEncoder28x28'
   img_decoder: 'ConvDecoder28x28'

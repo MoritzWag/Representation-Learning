@@ -35,7 +35,7 @@ class Visualizer(nn.Module):
         
         return (-1 * max_traversal, max_traversal)
     
-    def _traverse_line(self, idx, n_samples, data=None):
+    def _traverse_line(self, idx, n_samples, model_type, data=None):
         """
         Args:
             embedding: {torch} represents the 
@@ -49,26 +49,57 @@ class Visualizer(nn.Module):
                 image, attribute = next(iter(data))
                 if torch.cuda.is_available():
                     image, attribute = image.cuda(), attribute.cuda()
-                mu, logvar, embedding = self._embed(image.float())
+                if model_type != 'CatVae':
 
-                if embedding.size(0) > 1:
-                #raise ValueError('Every value should be sampled from the same posterior, but {} datapoints given'.format(data.size(0)))
-                    embedding = embedding[0, :]
-                    mu = mu[0, :]
-                    logvar = logvar[0, :]
-                mu = mu.unsqueeze(0)
-                logvar = logvar.unsqueeze(0)
-                samples = self._reparameterization(h_enc=embedding)
-                samples = samples.repeat(n_samples, 1)
-                post_mean_idx = mu[0, idx]
-                post_std_idx = torch.exp(logvar / 2)[0, idx]
-            
-            traversals = torch.linspace(*self._get_traversal_range(mean=post_mean_idx,
-                                                                std=post_std_idx),
-                                        steps=n_samples)
+                    mu, logvar, embedding = self._embed(image.float())
+
+                    if embedding.size(0) > 1:
+                    #raise ValueError('Every value should be sampled from the same posterior, but {} datapoints given'.format(data.size(0)))
+                        embedding = embedding[0, :]
+                        mu = mu[0, :]
+                        logvar = logvar[0, :]
+                    mu = mu.unsqueeze(0)
+                    logvar = logvar.unsqueeze(0)
+                    samples = self._reparameterization(h_enc=embedding)
+                    samples = samples.repeat(n_samples, 1)
+                    post_mean_idx = mu[0, idx]
+                    post_std_idx = torch.exp(logvar / 2)[0, idx]
+
+                    traversals = torch.linspace(*self._get_traversal_range(mean=post_mean_idx,
+                                                                std=post_std_idx), steps=n_samples)
         
-        for i in range(n_samples):
-            samples[i, idx] = traversals[i]
+                    for i in range(n_samples):
+                        samples[i, idx] = traversals[i]          
+
+                else:
+                    
+                    # code = self._embed(image.float())
+                    # code = code[0,:].view(self.latent_dim, self.categorical_dim)
+                    total_dim = self.latent_dim * self.categorical_dim
+                    traversal = torch.rand(
+                        total_dim,
+                        self.latent_dim,
+                        self.categorical_dim
+                    )
+
+                    const_one_hot = torch.tensor(np.concatenate((np.array([1]),np.repeat(0, self.categorical_dim-1)))).float().cuda()
+                    code = torch.cat(self.latent_dim * [const_one_hot]).view(self.latent_dim, self.categorical_dim)
+
+                    total = 0
+                    for latent in range(self.latent_dim):
+                        for cat in range(self.categorical_dim):
+                            
+                            traversal[total] = code
+                            one_hot = torch.zeros(self.categorical_dim)
+                            one_hot[cat] = 1
+                            traversal[total, latent, :] = one_hot
+
+                            total += 1
+
+                    samples = traversal.view(-1, total_dim).float()
+
+                    if torch.cuda.is_available():
+                        samples = samples.cuda()
         
         return samples
 
@@ -81,12 +112,16 @@ class Visualizer(nn.Module):
                 n_per_latent=8,
                 n_latents=None):
 
-        #if experiment_name is not 
-        n_latents = n_latents if n_latents is not None else self.latent_dim
-        latent_samples = [self._traverse_line(dim, n_per_latent, data=data) for
-                            dim in range(self.latent_dim)]
-        decoded_traversals = self.img_decoder(torch.cat(latent_samples, dim=0))
-
+        if self.__class__.__name__ != 'CatVae':
+            n_latents = n_latents if n_latents is not None else self.latent_dim
+            latent_samples = [self._traverse_line(dim, n_per_latent, data=data, model_type=self.__class__.__name__) for
+                                dim in range(self.latent_dim)]
+            decoded_traversals = self.img_decoder(torch.cat(latent_samples, dim=0))
+        else:
+            latent_samples = self._traverse_line(1, n_per_latent, data=data, model_type=self.__class__.__name__)
+            decoded_traversals = self.img_decoder(latent_samples)
+            n_per_latent = self.categorical_dim
+        
         if is_reorder_latents:
             n_images, *other_shape = decoded_traversals.size()
             n_rows = n_images // n_per_latent
@@ -103,18 +138,6 @@ class Visualizer(nn.Module):
                         f"{storage_path}traversal_{epoch}.png",
                         normalize=True,
                         nrow=n_per_latent)
-
-        
-        # CatVae traversals:
-        # Example: latent_dim = 5, cat_dim = 5
-        # 1.) image, attribute next(iter(data))
-        # 2.) embedding, z = self._emebd(img.float())
-        # 3.) dim(z) = 32, 5*5 => (32, 25)
-        # 4.) z = z[0, :] => dim(z) = (1, 25)
-        # 4.) for lat_dim in self.latent_dim:
-        #        for cat_dim in self.cat_dim:
-        #            z[lat_dim*cat_dim] = 1 
-        #            z
 
     def _sample_images(self,
                     val_gen,
@@ -141,6 +164,13 @@ class Visualizer(nn.Module):
                         f"{storage_path}real_{epoch}.png",
                         normalize=True,
                         nrow=12)
+        #pdb.set_trace()
+        recon_real = torch.cat((test_input.cuda(), reconstruction.type(torch.DoubleTensor).cuda()), 0)
+        vutils.save_image(recon_real.data,
+                        f"{storage_path}real_recon{epoch}.png",
+                        normalize=True,
+                        nrow=8)
+
         try:
             samples = self._sample(num_samples=32)
             vutils.save_image(samples.data,
