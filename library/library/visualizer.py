@@ -1,5 +1,6 @@
 import numpy as np 
 import pandas as pd 
+import seaborn as sns
 import os
 import torch 
 from torch import nn
@@ -67,33 +68,14 @@ class Visualizer(nn.Module):
                     samples = samples.repeat(n_samples, 1)
                     post_mean_idx = mu[0, idx]
                     post_std_idx = torch.exp(logvar / 2)[0, idx]
-                else:
-                    code = self._embed(image.float())
-                    code = code[0,:].view(self.latent_dim, self.categorical_dim)
-                    total_dim = self.latent_dim * self.categorical_dim
-                    traversal = torch.rand(
-                        total_dim,
-                        self.latent_dim,
-                        self.categorical_dim
-                    )
-                    total = 0
-                    for latent in range(self.latent_dim):
-                        for cat in range(self.categorical_dim):
-                            
-                            traversal[total] = code
-                            one_hot = torch.zeros(self.categorical_dim)
-                            one_hot[cat] = 1
-                            traversal[total, latent, :] = one_hot 
 
-                            total =+ 1
-            
-            traversals = torch.linspace(*self._get_traversal_range(mean=post_mean_idx,
+                    traversals = torch.linspace(*self._get_traversal_range(mean=post_mean_idx,
                                                                 std=post_std_idx),
                                         steps=n_samples)
         
                     for i in range(n_samples):
                         samples[i, idx] = traversals[i]          
-
+            
                 else:
                     
                     # code = self._embed(image.float())
@@ -135,6 +117,10 @@ class Visualizer(nn.Module):
                 n_per_latent=8,
                 n_latents=None):
 
+        carry_on = (epoch < 10) or ((epoch % 10) == 0)
+        if not carry_on:
+            return
+
         if self.__class__.__name__ != 'CatVae':
             n_latents = n_latents if n_latents is not None else self.latent_dim
             latent_samples = [self._traverse_line(dim, n_per_latent, data=data, model_type=self.__class__.__name__) for
@@ -167,6 +153,10 @@ class Visualizer(nn.Module):
                     epoch,
                     path,
                     experiment_name):
+                    
+        carry_on = (epoch < 10) or ((epoch % 10) == 0)
+        if not carry_on:
+            return
 
         test_input, test_label = next(iter(val_gen))
 
@@ -187,7 +177,7 @@ class Visualizer(nn.Module):
                         f"{storage_path}real_{epoch}.png",
                         normalize=True,
                         nrow=12)
-        #pdb.set_trace()
+
         recon_real = torch.cat((test_input.cuda(), reconstruction.type(torch.DoubleTensor).cuda()), 0)
         vutils.save_image(recon_real.data,
                         f"{storage_path}real_recon{epoch}.png",
@@ -209,7 +199,7 @@ class Visualizer(nn.Module):
         # changed from https://www.learnopencv.com/t-sne-for-feature-visualization/
         # Get height and width of image
         height, width = image.shape
-        
+
         # compute the image center coordinates for dimensionality reduction plot
         center_x = int(global_size * dimred_x)
 
@@ -264,7 +254,6 @@ class Visualizer(nn.Module):
                 epoch,
                 experiment_name,
                 num_batches=10,
-                plot_images = True,
                 plot_size = 1000):
         """Clustering algorithm with t-SNE visualization capability
         Args:
@@ -273,9 +262,14 @@ class Visualizer(nn.Module):
             experiment_name {}:
         """
 
+        carry_on = (epoch < 10) or ((epoch % 10) == 0)
+        if not carry_on:
+            return
+
         indices = np.random.choice(a=len(data),
                                     size=int(num_batches),
                                     replace=False)
+
         features_extracted = []
         features_labels = []
         images_ = None
@@ -287,17 +281,21 @@ class Visualizer(nn.Module):
                 h_enc = self.img_encoder(image.float())
                 z = self._reparameterization(h_enc)
                 z = z.cpu().detach().numpy()
+
                 features_extracted.append(z)
                 features_labels.append(attribute)
-                #images_.append(image)
                 if images_ is None:
-                    images_ = image.numpy().transpose(0, 2, 3, 1)
-                image = image.numpy().transpose(0, 2, 3, 1)
-                images_ = np.append(images_, image, 0)
+                    images_ = image.cpu().numpy().transpose(0, 2, 3, 1)
+                else:
+                    image = image.cpu().numpy().transpose(0, 2, 3, 1)
+                    images_ = np.append(images_, image, 0)
             else:
                 pass
+
         features_extracted = np.vstack(features_extracted)
         features_labels = np.concatenate(features_labels)
+        if features_labels.dtype == int:
+            features_labels = np.array([str(x) for x in features_labels])
 
         ## t-SNE:
         tsne_results = TSNE(n_components=2, verbose=1, metric='euclidean',
@@ -312,40 +310,37 @@ class Visualizer(nn.Module):
         if not os.path.exists(storage_path):
                 os.makedirs(storage_path)
 
-        if plot_images: 
-            # Create blank canvas to be filled with images
-            if  self.img_encoder.in_channels == 1:
-                tsne_plot = 255 * np.ones((plot_size, plot_size), np.uint8)
-            else:
-                tsne_plot = 255 * np.ones((plot_size, plot_size, self.img_encoder.in_channels), np.uint8)
 
-            # Fill the blank plot with the coordinates of the images according to tSNE
-            for img, label, x, y in tqdm(zip(images_, features_labels, tx, ty),
-            desc='Plotting t-SNE with images',
-            total=len(images_)):
-
-                img = self.reshape_image(img, 100)
-                tl_x, tl_y, br_x, br_y = self.get_coordinates(img, x, y, plot_size)
-
-                # draw a rectangle with a color corresponding to the image class
-	            #image = draw_rectangle_by_class(img, label)
-                #tsne_plot[tl_y:br_y, tl_x:br_x, :] = img
-                tsne_plot[tl_y:br_y, tl_x:br_x] = img 
-            
-            img_storage_path =  f"{storage_path}/cluster_{epoch}.png"
-            cv2.imwrite(img_storage_path, tsne_plot)
-
+        if  self.img_encoder.in_channels == 1:
+            tsne_imgplot = 255 * np.ones((plot_size, plot_size), np.uint8)
         else:
-            ## plot t-SNE results:
-            plt.close()
-            colormap = plt.cm.get_cmap('coolwarm')
-            scatter_plot = plt.scatter(tsne_results[:, 0], tsne_results[:,1], 
-                                    c=features_labels, cmap=colormap)
-            plt.colorbar(scatter_plot)
+            tsne_imgplot = 255 * np.ones((plot_size, plot_size, self.img_encoder.in_channels), np.uint8)
 
-            img_storage_path =  f"{storage_path}/cluster_{epoch}"
-            plt.tight_layout()
-            plt.savefig(img_storage_path)
+        # Fill the blank plot with the coordinates of the images according to tSNE
+        for img, label, x, y in tqdm(zip(images_, features_labels, tx, ty),
+        desc='Plotting t-SNE with images',
+        total=len(images_)):
+
+            img = self.reshape_image(img, 100)
+            tl_x, tl_y, br_x, br_y = self.get_coordinates(img, x, y, plot_size)
+
+            # draw a rectangle with a color corresponding to the image class
+	        #image = draw_rectangle_by_class(img, label)
+            if self.img_encoder.in_channels > 1:
+                tsne_plot[tl_y:br_y, tl_x:br_x, :] = img
+            else:
+                tsne_imgplot[tl_y:br_y, tl_x:br_x] = img 
+            
+        img_storage_path =  f"{storage_path}/clusterimg_{epoch}.png"
+        cv2.imwrite(img_storage_path, tsne_imgplot)
+
+        ## plot scatterplot t-SNE results:
+        plt.close()
+        df = pd.DataFrame({'x': tsne_results[:,0], 'y': tsne_results[:,1], 'category': features_labels})
+        palette = sns.color_palette("bright", 10)
+        tsne_plot = sns.scatterplot(x='x', y='y', data=df, hue='category', legend='full',  palette=palette, alpha = 0.7)
+        fig = tsne_plot.get_figure()
+        fig.savefig(f"{storage_path}/cluster_{epoch}.png")
 
 
 
