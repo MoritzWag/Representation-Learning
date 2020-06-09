@@ -67,31 +67,43 @@ class ImageData(data.Dataset):
 
 
 # For adidas
-def img_to_npy(path, train=True, val_split_ratio=0.0, data_suffix=None):
+def img_to_npy(path, 
+				train=True, 
+				val_split_ratio=0.0, 
+				data_suffix=None,
+				attributes=['labels', 'SOLD_QTY_SUM']):
 	"""
 	Args:
 		path: {string} path to the dataset
 		train: {bool} read train or test data
 	Returns:
 		(X, Y) ndarrays with dim(X) = (n_samples, n_channels(RGB), width, height)
-		and dim(Y) = (n_samples)
+		and dim(Y) = (n_samples, attributes)
 	"""
-
 	suffix = 'train' if train else 'test'
-	# For adidas
+	#pdb.set_trace()
 	if data_suffix is not None:
-		X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
-		Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
+		X = []
+		Y = []
+		for d_suffix in data_suffix:
+			data = np.load(file='{}X_{}_{}.npy'.format(path, suffix, d_suffix)).astype('float64')
+			X.append(data)
+			attr = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, d_suffix))
+			attr = attr[attributes].values
+			Y.append(attr)
+
+		X = np.stack(X)
+		X = np.squeeze(X)
+		Y = np.stack(Y)
+		Y = np.squeeze(Y)
 	else:
 		X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
 		Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values
-
-	#X = np.load(file='{}X_{}_{}.npy'.format(path, suffix, data_suffix)).astype('float64')
-	#Y = pd.read_csv('{}Y_{}_{}.csv'.format(path, suffix, data_suffix))['label'].values 
-
-
-
-	classes = np.unique(Y)
+	#pdb.set_trace()
+	if data_suffix is not None:
+		classes = np.unique(Y[:, 0])
+	else:
+		classes = np.unique(Y)
 	for idx in range(len(classes)):
 		np.place(Y, Y == classes[idx], idx)
 	Y = Y.astype(int)
@@ -108,9 +120,7 @@ def img_to_npy(path, train=True, val_split_ratio=0.0, data_suffix=None):
 		X = X[idx_train, :, :, :]
 		Y = Y[idx_train]
 
-
 		return((X, Y), (X_val, Y_val))
-
 
 	return(X, Y)
 
