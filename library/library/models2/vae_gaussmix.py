@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np 
+import numpy as np
 import pdb
 import logging
 import os
@@ -18,67 +18,78 @@ from torch import nn, optim, Tensor
 from torch.nn import functional as F
 from torchvision import datasets, transforms
 import torchvision.utils as vutils
-#from torchsummary import summary
 
 torch.set_default_dtype(torch.float64)
 
-class VaeGaussian(nn.Module):
+class GaussmixVae(nn.Module):
     """
     """
-    def __init__(self,
-                loss_type = "l2", 
-                **kwargs):
-        super(VaeGaussian, self).__init__(
+
+    num_iter = 0 # Global static variable to keep track of iterations
+
+    def __init__(
+    self,
+    temperature,
+    anneal_rate,
+    anneal_interval,
+    alpha,
+    **kwargs):
+        super(GaussmixVae, self).__init__(
             **kwargs
         )
 
         self.latent_dim = self.img_encoder.latent_dim
         self.hidden_dim = self.img_encoder.enc_hidden_dims
         self.output_dim = self.img_encoder.enc_output_dim
-        self.loss_type = loss_type
-        # Define the affine linear transformations from laster layer of encoder to space of parametrization
-        self.mu = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
-        self.logvar = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
-        
-        try:
-            self.attr_mu = nn.Linear(50, self.text_encoder.num_attr) #hard-coded
-            self.attr_logvar = nn.Linear(50, self.text_encoder.num_attr) #hard-coded
-        except:
-            pass
+        self.categorical_dim = self.img_decoder.categorical_dim
+        self.temp = temperature
+        self.min_temp = temperature
+        self.anneal_rate = anneal_rate
+        self.anneal_interval = anneal_interval
+        self.alpha = alpha
+        self.mu = nn.Linear(
+            self.hidden_dim[(-1)] * self.output_dim, self.latent_dim * self.categorical_dim)
+        self.logvar = nn.Linear(
+            self.hidden_dim[(-1)] * self.output_dim, self.latent_dim * self.categorical_dim)
+        self.cat = nn.Linear(
+            self.hidden_dim[(-1)] * self.output_dim, self.categorical_dim)
 
-    # here I need some check whether reparameterization for attr or image 
-    def _reparameterization(self, h_enc):
-        """Reparameterization trick to sample from N(mu, var) from 
-        N(0,1).
-
-        Args:
-            mu: {Tensor} Mean of the latent Gaussian [B x D]
-            logvar: {Tensor} Standard Deviation of the latent Gaussian [B x D]
-        Returns:
-            {Tensor} {B x D}
+    # here I need some check whether reparameterization for attr or image
+    def _reparameterization(self, h_enc: Tensor, constant: float=1e-07, *args, **kwargs):
         """
-
-        ## Gaussian reparameterization: mu + epsilon*sigma
+        Gumbel-Softmax reparametrization trick and followed by a normal reparametrization trick
+        Args:
+            h_enc: {Tensor} Last layer (flattend) of forward pass [B x D]
+            eps: {Scalar} Machine Epsilon
+        Returns:
+            {Tensor} [B x D] 
+        """
         mu = self.mu(h_enc)
+        mu = mu.view(-1, self.categorical_dim, self.latent_dim)
         logvar = self.logvar(h_enc)
-
-        std = torch.exp(0.5*logvar)
+        logvar = logvar.view(-1, self.categorical_dim, self.latent_dim)
+        std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
-
-        # store loss items
-        self.loss_item['mu'] = mu
-        self.loss_item['logvar'] = logvar
         z = eps * std + mu
 
         if not self.training:
-            try: #try statement is needed bc the old implementation of traversals throws an error
-                # Save mu and sigma estimate for traversals
-                self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
-                self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
-            except:
-                pass
+            self.mu_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).mean(dim=2)
+            self.sigma_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).var(dim=2).sqrt()
 
-        return z
+        logits = self.cat(h_enc)
+        uniform_samples = torch.rand_like(logits)
+        gumbel_samples = -torch.log(-torch.log(uniform_samples + constant) + constant)
+        probs = F.softmax(((logits + gumbel_samples) / self.temp), dim=(-1))
+        probs = probs.unsqueeze(1)
+
+        mixtures = torch.matmul(probs, z)
+        mixtures = mixtures.squeeze(1)
+
+        self.loss_item['mu'] = mu
+        self.loss_item['logvar'] = logvar
+        self.loss_item['logits'] = logits
+
+        return mixtures
     
     def _sample(self, num_samples):
         """Samples from the latent space and return the corresponding
@@ -104,66 +115,60 @@ class VaeGaussian(nn.Module):
     def _embed(self, data):
         """
         """
-        #x = self.resnet(data.float())
+        # x = self.resnet(data.float())
         if torch.cuda.is_available():
             data = data.cuda()
         embedding = self.img_encoder(data.float())
         mu = self.mu(embedding)
         logvar = self.logvar(embedding)
-        z = self._reparameterization(embedding)
 
         return mu, logvar, embedding
 
     def _parameterize(self, h_enc, img=None, attrs=None):
 
-        if img:
-            mu = self.mu(h_enc)
-            log_sigma = self.logvar(h_enc)
-        else:
-            mu = self.attr_mu(h_enc)
-            log_sigma = self.attr_mu(h_enc)
-        
-        return mu, log_sigma
+        pass
 
-    def _mm_reparameterization(self, mu, logvar):
-        std = torch.exp(0.5*logvar)
-        eps = torch.randn_like(std)
+    def _loss_function(
+        self,
+        image=None,
+        text=None,
+        recon_image=None,
+        recon_text=None,
+        mu=None,
+        logvar=None,
+        logits=None,
+        constant=1e-07,
+        *args,
+        **kwargs):
 
-        return eps * std + mu
+        if self.training:
+            self.num_iter += torch.tensor(1).float()
 
-    def _loss_function(self, image=None, text=None, recon_image=None, 
-                        recon_text=None, mu=None, logvar=None):
-        
-        if self.loss_type == "l2":
-
-            if recon_image is not None and image is not None:
+        if recon_image is not None:
+            if image is not None:
                 image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
-            
-            if recon_text is not None and text is not None:
-                text_recon_loss = F.nll_loss(recon_text, text.to(torch.long)).to(torch.float64)
-        else:
+        
+        probs = F.softmax(logits, dim=(-1))
+        ent = torch.sum((probs * torch.log(probs + constant)), dim=1)
+        c_ent = -torch.sum((probs * np.log(1.0 / self.categorical_dim + constant)), dim=1)
+        kld_categorical = torch.mean(c_ent - ent)
 
-            if recon_image is not None and image is not None:
-                image_recon_loss = F.l1_loss(recon_image, image).to(torch.float64)
-            
-            if recon_text is not None and text is not None:
-                text_recon_loss = F.nll_loss(recon_text, text.to(torch.long)).to(torch.float64)
+        mu_c = torch.cat([self.mu_hat.unsqueeze(0)] * image.size()[0], 0)
+        kld_gaussmix = -0.5 * (1 - logvar.exp() + logvar - (mu - mu_c) ** 2)
+        kld_gaussmix = torch.matmul(probs.unsqueeze(1), kld_gaussmix).squeeze(1)
+        kld_gaussmix = torch.mean(torch.sum(kld_gaussmix, dim=1), dim=0)
 
-        latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
-
-        #kld_weight = 32 / 40000
-        if image.shape[1] == 3:
-            kld_weight = 32 / 400000
-        else:
-            kld_weight = 32 / 40000
-        if recon_text is not None and text is not None:
-            loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss 
-            return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
-                    'image_recon_loss': image_recon_loss.to(torch.double), 'text_recon_loss': text_recon_loss.to(torch.double)}
-
-        else:
-            loss = kld_weight * latent_loss + image_recon_loss 
-
-            return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
-                    'image_recon_loss': image_recon_loss.to(torch.double)}
+        if self.num_iter % self.anneal_interval == 0:
+            if self.training:
+                self.temp = np.maximum(self.temp * np.exp(-self.anneal_rate), 1e-05)
+        
+        loss = self.alpha * image_recon_loss + (kld_gaussmix + kld_categorical)
+        
+        return {'loss':loss.to(torch.double), 
+         'latent_loss':kld_gaussmix.to(torch.double), 
+         'categorical_loss':kld_categorical.to(torch.double), 
+         'image_recon_loss':image_recon_loss.to(torch.double), 
+         'temperature':torch.tensor(self.temp).to(torch.double), 
+         'categorical_entropy':-torch.mean(ent).to(torch.double)
+         }
         

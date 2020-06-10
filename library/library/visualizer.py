@@ -272,7 +272,8 @@ class Visualizer(nn.Module):
     def get_coordinates(self, image, dimred_x, dimred_y, global_size):
         # changed from https://www.learnopencv.com/t-sne-for-feature-visualization/
         # Get height and width of image
-        height, width = image.shape
+
+        height, width, _ = image.shape
 
         # compute the image center coordinates for dimensionality reduction
         # plot
@@ -350,7 +351,10 @@ class Visualizer(nn.Module):
         images_ = None
 
         for batch, (image, attribute) in enumerate(data):
-            attribute = attribute[:, 0]
+            try:
+                attribute = attribute[:, 0]
+            except:
+                pass
 
             if batch in indices:
                 if torch.cuda.is_available():
@@ -408,13 +412,13 @@ class Visualizer(nn.Module):
                                      desc='Plotting t-SNE with images',
                                      total=len(images_)):
 
-            img = self.reshape_image(img, 100)
+            img = self.reshape_image(img, 25)
             tl_x, tl_y, br_x, br_y = self.get_coordinates(img, x, y, plot_size)
 
             # draw a rectangle with a color corresponding to the image class
             #image = draw_rectangle_by_class(img, label)
             if self.img_encoder.in_channels > 1:
-                tsne_plot[tl_y:br_y, tl_x:br_x, :] = img
+                tsne_imgplot[tl_y:br_y, tl_x:br_x, :] = img
             else:
                 tsne_imgplot[tl_y:br_y, tl_x:br_x] = img
 
@@ -423,9 +427,11 @@ class Visualizer(nn.Module):
 
         # plot scatterplot t-SNE results:
         plt.close()
+
         df = pd.DataFrame(
             {'x': tsne_results[:, 0], 'y': tsne_results[:, 1], 'category': features_labels})
-        palette = sns.color_palette("bright", 10)
+        num_unique_cats = len(df['category'].unique())
+        palette = sns.color_palette("bright", num_unique_cats)
         fig = sns.relplot(
             x='x',
             y='y',

@@ -7,7 +7,6 @@ model_hyperparams:
   anneal_rate: 0.02
   anneal_interval: 300
   alpha: 1250.
-  probability: True
 
 architecture:
   img_encoder: 'ConvEncoder'
