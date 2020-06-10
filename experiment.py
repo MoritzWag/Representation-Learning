@@ -23,7 +23,9 @@ class RlExperiment(pl.LightningModule):
                 params, 
                 experiment_name):
         super(RlExperiment, self).__init__()
+
         self.model = model.float()
+        self.model.epoch = self.current_epoch
         self.params = params
         self.curr_device = None
         self.train_history = pd.DataFrame()
@@ -126,21 +128,16 @@ class RlExperiment(pl.LightningModule):
         #self.logger.experiment.log_metric(key='val_avg_loss',
         #                                value=avg_loss,
         #                                run_id=self.logger.run_id)
-
+        
         self.model._sample_images(self.val_gen,
                                 path=f"images/{self.params['dataset']}/",
                                 epoch=self.current_epoch,
                                 experiment_name=self.experiment_name)
-        try:
-            self.model.traversals(data=self.val_gen,
-                                is_reorder_latents=False,
-                                n_per_latent=8,
-                                n_latents=None,
+    
+        self.model.traversals(data=self.val_gen,
                                 epoch=self.current_epoch,
                                 experiment_name=self.experiment_name,
                                 path=f"images/{self.params['dataset']}/")
-        except:
-            pass
 
         self.model._cluster(data=self.val_gen,
                             path=f"images/{self.params['dataset']}/",

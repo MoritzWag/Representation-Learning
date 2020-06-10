@@ -5,6 +5,7 @@ from library.models2.base2 import *
 from library.architectures import *
 from library.models2.vae_beta import *
 from library.models2.autoencoder import *
+from library.models2.vae_gaussmix import *
 import pdb 
 
 base_models = {'VaeBase': VaeBase,
@@ -14,8 +15,8 @@ vae_models = {'GaussianVae': VaeGaussian,
             'BetaVae': BetaVae,
             'InfoVae': InfoVae,
             'CatVae': CatVae, 
-            'Autoencoder': Autoencoder}
-
+            'Autoencoder': Autoencoder,
+            'GaussmixVae': GaussmixVae}
 
 vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
                 'ConvDecoder28x28': ConvDecoder28x28,
@@ -29,7 +30,6 @@ vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
                 'CustomizedResNet101': CustomizedResNet101,
                 'ConvEncoder': ConvEncoder,
                 'ConvDecoder': ConvDecoder}
-
 
 def createClass(vae_model, base_model):
     #class vae_model(base_model): pass
@@ -82,5 +82,5 @@ def parse_architecture_config(config):
                     model_dict[instance[0]] = instance[1](**text_arch_params)
                 except: 
                     model_dict[instance[0]] = instance[1]()
-    #pdb.set_trace()
+
     return model_dict

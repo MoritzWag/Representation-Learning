@@ -104,6 +104,7 @@ class ConvDecoder(nn.Module):
 
         self.latent_dim = latent_dim
         self.in_channels = in_channels
+        self.categorical_dim = categorical_dim
 
         # Input check for padding
         #assertTrue(len(dec_hidden_dims) == len(dec_padding))
@@ -135,7 +136,8 @@ class ConvDecoder(nn.Module):
         self.enc_output_dim = output_dims[-1]*output_dims[-1]
         
         # Check to adjust first layer in case categorical dimension exists
-        if categorical_dim is None:
+        #if categorical_dim is None:
+        if self.__class__.__name__ != 'CatVae':
             self.decoder_input = nn.Linear(latent_dim, dec_hidden_dims[0] * self.enc_output_dim)
         else:
             self.categorical_dim = categorical_dim

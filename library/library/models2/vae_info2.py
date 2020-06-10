@@ -9,7 +9,6 @@ from library.models2.helpers import *
 
 from library.models2.base2 import VaeBase
 
-
 import torch
 import torch.utils.data
 from torch.autograd import Variable
@@ -68,6 +67,14 @@ class InfoVae(VaeBase):
 
         z = eps * std + mu 
         self.loss_item['z'] = z
+
+        if not self.training:
+            try: #try statement is needed bc the old implementation of traversals throws an error
+                # Save mu and sigma estimate for traversals
+                self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
+                self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
+            except:
+                pass
 
         return z
     
