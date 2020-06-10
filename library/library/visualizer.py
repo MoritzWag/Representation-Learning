@@ -155,9 +155,9 @@ class Visualizer(nn.Module):
                     self.latent_dim, probabilities.size()[-1]
                 )
 
-                    # Create dummy traversal tensor to be filled up in subsequent
-                    # loop. The N-Dimension will be N = Latent_Dim * Probabilities.
-                    # This is the total number of plots which shall be plotted
+                # Create dummy traversal tensor to be filled up in subsequent
+                # loop. The N-Dimension will be N = Latent_Dim * Probabilities.
+                # This is the total number of plots which shall be plotted
                 traversal = torch.rand(
                     self.latent_dim * probabilities.size()[-1],
                     self.latent_dim
