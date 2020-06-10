@@ -275,6 +275,8 @@ class Visualizer(nn.Module):
         images_ = None
 
         for batch, (image, attribute) in enumerate(data):
+            attribute = attribute[:, 0]
+
             if batch in indices:
                 if torch.cuda.is_available():
                     image = image.cuda()
