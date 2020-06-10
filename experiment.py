@@ -47,6 +47,7 @@ class RlExperiment(pl.LightningModule):
         image, attribute = Variable(image), Variable(attribute)
 
         try:
+            ## here, SOLD_QTY must be deleted 
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
@@ -64,6 +65,7 @@ class RlExperiment(pl.LightningModule):
             print(train_loss)
 
         except:
+
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             train_loss = self.model._loss_function(image.float(), **self.model.loss_item)
@@ -216,7 +218,7 @@ class RlExperiment(pl.LightningModule):
         
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
-            data_suffix = 'standard_view'
+            data_suffix = ['standard_view']
         
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
@@ -250,7 +252,7 @@ class RlExperiment(pl.LightningModule):
         
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
-            data_suffix='standard_view'
+            data_suffix=['standard_view']
         
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
@@ -284,7 +286,7 @@ class RlExperiment(pl.LightningModule):
 
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
-            data_suffix='standard_view'
+            data_suffix=['standard_view']
 
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'

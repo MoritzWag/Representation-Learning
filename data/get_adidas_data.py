@@ -1,3 +1,4 @@
+
 import numpy as np 
 import pandas as pd 
 import argparse
@@ -17,7 +18,7 @@ from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 
 def parse_args():
     parser = argparse.ArgumentParser(description='adidas')
-    parser.add_argument('--path', type=str, default='/home/data',
+    parser.add_argument('--path', type=str, default='/home/ubuntu/data',
                         help='path to store data')
     parser.add_argument('--test_ratio', type=float, default=0.2,
                         metavar='N', help='testratio for train/test split (default: 0.2)')
@@ -32,8 +33,6 @@ def get_data(args):
     storage_path = '{}/adidas/'.format(data_path)
     #if not os.path.exists(storage_path):
     if  not os.path.exists(storage_path):
-        #os.mkdir(storage_path)
-        #pdb.set_trace()
         os.makedirs(storage_path)
 
         r = requests.get(url)
@@ -61,17 +60,40 @@ def get_data(args):
 
         os.system(f'rm -rf {img_path}')
 
-
+        
         ## prepare meta data
         meta_data_image = pd.read_csv(f"{storage_path}Data/Image_Dataset/adidas_lmu_practicals_image_data.csv", sep=";")
         meta_data_info = pd.read_csv(f"{storage_path}Data/adidas_lmu_practicals_data.csv", sep=",")
 
+        ## get SOLD_QTY_SUM and
+        meta_SOLD_QTY_SUM = meta_data_info.groupby(['ARTICLE_NUMBER'], as_index=False).sum()
+        meta_SOLD_QTY_AVG = meta_data_info.groupby(['ARTICLE_NUMBER'], as_index=False).mean() 
+        #meta_SOLD_QTY_MAX = meta_data_info.groupby(['ARTICLE_NUMBER'], as_index=False).max()
+
+        # keep only ARTICLE_NUMBER and SOLD_QTY
+        meta_SOLD_QTY_SUM = meta_SOLD_QTY_SUM[['ARTICLE_NUMBER', 'SOLD_QTY']]
+        meta_SOLD_QTY_AVG = meta_SOLD_QTY_AVG[['ARTICLE_NUMBER', 'SOLD_QTY']]
+        #meta_SOLD_QTY_MAX = meta_SOLD_QTY_MAX[['ARTICLE_NUMBER', 'SOLD_QTY']]
+
         meta_data_info = meta_data_info.drop_duplicates('ARTICLE_NUMBER')
-        meta_data_all = pd.merge(meta_data_image, meta_data_info, on="ARTICLE_NUMBER", how='left', indicator='indicator_column')
+
+        meta_SOLD_QTY_SUM = meta_SOLD_QTY_SUM.rename(columns={'SOLD_QTY': 'SOLD_QTY_SUM'})
+        meta_SOLD_QTY_AVG = meta_SOLD_QTY_AVG.rename(columns={'SOLD_QTY': 'SOLD_QTY_AVG'})
+
+        meta_data_info = pd.merge(meta_data_info, meta_SOLD_QTY_SUM, on='ARTICLE_NUMBER', how='left')
+        meta_data_info = pd.merge(meta_data_info, meta_SOLD_QTY_AVG, on='ARTICLE_NUMBER', how='left')
+        #meta_data_info = pd.merge(meta_data_info, meta_SOLD_QTY_MAX, on='ARTICLE_NUMBER', how='left')
+
+        meta_data_all = pd.merge(meta_data_image, meta_data_info, on='ARTICLE_NUMBER', how='left', indicator='indicator_column')
 
         # remove all variables with too many NaNs
-        meta_data_all = meta_data_all.iloc[:, :-4]
-        meta_data_all = meta_data_all.drop(columns=['COLOR_GRP_2_x', 'COLOR_GRP_3_x', 'COLOR_GRP_4_x', 'GENDER_y', 'AGE_GROUP_y', 'PRICE_y', 'PRODUCT_DIVISION_DESCR_y', 'COLOR_GRP_1_y'])
+        #meta_data_all = meta_data_all.iloc[:, :-4]
+        meta_data_all = meta_data_all.drop(columns=['COLOR_GRP_2_x', 'COLOR_GRP_3_x', 'COLOR_GRP_4_x', 'GENDER_y', 
+                                                    'AGE_GROUP_y', 'PRICE_y', 'PRODUCT_DIVISION_DESCR_y', 'COLOR_GRP_1_y',
+                                                    'BUSINESS_UNIT_DESCR', 'SEASON', 'WEEK', 'SALES_LINE_DESCR',
+                                                    'CAMPAIGN', 'TOTAL_MARKDOWN_PCT', 'PRODUCT_FRANCHISE_DESCR',
+                                                    'COLOR_GRP_2_y', 'COLOR_GRP_3_y', 'COLOR_GRP_4_y', 'SOLD_QTY', 'PRICE_x',
+                                                    'indicator_column'])
 
         # determine remaining missing values
         data_missings = meta_data_all[meta_data_all.isnull().any(axis=1)]
@@ -80,7 +102,6 @@ def get_data(args):
         meta_data_all = meta_data_all.dropna(how='any', subset=['COLOR_GRP_1_x'])
 
         def prepare_attributes(data, cols):
-            
             remaining_data = data.drop(cols, axis=1)
 
             categorical_data = data[cols]
@@ -94,13 +115,17 @@ def get_data(args):
 
             return df_all
         
-        categorical_features = ['ASSET_CATEGORY', 'PRODUCT_DIVISION_DESCR_x',
-                                'GENDER_x', 'AGE_GROUP_x', 'PRICE_x',
-                                'COLOR_GRP_1_x', 'SEASON', 'PRODUCT_GROUP_DESCR',
-                                'PRODUCT_TYPE_DESCR', 'PRODUCT_FRANCHISE_DESCR',
-                                'SPORTS_CATEGORY_DESCR']
+        categorical_features = ['PRODUCT_GROUP_DESCR','PRODUCT_DIVISION_DESCR_x', 'GENDER_x', 
+                                'AGE_GROUP_x', 'COLOR_GRP_1_x', 'PRODUCT_TYPE_DESCR']
+        
+        #categorical_features = ['ASSET_CATEGORY', 'PRODUCT_DIVISION_DESCR_x',
+        #                        'GENDER_x', 'AGE_GROUP_x', 'PRICE_x',
+        #                        'COLOR_GRP_1_x', 'SEASON', 'PRODUCT_GROUP_DESCR',
+        #                        'PRODUCT_TYPE_DESCR', 'PRODUCT_FRANCHISE_DESCR',
+        #                        'SPORTS_CATEGORY_DESCR']
         meta_data = prepare_attributes(data=meta_data_all, cols=categorical_features)        
 
+        #meta_data = meta_data.dropna(how='any', subset=['COLOR_GRP_1_x'])
 
         array_fv = []
         array_bv = []
@@ -138,7 +163,6 @@ def get_data(args):
                 file_ids_tp.append(file[0:8])
 
         os.system(f'rm -rf {img_unzipped}')
-        #os.system(f'rm {img_unzipped}/{file[:-3]}')
         
         array_fv = np.stack(array_fv)
         array_fv = np.squeeze(array_fv)
@@ -161,8 +185,8 @@ def get_data(args):
         sv_list = [array_sv, file_ids_sv]
         tp_list = [array_tp, file_ids_tp]
 
-
         
+        #meta_data = meta_data.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
 
         # get indeces for each view
         front_view_idx = meta_data.index[meta_data['PRODUCT_VIEW'] == 'Front View'].tolist()
@@ -170,6 +194,10 @@ def get_data(args):
         side_lateral_idx = meta_data.index[meta_data['PRODUCT_VIEW'] == 'Side Lateral View'].tolist()
         standard_view_idx = meta_data.index[meta_data['PRODUCT_VIEW'] == 'Standard View'].tolist()
         top_portrait_idx = meta_data.index[meta_data['PRODUCT_VIEW'] == 'Top Portrait View'].tolist()
+
+        features = ['SOLD_QTY_SUM', 'SOLD_QTY_AVG']
+        features.extend(categorical_features)
+
 
         meta_data_fv = meta_data.iloc[front_view_idx, :]
         meta_data_bv = meta_data.iloc[back_view_idx, :]
@@ -197,11 +225,27 @@ def get_data(args):
         meta_data_sl.reset_index(drop=True, inplace=True)
         meta_data_sv.reset_index(drop=True, inplace=True)
         meta_data_tp.reset_index(drop=True, inplace=True)
+
+        meta_data_fv = meta_data_fv[features]
+        meta_data_fv = meta_data_fv.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
+
+        meta_data_bv = meta_data_bv[features]
+        meta_data_bv = meta_data_bv.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
+
+        meta_data_sl = meta_data_sl[features]
+        meta_data_sl = meta_data_sl.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
+
+        meta_data_sv = meta_data_sv[features]
+        meta_data_sv = meta_data_sv.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
+
+        meta_data_tp = meta_data_tp[features]
+        meta_data_tp = meta_data_tp.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
+
         
 
         # train / test split
-        idx_train_fv = np.random.choice(a=array_sl.shape[0],
-                                    size=int((1-args.test_ratio)*array_sl.shape[0]),
+        idx_train_fv = np.random.choice(a=array_fv.shape[0],
+                                    size=int((1-args.test_ratio)*array_fv.shape[0]),
                                     replace=False)
         idx_test_fv = [a for a in range(array_fv.shape[0]) if not a in idx_train_fv]
         
@@ -256,8 +300,6 @@ def get_data(args):
 
         Y_train_top_portrait = meta_data_tp.iloc[idx_train_tp, :]
         Y_test_top_portrait = meta_data_tp.iloc[idx_test_tp, :]
-
-
 
         # save X and Y; training and test data - for each view seperately
         save_path = f"{storage_path}Data/"

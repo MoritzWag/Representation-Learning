@@ -17,7 +17,7 @@ parser.add_argument('--config', '-c',
                     dest='filename',
                     metavar='FILE',
                     help='path to config file',
-                    default='configs/vae.yaml')
+                    default='configs/ADIDAS/vae.yaml')
 parser.add_argument('--experiment_name',
                     type=str, default='VaeExperiment',
                     metavar='N', help='specifies the experiment name for better tracking later')
