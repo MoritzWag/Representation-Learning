@@ -61,7 +61,6 @@ class CatVae(nn.Module):
         self.output_dim = self.img_encoder.enc_output_dim
         self.categorical_dim = self.img_decoder.categorical_dim # Number of categories
         self.temp = temperature # Temperature defines how close our gumbel-softmax is to gumbel-argmax (temp = 0)
-        self.min_temp = temperature # Limit to which the temperature is annealed to
         self.anneal_rate = anneal_rate # Rate by which temperature is annealed to 0
         self.anneal_interval = anneal_interval # The intervall in which the temperature is annealed to 0
         self.alpha = alpha # Weight of the reconstruction loss
@@ -155,21 +154,15 @@ class CatVae(nn.Module):
 
     def _loss_function(self, image=None, text=None, recon_image=None, 
                         recon_text=None, code=None, batch_idx=None, *args, **kwargs):
-
         self.num_iter += torch.tensor(1).float()
 
         # Compute the reconstruction loss
         if recon_image is not None and image is not None:
             image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
 
-        # try:        
-        #    # Anneal the temperature at regular intervals
-        #    if self.num_iter % self.anneal_interval == 0 and self.training:
-        #        self.temp = np.maximum(self.temp * np.exp(- self.anneal_rate * self.num_iter),
-        #        self.min_temp)
-        # except:
-        #    pass
-
+        if self.num_iter % self.anneal_interval == 0 and self.training:
+            self.temp = np.maximum(self.temp * np.exp(- self.anneal_rate),
+            0.00001)
 
         # Compute the KL-Divergence between the categorical distribution and  
         # the prior of a categorical distribution with equal probabilites.
@@ -193,8 +186,7 @@ class CatVae(nn.Module):
             dim = 0
         )
 
-        kld_weight = 1.2 #seems pretty arbitrary....
-        loss = kld_weight * latent_loss + self.alpha * image_recon_loss 
+        loss = latent_loss + self.alpha * image_recon_loss 
 
         return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
                 'image_recon_loss': image_recon_loss.to(torch.double)}

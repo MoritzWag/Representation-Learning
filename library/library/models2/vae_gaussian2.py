@@ -69,6 +69,15 @@ class VaeGaussian(nn.Module):
         self.loss_item['mu'] = mu
         self.loss_item['logvar'] = logvar
         z = eps * std + mu
+
+        if not self.training:
+            try: #try statement is needed bc the old implementation of traversals throws an error
+                # Save mu and sigma estimate for traversals
+                self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
+                self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
+            except:
+                pass
+
         return z
     
     def _sample(self, num_samples):

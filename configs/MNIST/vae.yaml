@@ -3,7 +3,7 @@ model_params:
   base: 'VaeBase'
 
 model_hyperparams:
-  loss_type: "l1"
+  loss_type: "l2"
 
 architecture:
   img_encoder: 'ConvEncoder28x28'
@@ -24,7 +24,7 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 1
+  max_epochs: 25
 
 logging_params:
   save_dir: "logs/"
