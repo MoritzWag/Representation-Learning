@@ -1,6 +1,12 @@
 model_params:
-  name: 'InfoVae'
+  name: 'GaussmixVae'
   base: 'VaeBase'
+
+model_hyperparams:
+  temperature: 1
+  anneal_rate: 0.02
+  anneal_interval: 300
+  alpha: 1250.
 
 architecture:
   img_encoder: 'ConvEncoder'
@@ -9,7 +15,8 @@ architecture:
 img_arch_params:
   in_channels: 1
   img_size: 28
-  latent_dim: 5 
+  latent_dim: 3
+  categorical_dim: 4
   enc_hidden_dims: [32, 64, 128, 256]
   enc_kernel_size: [3, 3, 3, 3]
   enc_stride: [2, 2, 2, 2]
@@ -35,5 +42,5 @@ trainer_params:
 
 logging_params:
   save_dir: "logs/"
-  name: "InfoVae"
+  name: "CatVae"
   manual_seed: 1265

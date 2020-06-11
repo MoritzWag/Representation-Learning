@@ -10,13 +10,23 @@ model_hyperparams:
   probability: True
 
 architecture:
-  img_encoder: 'ConvEncoder28x28'
-  img_decoder: 'ConvDecoder28x28'
+  img_encoder: 'ConvEncoder'
+  img_decoder: 'ConvDecoder'
 
 img_arch_params:
   in_channels: 1
-  latent_dim: 1
+  img_size: 28
+  latent_dim: 5 
   categorical_dim: 10
+  enc_hidden_dims: [32, 64, 128, 256]
+  enc_kernel_size: [3, 3, 3, 3]
+  enc_stride: [2, 2, 2, 2]
+  enc_padding: [1, 1, 1, 1]
+  dec_hidden_dims: [256, 128, 64, 32]
+  dec_kernel_size: [3, 3, 3, 2]
+  dec_stride: [2, 2, 2, 2]
+  dec_padding: [1, 1, 1, 2]
+  dec_out_padding: [1, 1, 1]
 
 exp_params:
   dataset: 'fashionmnist'

@@ -3,7 +3,7 @@ model_params:
   base: 'VaeBase'
 
 model_hyperparams:
-  l1_reg: True
+  l1_reg: False
 
 architecture:
   img_encoder: 'ConvEncoder'
