@@ -616,14 +616,27 @@ class MultiAttrEncoder(nn.Module):
     """
     def __init__(self,
                 list_num_categories,
-                list_num_attributes):
+                latent_dim):
         super(MultiAttrEncoder, self).__init__()
         self.list_num_categories = list_num_categories
-        self.list_num_attributes = list_num_attributes
-        self.net = nn.Sequential()
+        self.latent_dim = latent_dim        
+        self.word_embedding = []
+        for num_categories in list_num_categories:
+            self.word_embedding.append(nn.Embedding(num_categories, 50))
 
-    def forward(self):
-        pass
+        self.bn = nn.BatchNorm2d(50)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        embeddings = []
+        for attr in range(len(list_num_categories)):
+            embeddings.append(self.word_embedding[attr](x[attr]))
+        embeddings = np.stack(embeddings)
+        embeddings = np.squeeze(embeddings)
+        output = self.bn(embeddings)
+        output = self.relu(embeddings)
+
+        return output
 
 
 class MultiAttrDecoder(nn.Module):
@@ -631,15 +644,25 @@ class MultiAttrDecoder(nn.Module):
     """
     def __init__(self,
                 list_num_categories,
-                list_num_attributes):
+                latent_dim):
         super(MultiAttrDecoder, self).__init__()
         self.list_num_categories = list_num_categories
-        self.list_num_attributes = list_num_attributes
-        self.net = nn.Sequential()
+        self.latent_dim = latent_dim
+        self.net = nn.Sequential(
+                            nn.Linear(latent_dim, 10),
+                            nn.BatchNorm2d(),
+                            nn.ReLU())
 
+        # solve it with list comprehension!
+        self.linears = nn.ModuleList([])
+        
+        # create dictionary with len(list_num_categories) predictions!
+        # for each nn.Linear 
     
     def forward(self):
         pass
+
+        # F.log_softmax(z)
 
 
 
