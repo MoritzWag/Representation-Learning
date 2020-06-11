@@ -2,9 +2,16 @@ import pandas as pd
 import numpy as np 
 import sklearn as sk 
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.preprocessing import OneHotEncoder
 import scipy 
+import pdb
+import torch
+import csv
+import os
+from torch import nn, optim, Tensor
 
-from library.eval_helpers import make_discretizer, discrete_mutual_info, knn_regressor
+
+from library.eval_helpers import make_discretizer, discrete_mutual_info, knn_regressor, knn_classifier
 
 class Evaluator(nn.Module):
     """
@@ -13,43 +20,85 @@ class Evaluator(nn.Module):
         super(Evaluator, self).__init__(**kwargs)
         self.scores = {}
 
-    def _downstream_task(self, train_data, test_data, function='knn_regressor'):
-        
+    def _downstream_task(self, train_data, test_data, function, column_index):
+        if len(column_index) == 1:
+            features_train = []
+            target_train = []
+            for batch, (image, attribute) in enumerate(train_data):
+                attribute = attribute[:, column_index]
+                if torch.cuda.is_available():
+                    image = image.cuda()
+                h_enc = self.img_encoder(image.float())
+                z = self._reparameterization(h_enc)
+                z = z.cpu().detach().numpy()
+                features_train.append(z)
+                target_train.append(attribute)
+                        
+            features_test = []
+            target_test = []
+            for batch, (image, attribute) in enumerate(test_data):
+                attribute = attribute[:, column_index]
+                if torch.cuda.is_available():
+                    image = image.cuda()
+                h_enc = self.img_encoder(image.float())
+                z = self._reparameterization(h_enc)
+                z = z.cpu().detach().numpy()
+                features_test.append(z)
+                target_test.append(attribute)
 
+            features_train = np.vstack(features_train)
+            target_train = np.concatenate(target_train)
 
-        zs_train = []
-        labels_train = []
-        for batch, (image, attribute) in enumerate(train_data):
+            features_test = np.vstack(features_test)
+            target_test = np.concatenate(target_test)
 
+        else:
+            features_train = []
+            target_train = []
+            for batch, (image, attribute) in enumerate(train_data):
+                attribute, z = attribute[:, column_index].transpose(0,1)
+                features_train.append(z)
+                target_train.append(attribute)
+                        
+            features_test = []
+            target_test = []
+            for batch, (image, attribute) in enumerate(test_data):
+                attribute, z = attribute[:, column_index].transpose(0,1)
+                features_test.append(z)
+                target_test.append(attribute)
 
-            h_enc = self.img_encoder(image.float())
-            z = self._reparameterization(h_enc)
-            z = z.cpu().detach().cpu()
-            zs_train.append(z)
-        
-        zs_test = []
-        labels_test = []
-        for batch, (image, attribute) in enumerate(test_data):
-            h_enc = self.img_encoder(image.float())
-            z = self._reparameterization(h_enc)
-            z = z.cpu().detach().cpu()
-            zs_test.append(z)
+            features_train_int = np.concatenate(features_train)
+            features_test_int = np.concatenate(features_test)
+            features_total = np.append(features_train_int, features_test_int)
 
-        zs_train = np.stack(zs_train)
-        zs_train = np.squeeze(zs_train)
+            features_total_chr = np.array([str(x) for x in features_total])
 
-        zs_test = np.stack(zs_test)
-        zs_test = np.squeeze(zs_test)
+            enc = OneHotEncoder()
+            enc.fit(features_total_chr.reshape(-1, 1))
+            features_total_oh = enc.transform(features_total_chr.reshape(-1, 1)).toarray()
+
+            features_train = features_total_oh[range(len(features_train_int)), :]
+            features_test = features_total_oh[-len(features_test_int):, :]
+
+            target_train = np.concatenate(target_train)
+            target_test = np.concatenate(target_test)
 
         # work with the labels here as well!
         if function == 'knn_regressor':
-            mse, mae = knn_regressor()
-            self.scores['downstream_task_mse'] = mse
-            self.scores['downstream_task_mae'] = mae
+            if len(column_index) == 1:
+                mse, mae = knn_regressor(features_train, target_train, features_test, target_test)
+                self.scores['downstream_task_mse'] = mse.round(3)
+                self.scores['downstream_task_mae'] = mae.round(3)
+            else:
+                mse, mae = knn_regressor(features_train, target_train, features_test, target_test)
+                self.scores['baseline_mse'] = mse.round(3)
+                self.scores['baseline_mae'] = mae.round(3)
         elif function == 'knn_classifier':
-            acc, auc = knn_classifier()
-            self.scores['downstream_task_acc'] = acc
-            self.scores['downstream_task_auc'] = auc
+            acc = knn_classifier(features_train, target_train, features_test, target_test)
+            self.scores['downstream_task_acc'] = acc.round(5)
+            #self.scores['downstream_task_auc'] = auc
+        else: 
+            pass
     
     def unsupervised_metrics(self, data):
         """
@@ -75,14 +124,13 @@ class Evaluator(nn.Module):
                 self.scores['gaussian_wasserstein_correlation'] / np.sum(np.diag(cov_zs)))
 
 
-        #zs_discrete = make_discretizer(zs)
-        zs_discrete = histogram_discretize(zs)   
+        #features_discrete = make_discretizer(zs)
+        features_discrete = histogram_discretize(zs)   
         mutual_info_matrix = discrete_mutual_info(mus_discrete, mus_discrete)
         np.fill_diagonal(mutual_info_matrix, 0)
         mutual_info_score = np.sum(mutual_info_matrix) / (num_latents**2 - num_latents)
         self.scores['mutual_info_score'] = mutual_info_score
  
-
     def gaussian_total_correlation(self, cov):
         """
         """
@@ -95,7 +143,15 @@ class Evaluator(nn.Module):
         return 2 * np.trace(cov) - 2 * np.trace(sqrtm)
     
 
-    def log_metrics(self):
+    def log_metrics(self, storage_path):
         """
         """
-        self.scores
+
+        if storage_path is not None:
+            if not os.path.exists(storage_path):
+                os.makedirs(f"./{storage_path}")
+            
+            df = pd.DataFrame(self.scores, index=[0])
+            df.to_csv(f"{storage_path}eval_metrics.csv")
+        
+

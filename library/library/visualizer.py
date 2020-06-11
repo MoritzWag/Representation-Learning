@@ -372,7 +372,7 @@ class Visualizer(nn.Module):
                     images_ = np.append(images_, image, 0)
             else:
                 pass
-
+                
         features_extracted = np.vstack(features_extracted)
         features_labels = np.concatenate(features_labels)
         if features_labels.dtype == int:

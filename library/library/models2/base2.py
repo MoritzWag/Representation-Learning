@@ -6,6 +6,7 @@ import os
 
 from library.architectures import prior_experts, CustomizedResNet101
 from library.visualizer import Visualizer
+from library.evaluator import Evaluator
 from abc import ABC, abstractmethod
 
 import torch
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 torch.set_default_dtype(torch.float64)
 
-class ReprLearner(Visualizer):
+class ReprLearner(Visualizer, Evaluator):
     """Representation Learner with PyTorch base functionality.
     """
 

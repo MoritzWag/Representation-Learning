@@ -71,7 +71,7 @@ def img_to_npy(path,
 				train=True, 
 				val_split_ratio=0.0, 
 				data_suffix=None,
-				attributes=['labels', 'SOLD_QTY_SUM']):
+				attributes=['labels', 'SOLD_QTY_AVG', 'PRODUCT_TYPE_DESCR']):
 	"""
 	Args:
 		path: {string} path to the dataset
@@ -81,7 +81,7 @@ def img_to_npy(path,
 		and dim(Y) = (n_samples, attributes)
 	"""
 	suffix = 'train' if train else 'test'
-	#pdb.set_trace()
+
 	if data_suffix is not None:
 		X = []
 		Y = []
@@ -99,7 +99,7 @@ def img_to_npy(path,
 	else:
 		X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
 		Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values
-	#pdb.set_trace()
+
 	if data_suffix is not None:
 		classes = np.unique(Y[:, 0])
 	else:

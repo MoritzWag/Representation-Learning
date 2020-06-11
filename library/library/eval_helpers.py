@@ -1,8 +1,10 @@
 import numpy as np 
 import pandas as pd 
 import sklearn as sk 
+import pdb
 from sklearn.metrics import mutual_info_score
-from sklearn.neighbors import KNeighborsRegressor
+from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
+#from sklearn.neibors import KNeighborsClassifier
 
 
 def make_discretizer():
@@ -44,18 +46,23 @@ def histogram_discretize(target, num_bins):
     return discretized
 
 
-def knn_regressor(train_data, test_data):
+def knn_regressor(train_X, train_y, test_X, test_y):
     
-    knn = KNeighborsRegressor()
-    knn.fit()
+    knn = KNeighborsRegressor(n_neighbors = 5)
+    knn.fit(train_X, train_y)
+    pred_y = knn.predict(test_X)
+    mse = ((pred_y - test_y)**2).mean()
+    mae = abs((pred_y - test_y)).mean()
 
     return mse, mae 
 
+def knn_classifier(train_X, train_y, test_X, test_y):
 
-def knn_classifier():
-    pass
-
-
+    knn = KNeighborsClassifier(n_neighbors = 5)
+    knn.fit(train_X, train_y.ravel())
+    acc = knn.score(test_X, test_y)
+    
+    return acc
 
 def save_metrics(scores, save_path, epoch=None):
     """Rearranges scores dictionary to pandas.DataFrame

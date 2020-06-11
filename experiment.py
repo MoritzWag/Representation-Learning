@@ -184,10 +184,13 @@ class RlExperiment(pl.LightningModule):
                             storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/training/")
         plot_train_progress(self.val_history,
                             storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/validation/")
+        
+        self.model._downstream_task(self.train_gen, self.test_gen, 'knn_regressor', [1])
+        self.model._downstream_task(self.train_gen, self.test_gen, 'knn_classifier', [2])
+        self.model._downstream_task(self.train_gen, self.test_gen, 'knn_regressor', [1,2])
 
-        #self.model._downstream_task(self.train_gen, self.test_gen, ...)
         #self.model.unsupervised_metrics(self.test_gen, ...)
-        #self.log_metrics()
+        self.model.log_metrics(storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/test/")
 
         return {'avg_test_loss': avg_test_loss}
 
@@ -222,7 +225,7 @@ class RlExperiment(pl.LightningModule):
         
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
-            data_suffix = ['standard_view']
+            data_suffix = ['front_view']
         
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
@@ -236,12 +239,12 @@ class RlExperiment(pl.LightningModule):
         train_data = utils.ImageData(rawdata=train_rawdata, transform=transform,
                                     dataset=self.params['dataset'])
 
-        train_gen = DataLoader(dataset=train_data,
+        self.train_gen = DataLoader(dataset=train_data,
                                 batch_size=self.params['batch_size'],
                                 shuffle=True)
 
 
-        return train_gen
+        return self.train_gen
 
     def val_dataloader(self):
 
@@ -256,7 +259,7 @@ class RlExperiment(pl.LightningModule):
         
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
-            data_suffix=['standard_view']
+            data_suffix=['front_view']
         
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
@@ -290,7 +293,7 @@ class RlExperiment(pl.LightningModule):
 
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
-            data_suffix=['standard_view']
+            data_suffix=['front_view']
 
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
