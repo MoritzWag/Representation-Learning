@@ -18,13 +18,17 @@ class Evaluator(nn.Module):
 
 
         zs_train = []
+        labels_train = []
         for batch, (image, attribute) in enumerate(train_data):
+
+
             h_enc = self.img_encoder(image.float())
             z = self._reparameterization(h_enc)
             z = z.cpu().detach().cpu()
             zs_train.append(z)
         
         zs_test = []
+        labels_test = []
         for batch, (image, attribute) in enumerate(test_data):
             h_enc = self.img_encoder(image.float())
             z = self._reparameterization(h_enc)

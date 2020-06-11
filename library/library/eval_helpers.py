@@ -50,6 +50,8 @@ def knn_regressor(train_data, test_data):
     knn.fit()
 
     return mse, mae 
+
+
 def knn_classifier():
     pass
 

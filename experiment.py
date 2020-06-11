@@ -185,9 +185,9 @@ class RlExperiment(pl.LightningModule):
         plot_train_progress(self.val_history,
                             storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/validation/")
 
-        self.model._downstream_task(self.train_gen, self.test_gen, ...)
-        self.model.unsupervised_metrics(self.test_gen, ...)
-        self.log_metrics()
+        #self.model._downstream_task(self.train_gen, self.test_gen, ...)
+        #self.model.unsupervised_metrics(self.test_gen, ...)
+        #self.log_metrics()
 
         return {'avg_test_loss': avg_test_loss}
 
