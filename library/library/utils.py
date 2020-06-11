@@ -41,7 +41,7 @@ class ImageData(data.Dataset):
 
 	def __getitem__(self, idx):
 		'Generates one sample of data'
-		x = self.rawdata[0][idx, :, :, :]
+		x = self.rawdata[0][idx, :, :, ]
 		y = self.rawdata[1][idx]
 		
 		if self.transform is not None:

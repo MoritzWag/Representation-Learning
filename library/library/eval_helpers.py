@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd 
 import sklearn as sk 
 from sklearn.metrics import mutual_info_score
+from sklearn.neighbors import KNeighborsRegressor
 
 
 def make_discretizer():
@@ -41,3 +42,23 @@ def histogram_discretize(target, num_bins):
                                 )[1][:, -1])
     
     return discretized
+
+
+def knn_regressor(train_data, test_data):
+    
+    knn = KNeighborsRegressor()
+    knn.fit()
+
+    return mse, mae 
+def knn_classifier():
+    pass
+
+
+
+def save_metrics(scores, save_path, epoch=None):
+    """Rearranges scores dictionary to pandas.DataFrame
+    """
+    if epoch is None:
+        pass 
+    else:
+        pass
