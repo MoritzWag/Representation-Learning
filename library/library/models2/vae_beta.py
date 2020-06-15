@@ -157,7 +157,7 @@ class BetaVae(nn.Module):
         #latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar + mu ** 2 - logvar.exp(), dim=1), dim=0)
         latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
-        kld_weight = 32 / 40000
+        kld_weight = 32 / 400000
         #loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss
         
         if self.restrict_capacity == False:

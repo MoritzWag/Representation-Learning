@@ -31,6 +31,8 @@ class GaussmixVae(nn.Module):
     self,
     temperature,
     anneal_rate,
+    temperature_bound,
+    decrease_temp,
     anneal_interval,
     alpha,
     **kwargs):
@@ -43,10 +45,11 @@ class GaussmixVae(nn.Module):
         self.output_dim = self.img_encoder.enc_output_dim
         self.categorical_dim = self.img_decoder.categorical_dim
         self.temp = temperature
-        self.min_temp = temperature
+        self.temp_bound = temperature_bound
         self.anneal_rate = anneal_rate
         self.anneal_interval = anneal_interval
         self.alpha = alpha
+        self.decr = decrease_temp
         self.mu = nn.Linear(
             self.hidden_dim[(-1)] * self.output_dim, self.latent_dim * self.categorical_dim)
         self.logvar = nn.Linear(
@@ -160,13 +163,16 @@ class GaussmixVae(nn.Module):
 
         if self.num_iter % self.anneal_interval == 0:
             if self.training:
-                self.temp = np.maximum(self.temp * np.exp(-self.anneal_rate), 1e-05)
+                if self.decr:
+                    self.temp = np.maximum(self.temp * np.exp(-self.anneal_rate), self.temp_bound)
+                else:
+                    self.temp = np.minimum(self.temp * 1/np.exp(-self.anneal_rate), self.temp_bound)
         
         loss = self.alpha * image_recon_loss + (kld_gaussmix + kld_categorical)
         
         return {'loss':loss.to(torch.double), 
-         'latent_loss':kld_gaussmix.to(torch.double), 
-         'categorical_loss':kld_categorical.to(torch.double), 
+         'kld_gaussian_loss':kld_gaussmix.to(torch.double), 
+         'kld_categorical_loss':kld_categorical.to(torch.double), 
          'image_recon_loss':image_recon_loss.to(torch.double), 
          'temperature':torch.tensor(self.temp).to(torch.double), 
          'categorical_entropy':-torch.mean(ent).to(torch.double)

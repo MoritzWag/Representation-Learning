@@ -41,7 +41,7 @@ def histogram_discretize(target, num_bins):
         discretized[:, i] = np.digitize(target[:, i],
                                 np.histogram(
                                     target[:, i], num_bins
-                                )[1][:, -1])
+                                )[1][:-1])
     
     return discretized
 

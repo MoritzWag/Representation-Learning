@@ -32,7 +32,9 @@ class RlExperiment(pl.LightningModule):
         self.val_history = pd.DataFrame()
         self.test_score = None
         self.experiment_name = experiment_name
-        
+        #pdb.set_trace()
+        #for key, value in zip(self.params.keys(), self.params.values()):
+        #    self.logger.experiment.log_param(key=key, value=value)
         #self.logger.experiment.log_param()
         #self.logger.experiment.log_hyperparams(self.params)
 
@@ -81,7 +83,6 @@ class RlExperiment(pl.LightningModule):
 
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
-        #pdb.set_trace()
 
         batch_idx = {'batch_idx': batch_idx}
         image, attribute = batch
@@ -127,9 +128,11 @@ class RlExperiment(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean().to(torch.double)
-        #self.logger.experiment.log_metric(key='val_avg_loss',
-        #                                value=avg_loss,
-        #                                run_id=self.logger.run_id)
+        avg_loss = avg_loss.cpu().detach().numpy() + 0
+
+        self.logger.experiment.log_metric(key='val_avg_loss',
+                                        value=avg_loss,
+                                        run_id=self.logger.run_id)
         
         self.model._sample_images(self.val_gen,
                                 path=f"images/{self.params['dataset']}/",
@@ -177,8 +180,11 @@ class RlExperiment(pl.LightningModule):
 
     def test_epoch_end(self, outputs):
         avg_test_loss = torch.stack([x['loss'] for x in outputs]).mean().to(torch.double)
-
+        avg_test_loss = avg_test_loss.cpu().detach().numpy() + 0
         ## log everything with mlflow
+        self.logger.experiment.log_metric(key='avg_test_loss', 
+                                        value=avg_test_loss,
+                                        run_id=self.logger.run_id)
 
         plot_train_progress(self.train_history,
                             storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/training/")
@@ -188,9 +194,19 @@ class RlExperiment(pl.LightningModule):
         self.model._downstream_task(self.train_gen, self.test_gen, 'knn_regressor', [1])
         self.model._downstream_task(self.train_gen, self.test_gen, 'knn_classifier', [2])
         self.model._downstream_task(self.train_gen, self.test_gen, 'knn_regressor', [1,2])
-
+        self.model.unsupervised_metrics(self.test_gen)
         #self.model.unsupervised_metrics(self.test_gen, ...)
         self.model.log_metrics(storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/test/")
+
+        for key, value in zip(self.model.scores.keys(), self.model.scores.values()):
+            self.logger.experiment.log_metric(key=key,
+                                            value=value,
+                                            run_id=self.logger.run_id)
+        
+        for _name, _param in zip(self.params.keys(), self.params.values()):
+            self.logger.experiment.log_param(key=_name, 
+                                            value=_param,
+                                            run_id=self.logger.run_id)
 
         return {'avg_test_loss': avg_test_loss}
 

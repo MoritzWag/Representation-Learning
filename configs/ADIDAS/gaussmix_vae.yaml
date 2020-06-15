@@ -5,8 +5,8 @@ model_params:
 model_hyperparams:
   temperature: 1
   anneal_rate: 0.02
-  anneal_interval: 300
-  alpha: 30.
+  anneal_interval: 200
+  alpha: 1250.
 
 architecture:
   img_encoder: 'ConvEncoder'
@@ -31,14 +31,14 @@ exp_params:
   dataset: 'adidas'
   data_path: "data/"
   img_size: 224
-  batch_size: 96
+  batch_size: 64
   learning_rate: 0.005
   weight_decay: 0.0
   scheduler_gamma: 0.95
 
 trainer_params:
   gpus: 1
-  max_epochs: 20
+  max_epochs: 35
 
 logging_params:
   save_dir: "logs/"

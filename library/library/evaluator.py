@@ -10,8 +10,7 @@ import csv
 import os
 from torch import nn, optim, Tensor
 
-
-from library.eval_helpers import make_discretizer, discrete_mutual_info, knn_regressor, knn_classifier
+from library.eval_helpers import histogram_discretize, discrete_mutual_info, knn_regressor, knn_classifier
 
 class Evaluator(nn.Module):
     """
@@ -102,31 +101,33 @@ class Evaluator(nn.Module):
     
     def unsupervised_metrics(self, data):
         """
-        """
-        scores = {}
-        
+        """        
         zs = []
         for batch, (image, attribute) in enumerate(data):
+            if torch.cuda.is_available():
+                    image = image.cuda()
             h_enc = self.img_encoder(image.float())
             z = self._reparameterization(h_enc)
             z = z.cpu().detach().cpu()
             zs.append(z)
         
-        zs = np.stack(zs)
+        zs = np.vstack(zs)
         zs = np.squeeze(zs)
 
         num_latents = zs.shape[1]
-        cov_zs = np.cov(zs)
+        zs_transposed = np.transpose(zs)
+        cov_zs = np.cov(zs_transposed)
 
-        self.scores['gaussian_total_correlation'] = gaussian_total_correlation(cov_zs)
-        self.scores['gaussian_wasserstein_correlation'] = gaussian_wasserstein_correlation(cov_zs)
+    
+        self.scores['gaussian_total_correlation'] = self.gaussian_total_correlation(cov_zs)
+        self.scores['gaussian_wasserstein_correlation'] = self.gaussian_wasserstein_correlation(cov_zs)
         self.scores['gaussian_wasserstein_correlation_norm'] = (
                 self.scores['gaussian_wasserstein_correlation'] / np.sum(np.diag(cov_zs)))
 
 
         #features_discrete = make_discretizer(zs)
-        features_discrete = histogram_discretize(zs)   
-        mutual_info_matrix = discrete_mutual_info(mus_discrete, mus_discrete)
+        features_discrete = histogram_discretize(zs, num_bins=400)   
+        mutual_info_matrix = discrete_mutual_info(features_discrete, features_discrete)
         np.fill_diagonal(mutual_info_matrix, 0)
         mutual_info_score = np.sum(mutual_info_matrix) / (num_latents**2 - num_latents)
         self.scores['mutual_info_score'] = mutual_info_score
@@ -153,5 +154,3 @@ class Evaluator(nn.Module):
             
             df = pd.DataFrame(self.scores, index=[0])
             df.to_csv(f"{storage_path}eval_metrics.csv")
-        
-
