@@ -32,7 +32,6 @@ class RlExperiment(pl.LightningModule):
         self.val_history = pd.DataFrame()
         self.test_score = None
         self.experiment_name = experiment_name
-        #pdb.set_trace()
         #for key, value in zip(self.params.keys(), self.params.values()):
         #    self.logger.experiment.log_param(key=key, value=value)
         #self.logger.experiment.log_param()
@@ -54,9 +53,9 @@ class RlExperiment(pl.LightningModule):
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
 
-            train_loss1 = self.model._loss_function(image.float(), attribute, **batch_idx, **reconstruction1)
-            train_loss2 = self.model._loss_function(image.float(), attribute, **batch_idx, **reconstruction2)
-            train_loss3 = self.model._loss_function(image.float(), attribute, **batch_idx, **reconstruction3)
+            train_loss1 = self.model._loss_function(image.float(), attribute, **reconstruction1)
+            train_loss2 = self.model._loss_function(image.float(), attribute, **reconstruction2)
+            train_loss3 = self.model._loss_function(image.float(), attribute, **reconstruction3)
             
             train_loss_dict = [train_loss1, train_loss2, train_loss3]
             counter = collections.Counter()
@@ -83,7 +82,7 @@ class RlExperiment(pl.LightningModule):
 
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
-
+    
         batch_idx = {'batch_idx': batch_idx}
         image, attribute = batch
         self.curr_device = image.device
@@ -97,9 +96,9 @@ class RlExperiment(pl.LightningModule):
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
 
-            val_loss1 = self.model._loss_function(image, attribute, **batch_idx, **reconstruction1)
-            val_loss2 = self.model._loss_function(image, attribute, **batch_idx, **reconstruction2)
-            val_loss3 = self.model._loss_function(image, attribute, **batch_idx, **reconstruction3)
+            val_loss1 = self.model._loss_function(image.float(), attribute, **reconstruction1)
+            val_loss2 = self.model._loss_function(image.float(), attribute, **reconstruction2)
+            val_loss3 = self.model._loss_function(image.float(), attribute, **reconstruction3)
 
 
             val_loss_dict = [val_loss1, val_loss2, val_loss3]
@@ -113,11 +112,6 @@ class RlExperiment(pl.LightningModule):
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
-
-        #for item in val_loss.items():
-        #    self.logger.experiment.log_metric(key=item[0],
-        #                                    value=item[1],
-        #                                    run_id=self.logger.run_id)
         
         val_history = pd.DataFrame([[value.cpu().detach().numpy() for value in val_loss.values()]],
                                     columns=[key for key in val_loss.keys()])
@@ -129,6 +123,7 @@ class RlExperiment(pl.LightningModule):
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean().to(torch.double)
         avg_loss = avg_loss.cpu().detach().numpy() + 0
+
 
         self.logger.experiment.log_metric(key='val_avg_loss',
                                         value=avg_loss,
@@ -160,9 +155,9 @@ class RlExperiment(pl.LightningModule):
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
 
-            test_loss1 = self.model._loss_function(image, attribute, **reconstruction1)
-            test_loss2 = self.model._loss_function(image, attribute, **reconstruction2)
-            test_loss3 = self.model._loss_function(image, attribute, **reconstruction3)
+            test_loss1 = self.model._loss_function(image.float(), attribute, **reconstruction1)
+            test_loss2 = self.model._loss_function(image.float(), attribute, **reconstruction2)
+            test_loss3 = self.model._loss_function(image.float(), attribute, **reconstruction3)
 
             test_loss_dict = [test_loss1, test_loss2, test_loss3]
             counter = collections.Counter()
@@ -190,7 +185,9 @@ class RlExperiment(pl.LightningModule):
                             storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/training/")
         plot_train_progress(self.val_history,
                             storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/validation/")
-        
+
+
+
         self.model._downstream_task(self.train_gen, self.test_gen, 'knn_regressor', [1])
         self.model._downstream_task(self.train_gen, self.test_gen, 'knn_classifier', [2])
         self.model._downstream_task(self.train_gen, self.test_gen, 'knn_regressor', [1,2])

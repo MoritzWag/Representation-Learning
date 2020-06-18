@@ -1,0 +1,38 @@
+model_params:
+  name: 'GaussianVae'
+  base: 'MMVaeBase'
+
+model_hyperparams:
+  loss_type: "l2"
+
+architecture:
+  img_encoder: 'ConvEncoder28x28'
+  img_decoder: 'ConvDecoder28x28'
+  text_encoder: 'AttrEncoder'
+  text_decoder: 'AttrDecoder'
+  expert: 'expert'
+
+img_arch_params:
+  in_channels: 1
+  latent_dim: 10 
+
+text_arch_params:
+  num_attr: 10
+
+exp_params:
+  dataset: 'mnist'
+  data_path: "data/"
+  img_size: 28
+  batch_size: 32
+  learning_rate: 0.005
+  weight_decay: 0.0
+  scheduler_gamma: 0.95
+
+trainer_params:
+  gpus: 1
+  max_epochs: 25
+
+logging_params:
+  save_dir: "logs/"
+  name: "GaussianVae"
+  manual_seed: 1265
