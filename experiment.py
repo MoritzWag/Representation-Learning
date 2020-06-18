@@ -79,8 +79,6 @@ class RlExperiment(pl.LightningModule):
 
         return train_loss
 
-
-
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
     
         batch_idx = {'batch_idx': batch_idx}
@@ -128,21 +126,29 @@ class RlExperiment(pl.LightningModule):
         self.logger.experiment.log_metric(key='val_avg_loss',
                                         value=avg_loss,
                                         run_id=self.logger.run_id)
+
+        image, attribute = utils.accumulate_batches(self.val_gen)
+
+        self.model._embed(image)
         
-        self.model._sample_images(self.val_gen,
+        self.model._sample_images(image,
                                 path=f"images/{self.params['dataset']}/",
                                 epoch=self.current_epoch,
                                 experiment_name=self.experiment_name)
-    
-        self.model.traversals(data=self.val_gen,
-                                epoch=self.current_epoch,
+
+        self.model.traversals(epoch=self.current_epoch,
                                 experiment_name=self.experiment_name,
                                 path=f"images/{self.params['dataset']}/")
 
-        self.model._cluster(data=self.val_gen,
+        self.model._cluster(image=image,
+                            attribute=attribute[:,0],
                             path=f"images/{self.params['dataset']}/",
                             epoch=self.current_epoch,
                             experiment_name=self.experiment_name)
+
+        self.model._cluster_freq(path=f"images/{self.params['dataset']}/",
+                                epoch=self.current_epoch,
+                                experiment_name=self.experiment_name)
 
         return {'val_loss': avg_loss}    
 

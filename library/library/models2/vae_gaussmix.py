@@ -35,6 +35,8 @@ class GaussmixVae(nn.Module):
     decrease_temp,
     anneal_interval,
     alpha,
+    beta1,
+    beta2,
     **kwargs):
         super(GaussmixVae, self).__init__(
             **kwargs
@@ -49,6 +51,8 @@ class GaussmixVae(nn.Module):
         self.anneal_rate = anneal_rate
         self.anneal_interval = anneal_interval
         self.alpha = alpha
+        self.beta1 = beta1
+        self.beta2 = beta2
         self.decr = decrease_temp
         self.mu = nn.Linear(
             self.hidden_dim[(-1)] * self.output_dim, self.latent_dim * self.categorical_dim)
@@ -75,14 +79,17 @@ class GaussmixVae(nn.Module):
         eps = torch.randn_like(std)
         z = eps * std + mu
 
-        if not self.training:
-            self.mu_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).mean(dim=2)
-            self.sigma_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).var(dim=2).sqrt()
-
         logits = self.cat(h_enc)
         uniform_samples = torch.rand_like(logits)
         gumbel_samples = -torch.log(-torch.log(uniform_samples + constant) + constant)
-        probs = F.softmax(((logits + gumbel_samples) / self.temp), dim=(-1))
+
+        if not self.training:
+            probs = F.softmax((logits + gumbel_samples), dim=(-1)) # temperature is not included during test time
+        else:
+            probs = F.softmax(((logits + gumbel_samples) / self.temp), dim=(-1))
+
+        self.mu_hat_loss = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).mean(dim=2)
+
         probs = probs.unsqueeze(1)
 
         mixtures = torch.matmul(probs, z)
@@ -118,14 +125,21 @@ class GaussmixVae(nn.Module):
     def _embed(self, data):
         """
         """
-        # x = self.resnet(data.float())
-        if torch.cuda.is_available():
-            data = data.cuda()
+        
         embedding = self.img_encoder(data.float())
-        mu = self.mu(embedding)
-        logvar = self.logvar(embedding)
+        mu = self.mu(embedding).view(-1, self.categorical_dim, self.latent_dim)
+        logvar = self.logvar(embedding).view(-1, self.categorical_dim, self.latent_dim)
+        probs = F.softmax(self.cat(embedding), dim=-1)
+        z = torch.randn_like(logvar) * torch.exp(0.5 * logvar) + mu
+        probs_ = probs.unsqueeze(1)
+        mixtures = torch.matmul(probs_, z).squeeze(1)
 
-        return mu, logvar, embedding
+        # Store variables
+        self.store_probs = probs
+        self.store_individual_z = z
+        self.mu_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).mean(dim=2)
+        self.sigma_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).var(dim=2).sqrt()
+        self.store_z = mixtures
 
     def _parameterize(self, h_enc, img=None, attrs=None):
 
@@ -150,13 +164,13 @@ class GaussmixVae(nn.Module):
         if recon_image is not None:
             if image is not None:
                 image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
-        
-        probs = F.softmax(logits, dim=(-1))
+
+        probs = F.softmax(logits/self.temp, dim=(-1))
         ent = torch.sum((probs * torch.log(probs + constant)), dim=1)
         c_ent = -torch.sum((probs * np.log(1.0 / self.categorical_dim + constant)), dim=1)
         kld_categorical = torch.mean(c_ent - ent)
 
-        mu_c = torch.cat([self.mu_hat.unsqueeze(0)] * image.size()[0], 0)
+        mu_c = torch.cat([self.mu_hat_loss.unsqueeze(0)] * image.size()[0], 0)
         kld_gaussmix = -0.5 * (1 - logvar.exp() + logvar - (mu - mu_c) ** 2)
         kld_gaussmix = torch.matmul(probs.unsqueeze(1), kld_gaussmix).squeeze(1)
         kld_gaussmix = torch.mean(torch.sum(kld_gaussmix, dim=1), dim=0)
@@ -168,7 +182,7 @@ class GaussmixVae(nn.Module):
                 else:
                     self.temp = np.minimum(self.temp * 1/np.exp(-self.anneal_rate), self.temp_bound)
         
-        loss = self.alpha * image_recon_loss + (kld_gaussmix + kld_categorical)
+        loss = self.alpha * image_recon_loss + (self.beta1*kld_gaussmix + self.beta2*kld_categorical)
         
         return {'loss':loss.to(torch.double), 
          'kld_gaussian_loss':kld_gaussmix.to(torch.double), 

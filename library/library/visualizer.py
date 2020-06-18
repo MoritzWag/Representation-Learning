@@ -24,18 +24,14 @@ class Visualizer(nn.Module):
     def __init__(self, **kwargs):
         super(Visualizer, self).__init__(**kwargs)
 
-    def _get_traversals(self, model_type, data=None):
+    def _get_traversals(self, model_type, data=None, normal_traversals = False):
         """
         Args:
             embedding: {torch} represents the
         """
 
         with torch.no_grad():
-            image, attribute = next(iter(data))
-
-            if torch.cuda.is_available():
-                image, attribute = image.cuda(), attribute.cuda()
-
+            
             if model_type == 'GaussmixVae':
             
                 probabilities = torch.tensor(
@@ -43,23 +39,34 @@ class Visualizer(nn.Module):
                 )
 
                 num_latent_trav = probabilities.size()[0]
-                
-                mu_hat = self.mu_hat.view(
-                    self.latent_dim * self.categorical_dim)
-                sigma_hat = self.sigma_hat.view(
-                    self.latent_dim * self.categorical_dim)
-                normal_dist = [
-                    torch.distributions.normal.Normal(
-                        x, y) for x, y in zip(
-                        mu_hat, sigma_hat)]
 
-                quantiles = torch.stack([normal_dist[x].icdf(
-                    probabilities) for x in range(len(normal_dist))])
+                if normal_traversals == False:
+                    probs = copy.deepcopy(self.store_probs.cpu().numpy())
+                    z = copy.deepcopy(self.store_individual_z.view(-1, self.categorical_dim * self.latent_dim).transpose(0,1).cpu().numpy())
+
+                    quantiles = np.empty((self.latent_dim*self.categorical_dim, num_latent_trav))
+                    for i in range(self.latent_dim):
+                        quantiles[i, :] = [np.quantile(z[i,:], prob) for prob in probabilities] 
                     
+                    quantiles = torch.tensor(quantiles)
+
+                else:
+                    mu_hat = self.mu_hat.view(
+                        self.latent_dim * self.categorical_dim)
+                    sigma_hat = self.sigma_hat.view(
+                        self.latent_dim * self.categorical_dim)
+                    normal_dist = [
+                        torch.distributions.normal.Normal(
+                            x, y) for x, y in zip(
+                            mu_hat, sigma_hat)]
+
+                    quantiles = torch.stack([normal_dist[x].icdf(
+                        probabilities) for x in range(len(normal_dist))])
+                        
                 quantiles = quantiles.view(
-                    self.categorical_dim,
-                    self.latent_dim,
-                    probabilities.size()[-1]
+                        self.categorical_dim,
+                        self.latent_dim,
+                        probabilities.size()[-1]
                 )
 
                 traversal = torch.rand(
@@ -69,13 +76,16 @@ class Visualizer(nn.Module):
                 )
 
                 total = 0
-                for cat in range(self.categorical_dim):
-                    for lat in range(self.latent_dim):
-                        for prob in range(len(probabilities)):
-                            mu = copy.deepcopy(self.mu_hat[cat])
-                            mu[lat] = quantiles[cat, lat, prob]
-                            traversal[total, :] = mu
-                            total += 1
+                with tqdm(total = self.latent_dim * len(probabilities) * self.categorical_dim,
+                desc='Buildung traversal plots') as pbar:
+                    for cat in range(self.categorical_dim):
+                        for lat in range(self.latent_dim):
+                            for prob in range(len(probabilities)):
+                                mu = copy.deepcopy(self.mu_hat[cat])
+                                mu[lat] = quantiles[cat, lat, prob]
+                                traversal[total, :] = mu
+                                total += 1
+                                pbar.update(1)
 
                 if torch.cuda.is_available():
                     traversal = traversal.cuda()
@@ -131,25 +141,36 @@ class Visualizer(nn.Module):
 
                 num_latent_trav = probabilities.size()[0]
 
-                # Get the estimates for the means and the variance for each
-                # latent to parameterize a normal distribution (1 Normal Dist 
-                # per latent)
-                mu_hat = self.mu_hat
-                sigma_hat = self.sigma_hat
-                normal_dist = [
-                    torch.distributions.normal.Normal(
-                        x, y) for x, y in zip(
-                        mu_hat, sigma_hat
-                    )
-                ]
+                if normal_traversals == False:
+                    # Compute emprical quantiels according to "probabilities"
+                    z = copy.deepcopy(self.store_z.transpose(0,1).cpu().numpy())
 
-                # Apply quantile function with the specified proabilities to 
-                # each normal distribution and change the shape
-                quantiles = torch.stack([
-                    normal_dist[x].icdf(
-                    probabilities) for x in range(len(normal_dist))
+                    quantiles = np.empty((self.latent_dim, num_latent_trav))
+                    for i in range(self.latent_dim):
+                        quantiles[i, :] = [np.quantile(z[i,:], prob) for prob in probabilities] 
+                    
+                    quantiles = torch.tensor(quantiles)
+
+                else:
+                    # Get the estimates for the means and the variance for each
+                    # latent to parameterize a normal distribution (1 Normal Dist 
+                    # per latent)
+                    mu_hat = self.mu_hat
+                    sigma_hat = self.sigma_hat
+                    normal_dist = [
+                        torch.distributions.normal.Normal(
+                            x, y) for x, y in zip(
+                            mu_hat, sigma_hat
+                        )
                     ]
-                )
+
+                    # Apply quantile function with the specified proabilities to 
+                    # each normal distribution and change the shape
+                    quantiles = torch.stack([
+                        normal_dist[x].icdf(
+                        probabilities) for x in range(len(normal_dist))
+                        ]
+                    )
                     
                 quantiles = quantiles.view(
                     self.latent_dim, probabilities.size()[-1]
@@ -164,12 +185,15 @@ class Visualizer(nn.Module):
                 )
 
                 total = 0
-                for lat in range(self.latent_dim):
-                    for prob in range(len(probabilities)):
-                        mu = copy.deepcopy(self.mu_hat)
-                        mu[lat] = quantiles[lat, prob]
-                        traversal[total, :] = mu
-                        total += 1
+                with tqdm(total = self.latent_dim * len(probabilities),
+                desc='Buildung traversal plots') as pbar:
+                    for lat in range(self.latent_dim):
+                        for prob in range(len(probabilities)):
+                            mu = copy.deepcopy(self.mu_hat)
+                            mu[lat] = quantiles[lat, prob]
+                            traversal[total, :] = mu
+                            total += 1
+                            pbar.update(1)
 
                 if torch.cuda.is_available():
                     traversal = traversal.cuda()
@@ -188,9 +212,16 @@ class Visualizer(nn.Module):
         if not carry_on:
             return
         
-        latent_traversals, n_per_latent = self._get_traversals(
+        # latent_traversals_normal, n_per_latent = self._get_traversals(
+        #     model_type = self.__class__.__name__,
+        #     data = data,
+        #     normal_traversals = True
+        # )
+
+        latent_traversals_empirical, n_per_latent = self._get_traversals(
             model_type = self.__class__.__name__,
-            data = data
+            data = data,
+            normal_traversals = False
         )
 
         path = os.path.expanduser(path)
@@ -201,30 +232,52 @@ class Visualizer(nn.Module):
         if self.__class__.__name__ == 'GaussmixVae':
             for categories in range(self.categorical_dim):
 
-                decoded_traversals = self.img_decoder(
-                    latent_traversals[categories]
+                # decoded_traversals_normal = self.img_decoder(
+                #     latent_traversals_normal[categories]
+                # )
+
+                decoded_traversals_empirical = self.img_decoder(
+                    latent_traversals_empirical[categories]
                 )
 
+                # vutils.save_image(
+                #     decoded_traversals_normal.data,
+                #     f"{storage_path}traversal_norm_{epoch}_cat{categories+1}.png",
+                #     normalize=True,
+                #     nrow=n_per_latent
+                # )
+
                 vutils.save_image(
-                    decoded_traversals.data,
-                    f"{storage_path}traversal_{epoch}_cat{categories+1}.png",
+                    decoded_traversals_empirical.data,
+                    f"{storage_path}traversal_emp_{epoch}_cat{categories+1}.png",
                     normalize=True,
                     nrow=n_per_latent
                 )
         else:
-            decoded_traversals = self.img_decoder(
-                latent_traversals
+            # decoded_traversals_normal = self.img_decoder(
+            #     latent_traversals_normal
+            # )
+
+            decoded_traversals_empirical = self.img_decoder(
+                latent_traversals_empirical
             )
 
+            # vutils.save_image(
+            #     decoded_traversals_normal.data,
+            #     f"{storage_path}traversal_norm_{epoch}.png",
+            #     normalize=True,
+            #     nrow=n_per_latent
+            # )
+
             vutils.save_image(
-                decoded_traversals.data,
-                f"{storage_path}traversal_{epoch}.png",
+                decoded_traversals_empirical.data,
+                f"{storage_path}traversal_emp_{epoch}.png",
                 normalize=True,
                 nrow=n_per_latent
             )
 
     def _sample_images(self,
-                       val_gen,
+                       image,
                        epoch,
                        path,
                        experiment_name):
@@ -233,25 +286,15 @@ class Visualizer(nn.Module):
         if not carry_on:
             return
 
-        test_input, test_label = next(iter(val_gen))
-
-        if torch.cuda.is_available():
-            test_input, test_label = test_input.cuda(), test_label.cuda()
-
-        if test_input.size()[0] > 32:
-            indices = np.random.choice(test_input.size()[0], 32)
-            test_input = test_input[indices]
-            test_label = test_label[indices]
-
         path = os.path.expanduser(path)
         storage_path = f"{path}{experiment_name}/"
         if not os.path.exists(storage_path):
             os.makedirs(storage_path)
 
-        reconstruction = self._generate(test_input)
+        reconstruction = self._generate(image[:32])
 
         recon_real = torch.cat(
-            (test_input.cuda(), reconstruction.type(
+            (image[:32].cuda(), reconstruction.type(
                 torch.DoubleTensor).cuda()), 0)
         vutils.save_image(recon_real.data,
                           f"{storage_path}real_recon{epoch}.png",
@@ -267,7 +310,128 @@ class Visualizer(nn.Module):
         except BaseException:
             print("could not sample images!")
 
-        del test_input, reconstruction
+        del reconstruction
+
+    def _cluster(self,
+                 image,
+                 attribute,
+                 path,
+                 epoch,
+                 experiment_name,
+                 num_samples=320,
+                 plot_size=1000):
+        """Clustering algorithm with t-SNE visualization capability
+        Args:
+            feature_list {}:
+            path {str}:
+            experiment_name {}:
+        """
+
+        carry_on = (epoch < 10) or ((epoch % 10) == 0)
+        if not carry_on:
+            return
+        
+        indices = np.random.choice(a=image.size()[0],
+                                   size=int(num_samples),
+                                   replace=False)
+
+        image = image[indices].cpu().numpy().transpose(0, 2, 3, 1)
+        feature_labels = attribute[indices].cpu().numpy()
+        latents = self.store_z[indices].cpu().numpy()
+
+        if feature_labels.dtype == int:
+            feature_labels = np.array([str(x) for x in feature_labels])
+
+        # t-SNE:
+        tsne_results = TSNE(
+            n_components=2,
+            verbose=1,
+            metric='euclidean',
+            perplexity=50,
+            n_iter=1000,
+            learning_rate=200).fit_transform(latents)
+
+        tx, ty = tsne_results[:, 0], tsne_results[:, 1]
+        tx = (tx - np.min(tx)) / (np.max(tx) - np.min(tx))
+        ty = (ty - np.min(ty)) / (np.max(ty) - np.min(ty))
+
+        path = os.path.expanduser(path)
+        storage_path = f"{path}{experiment_name}/"
+        if not os.path.exists(storage_path):
+            os.makedirs(storage_path)
+
+        if self.img_encoder.in_channels == 1:
+            tsne_imgplot = 255 * np.ones((plot_size, plot_size), np.uint8)
+        else:
+            tsne_imgplot = 255 * \
+                np.ones(
+                    (plot_size,
+                     plot_size,
+                     self.img_encoder.in_channels),
+                    np.uint8)
+
+        # Fill the blank plot with the coordinates of the images according to
+        # tSNE
+        for img, label, x, y in tqdm(zip(image, feature_labels, tx, ty),
+                                     desc='Plotting t-SNE with images',
+                                     total=len(image)):
+
+            img = self.reshape_image(img, 25)
+            tl_x, tl_y, br_x, br_y = self.get_coordinates(img, x, y, plot_size)
+
+            # draw a rectangle with a color corresponding to the image class
+            #image = draw_rectangle_by_class(img, label)
+            if self.img_encoder.in_channels > 1:
+                tsne_imgplot[tl_y:br_y, tl_x:br_x, :] = img
+            else:
+                tsne_imgplot[tl_y:br_y, tl_x:br_x] = img
+
+        img_storage_path = f"{storage_path}/clusterimg_{epoch}.png"
+        cv2.imwrite(img_storage_path, tsne_imgplot)
+
+        # plot scatterplot t-SNE results:
+        plt.close()
+
+        df = pd.DataFrame(
+            {'x': tsne_results[:, 0], 'y': tsne_results[:, 1], 'category': feature_labels})
+        num_unique_cats = len(df['category'].unique())
+        palette = sns.color_palette("bright", num_unique_cats)
+        fig = sns.relplot(
+            x='x',
+            y='y',
+            data=df,
+            hue='category',
+            palette=palette,
+            alpha=0.7)
+        fig.savefig(f"{storage_path}/cluster_{epoch}.png")
+
+    def _cluster_freq(self, path, experiment_name, epoch):
+        try:
+            self.store_probs * 1
+        except:
+            return
+
+        # carry_on = (epoch < 10) or ((epoch % 10) == 0)
+        # if not carry_on:
+        #     return
+        storage_path = f"{path}{experiment_name}/"
+
+        probs = copy.deepcopy(self.store_probs.cpu().numpy())
+        probs2 = copy.deepcopy(self.store_probs.cpu().numpy())
+
+        indices_max = np.argmax(probs, 1)
+        one_hot_matrix = np.zeros((probs.shape[0], self.categorical_dim))
+        for i in range(probs.shape[0]):
+            one_hot_matrix[i,indices_max[i]] = 1
+        
+        cluster_percentages = one_hot_matrix.mean(0).round(4)
+        cluster_names = ['cluster_{num}'.format(num=x) for x in range(self.categorical_dim+1)]
+        mean_probability = probs2.mean(0)
+
+        df = pd.DataFrame({'Distribution':cluster_percentages, 'Mean Probability':mean_probability}, index = cluster_names[1:])
+        ax = df.plot.bar(rot=0)
+        fig = ax.get_figure()
+        fig.savefig(f"{storage_path}/cluster_distribution{epoch}.png")
 
     def get_coordinates(self, image, dimred_x, dimred_y, global_size):
         # changed from https://www.learnopencv.com/t-sne-for-feature-visualization/
@@ -324,119 +488,9 @@ class Visualizer(nn.Module):
 
         return resized
 
-    def _cluster(self,
-                 data,
-                 path,
-                 epoch,
-                 experiment_name,
-                 num_batches=10,
-                 plot_size=1000):
-        """Clustering algorithm with t-SNE visualization capability
-        Args:
-            feature_list {}:
-            path {str}:
-            experiment_name {}:
-        """
 
-        carry_on = (epoch < 10) or ((epoch % 10) == 0)
-        if not carry_on:
-            return
 
-        indices = np.random.choice(a=len(data),
-                                   size=int(num_batches),
-                                   replace=False)
+        
 
-        features_extracted = []
-        features_labels = []
-        images_ = None
+        
 
-        for batch, (image, attribute) in enumerate(data):
-            try:
-                attribute = attribute[:, 0]
-            except:
-                pass
-
-            if batch in indices:
-                if torch.cuda.is_available():
-                    image = image.cuda()
-                h_enc = self.img_encoder(image.float())
-                z = self._reparameterization(h_enc)
-                z = z.cpu().detach().numpy()
-
-                features_extracted.append(z)
-                features_labels.append(attribute)
-                if images_ is None:
-                    images_ = image.cpu().numpy().transpose(0, 2, 3, 1)
-                else:
-                    image = image.cpu().numpy().transpose(0, 2, 3, 1)
-                    images_ = np.append(images_, image, 0)
-            else:
-                pass
-                
-        features_extracted = np.vstack(features_extracted)
-        features_labels = np.concatenate(features_labels)
-        if features_labels.dtype == int:
-            features_labels = np.array([str(x) for x in features_labels])
-
-        # t-SNE:
-        tsne_results = TSNE(
-            n_components=2,
-            verbose=1,
-            metric='euclidean',
-            perplexity=50,
-            n_iter=1000,
-            learning_rate=200).fit_transform(features_extracted)
-
-        tx, ty = tsne_results[:, 0], tsne_results[:, 1]
-        tx = (tx - np.min(tx)) / (np.max(tx) - np.min(tx))
-        ty = (ty - np.min(ty)) / (np.max(ty) - np.min(ty))
-
-        path = os.path.expanduser(path)
-        storage_path = f"{path}{experiment_name}/"
-        if not os.path.exists(storage_path):
-            os.makedirs(storage_path)
-
-        if self.img_encoder.in_channels == 1:
-            tsne_imgplot = 255 * np.ones((plot_size, plot_size), np.uint8)
-        else:
-            tsne_imgplot = 255 * \
-                np.ones(
-                    (plot_size,
-                     plot_size,
-                     self.img_encoder.in_channels),
-                    np.uint8)
-
-        # Fill the blank plot with the coordinates of the images according to
-        # tSNE
-        for img, label, x, y in tqdm(zip(images_, features_labels, tx, ty),
-                                     desc='Plotting t-SNE with images',
-                                     total=len(images_)):
-
-            img = self.reshape_image(img, 25)
-            tl_x, tl_y, br_x, br_y = self.get_coordinates(img, x, y, plot_size)
-
-            # draw a rectangle with a color corresponding to the image class
-            #image = draw_rectangle_by_class(img, label)
-            if self.img_encoder.in_channels > 1:
-                tsne_imgplot[tl_y:br_y, tl_x:br_x, :] = img
-            else:
-                tsne_imgplot[tl_y:br_y, tl_x:br_x] = img
-
-        img_storage_path = f"{storage_path}/clusterimg_{epoch}.png"
-        cv2.imwrite(img_storage_path, tsne_imgplot)
-
-        # plot scatterplot t-SNE results:
-        plt.close()
-
-        df = pd.DataFrame(
-            {'x': tsne_results[:, 0], 'y': tsne_results[:, 1], 'category': features_labels})
-        num_unique_cats = len(df['category'].unique())
-        palette = sns.color_palette("bright", num_unique_cats)
-        fig = sns.relplot(
-            x='x',
-            y='y',
-            data=df,
-            hue='category',
-            palette=palette,
-            alpha=0.7)
-        fig.savefig(f"{storage_path}/cluster_{epoch}.png")

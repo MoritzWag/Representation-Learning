@@ -39,6 +39,7 @@ trainer_params:
   gpus: 1
   max_epochs: 100
 
+
 logging_params:
   save_dir: "logs/"
   name: "GaussianVae"
