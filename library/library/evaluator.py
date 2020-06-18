@@ -131,6 +131,10 @@ class Evaluator(nn.Module):
         np.fill_diagonal(mutual_info_matrix, 0)
         mutual_info_score = np.sum(mutual_info_matrix) / (num_latents**2 - num_latents)
         self.scores['mutual_info_score'] = mutual_info_score
+
+        num_au, au_var = self.calculate_num_active_units(data=data)
+
+        self.scores['num_active_units'] = num_au
  
     def gaussian_total_correlation(self, cov):
         """
@@ -143,6 +147,27 @@ class Evaluator(nn.Module):
         sqrtm = scipy.linalg.sqrtm(cov * np.expand_dims(np.diag(cov), axis=1))
         return 2 * np.trace(cov) - 2 * np.trace(sqrtm)
     
+    def calculate_num_active_units(self, mus):
+        """computes the number of active units in the latent space.
+        """
+        #question here: is this the same!?
+        means = []
+        for batch, (image, attribute) in enumerate(data):
+            if torch.cuda.is_available():
+                image = image.cuda()
+            mean, _, _ = self._embed(image)
+            means.append(mean)
+        
+        means = torch.cat(means, dim=0)
+        au_mean = mus.mean(0, keepdim=True)
+
+        au_var = mus - au_mean
+        ns = au_var.size(0)
+
+        au_var = (au_var ** 2).sum(dim=0) / (ns - 1)
+
+        return (au_var >= delta).sum().item(), au_var
+  
 
     def log_metrics(self, storage_path):
         """
@@ -154,3 +179,4 @@ class Evaluator(nn.Module):
             
             df = pd.DataFrame(self.scores, index=[0])
             df.to_csv(f"{storage_path}eval_metrics.csv")
+

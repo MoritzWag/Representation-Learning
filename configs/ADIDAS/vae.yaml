@@ -6,8 +6,10 @@ model_hyperparams:
   loss_type: "l2"
 
 architecture:
-  img_encoder: 'ConvEncoder'
+  #img_encoder: 'ConvEncoder'
+  img_encoder: 'CustomizedResNet101'
   img_decoder: 'ConvDecoder'
+
 
 img_arch_params:
   in_channels: 3
@@ -23,6 +25,7 @@ img_arch_params:
   dec_padding: [1, 1, 1, 1, 1, 1, 1, 0]
   dec_out_padding: [1, 1, 1, 1, 1, 1, 0, 0]
 
+
 exp_params:
   dataset: 'adidas'
   data_path: "data/"
@@ -34,7 +37,8 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 5
+  max_epochs: 100
+
 
 logging_params:
   save_dir: "logs/"

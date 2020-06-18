@@ -47,7 +47,7 @@ class ConvEncoder(nn.Module):
         self.enc_stride = enc_stride
 
         modules = []
-        
+        pdb.set_trace()
         output_dims = np.repeat(img_size, len(self.enc_hidden_dims)+1)
         for i in range(len(self.enc_hidden_dims)):
             if i == 0:
@@ -726,12 +726,19 @@ def prior_experts(size, use_cuda=False):
 ###############################################################
 
 
+
 class CustomizedResNet101(nn.Module):
     """
     """
-    def __init__(self, pretrained=True):
+    def __init__(self, 
+                in_channels: int,
+                latent_dim: int,
+                pretrained=True,
+                **kwargs):
         super(CustomizedResNet101, self).__init__()
-
+        self.latent_dim = latent_dim
+        self.in_channels = in_channels
+        
         if pretrained:
             resnet101 = models.resnet101(pretrained=True)
             modules = list(resnet101.children())[:-2]
@@ -739,14 +746,28 @@ class CustomizedResNet101(nn.Module):
             for p in self.resnet101.parameters():
                 p.requires_grad = False
 
-        self.linear = nn.Linear(2048*7*7, 12288)
+        self.enc_hidden_dims = [512]
+        self.enc_output_dim = 2*2
+        self.top_up = nn.Sequential(
+                        nn.Conv2d(2048, out_channels=1024,
+                                kernel_size=2,
+                                stride=2,
+                                padding=1),
+                        nn.BatchNorm2d(1024),
+                        nn.LeakyReLU(),
+                        nn.Conv2d(1024, out_channels=512,
+                                kernel_size=3,
+                                stride=2,
+                                padding=1),
+                        nn.BatchNorm2d(512),
+                        nn.LeakyReLU()
+        )
 
     def forward(self, x):
         output = self.resnet101(x)
-        output = torch.flatten(output, 1)
-        output = self.linear(output)
-        output = output.view(32, 3, 64, 64)
+        output = self.top_up(output)
+        output = torch.flatten(output, start_dim=1)
+
         return output
 
 
-    

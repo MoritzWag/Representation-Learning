@@ -100,7 +100,15 @@ def img_to_npy(path,
 	else:
 		X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
 		Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values
-
+	
+	# store values of Y differently:
+	#pdb.set_trace()
+	
+	if Y.ndim > 1: 
+		Y_attr = []
+		for attr in range(Y.shape[1]):
+			Y_attr.append(Y[:, attr])
+	
 	if data_suffix is not None:
 		classes = np.unique(Y[:, 0])
 	else:
