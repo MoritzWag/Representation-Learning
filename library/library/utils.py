@@ -7,6 +7,7 @@ import pandas as pd
 import sklearn as sk 
 import os 
 import pdb 
+import torch
 
 
 ######################
@@ -132,6 +133,22 @@ def img_to_npy(path,
 # Data Augmentation
 #
 #########################
+
+def accumulate_batches(data):
+	image_ = []
+	attribute_ = []
+	for batch, (image, attribute) in enumerate(data):
+		image_.append(image)
+		attribute_.append(attribute)
+	
+	image_ = torch.cat(image_)
+	attribute_ = torch.cat(attribute_)
+
+	if torch.cuda.is_available():
+            image_, attribute_ = image_.cuda(), attribute_.cuda()
+
+	return image_, attribute_
+
 
 class Transform1(object):
 

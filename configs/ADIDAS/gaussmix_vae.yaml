@@ -3,10 +3,14 @@ model_params:
   base: 'VaeBase'
 
 model_hyperparams:
-  temperature: 1
-  anneal_rate: 0.02
-  anneal_interval: 200
+  temperature: 0.01
+  anneal_rate: 0.2
+  anneal_interval: 100
   alpha: 1250.
+  temperature_bound: 500
+  decrease_temp: False
+  beta1: 1
+  beta2: 1
 
 architecture:
   img_encoder: 'ConvEncoder'
@@ -15,8 +19,8 @@ architecture:
 img_arch_params:
   in_channels: 3
   img_size: 224
-  latent_dim: 8
-  categorical_dim: 5
+  latent_dim: 5
+  categorical_dim: 3
   enc_hidden_dims: [8, 16, 32, 64, 128, 256, 512]
   enc_kernel_size: [3, 3, 3, 3, 3, 3, 3]
   enc_stride: [2, 2, 2, 2, 2, 2, 2]
@@ -31,14 +35,14 @@ exp_params:
   dataset: 'adidas'
   data_path: "data/"
   img_size: 224
-  batch_size: 64
+  batch_size: 32
   learning_rate: 0.005
   weight_decay: 0.0
   scheduler_gamma: 0.95
 
 trainer_params:
   gpus: 1
-  max_epochs: 35
+  max_epochs: 41
 
 logging_params:
   save_dir: "logs/"

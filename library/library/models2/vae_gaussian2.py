@@ -69,15 +69,7 @@ class VaeGaussian(nn.Module):
         self.loss_item['mu'] = mu
         self.loss_item['logvar'] = logvar
         z = eps * std + mu
-
-        if not self.training:
-            try: #try statement is needed bc the old implementation of traversals throws an error
-                # Save mu and sigma estimate for traversals
-                self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
-                self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
-            except:
-                pass
-
+        
         return z
     
     def _sample(self, num_samples):
@@ -104,15 +96,17 @@ class VaeGaussian(nn.Module):
     def _embed(self, data):
         """
         """
-        #x = self.resnet(data.float())
-        if torch.cuda.is_available():
-            data = data.cuda()
+
         embedding = self.img_encoder(data.float())
         mu = self.mu(embedding)
         logvar = self.logvar(embedding)
         z = self._reparameterization(embedding)
 
-        return mu, logvar, embedding
+        # Store variables
+        self.store_z = z
+        self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
+        self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
+
 
     def _parameterize(self, h_enc, img=None, attrs=None):
 
