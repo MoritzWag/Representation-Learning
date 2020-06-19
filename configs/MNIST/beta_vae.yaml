@@ -3,8 +3,8 @@ model_params:
   base: 'VaeBase'
 
 model_hyperparams:
-  beta: 10
-  restrict_capacity: True
+  beta: 3
+  restrict_capacity: False
   capacity_max_iter: 10000
   max_capacity: 25
 
@@ -15,7 +15,7 @@ architecture:
 img_arch_params:
   in_channels: 1
   img_size: 28
-  latent_dim: 10 
+  latent_dim: 5 
   enc_hidden_dims: [32, 64, 128, 256]
   enc_kernel_size: [3, 3, 3, 3]
   enc_stride: [2, 2, 2, 2]
