@@ -141,6 +141,8 @@ class GaussmixVae(nn.Module):
         self.sigma_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).var(dim=2).sqrt()
         self.store_z = mixtures
 
+        return mu, logvar, z, embedding
+        
     def _parameterize(self, h_enc, img=None, attrs=None):
 
         pass

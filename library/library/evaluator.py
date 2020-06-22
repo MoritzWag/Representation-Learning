@@ -11,6 +11,8 @@ import os
 from torch import nn, optim, Tensor
 
 from library.eval_helpers import histogram_discretize, discrete_mutual_info, knn_regressor, knn_classifier
+from library.utils import accumulate_batches
+
 
 class Evaluator(nn.Module):
     """
@@ -20,56 +22,19 @@ class Evaluator(nn.Module):
         self.scores = {}
 
     def _downstream_task(self, train_data, test_data, function, column_index):
+        
+        features_train, train_attributes = train_data[0], train_data[1]
+        features_test, test_attributes = test_data[0], test_data[2] 
+
         if len(column_index) == 1:
-            features_train = []
-            target_train = []
-            for batch, (image, attribute) in enumerate(train_data):
-                attribute = attribute[:, column_index]
-                if torch.cuda.is_available():
-                    image = image.cuda()
-                h_enc = self.img_encoder(image.float())
-                z = self._reparameterization(h_enc)
-                z = z.cpu().detach().numpy()
-                features_train.append(z)
-                target_train.append(attribute)
-                        
-            features_test = []
-            target_test = []
-            for batch, (image, attribute) in enumerate(test_data):
-                attribute = attribute[:, column_index]
-                if torch.cuda.is_available():
-                    image = image.cuda()
-                h_enc = self.img_encoder(image.float())
-                z = self._reparameterization(h_enc)
-                z = z.cpu().detach().numpy()
-                features_test.append(z)
-                target_test.append(attribute)
-
-            features_train = np.vstack(features_train)
-            target_train = np.concatenate(target_train)
-
-            features_test = np.vstack(features_test)
-            target_test = np.concatenate(target_test)
+            target_train = train_attributes[:, column_index].cpu().detach().numpy()
+            target_test = test_attributes[:, column_index].cpu().detach().numpy()
 
         else:
-            features_train = []
-            target_train = []
-            for batch, (image, attribute) in enumerate(train_data):
-                attribute, z = attribute[:, column_index].transpose(0,1)
-                features_train.append(z)
-                target_train.append(attribute)
-                        
-            features_test = []
-            target_test = []
-            for batch, (image, attribute) in enumerate(test_data):
-                attribute, z = attribute[:, column_index].transpose(0,1)
-                features_test.append(z)
-                target_test.append(attribute)
+            target_train = train_attributes[:, column_index].tranpose(0, 1).cpu().detach().numpy()
+            target_test = test_attributes[:, column_index].transpose(0, 1).cpu().detach().numpy()
 
-            features_train_int = np.concatenate(features_train)
-            features_test_int = np.concatenate(features_test)
             features_total = np.append(features_train_int, features_test_int)
-
             features_total_chr = np.array([str(x) for x in features_total])
 
             enc = OneHotEncoder()
@@ -81,6 +46,68 @@ class Evaluator(nn.Module):
 
             target_train = np.concatenate(target_train)
             target_test = np.concatenate(target_test)
+
+        # if len(column_index) == 1:
+        #     features_train = []
+        #     target_train = []
+        #     for batch, (image, attribute) in enumerate(train_data):
+        #         attribute = attribute[:, column_index]
+        #         if torch.cuda.is_available():
+        #             image = image.cuda()
+        #         h_enc = self.img_encoder(image.float())
+        #         z = self._reparameterization(h_enc)
+        #         z = z.cpu().detach().numpy()
+        #         features_train.append(z)
+        #         target_train.append(attribute)
+                        
+        #     features_test = []
+        #     target_test = []
+        #     for batch, (image, attribute) in enumerate(test_data):
+        #         attribute = attribute[:, column_index]
+        #         if torch.cuda.is_available():
+        #             image = image.cuda()
+        #         h_enc = self.img_encoder(image.float())
+        #         z = self._reparameterization(h_enc)
+        #         z = z.cpu().detach().numpy()
+        #         features_test.append(z)
+        #         target_test.append(attribute)
+
+        #     features_train = np.vstack(features_train)
+        #     target_train = np.concatenate(target_train)
+
+        #     features_test = np.vstack(features_test)
+        #     target_test = np.concatenate(target_test)
+
+        # else:
+        #     features_train = []
+        #     target_train = []
+        #     for batch, (image, attribute) in enumerate(train_data):
+        #         attribute, z = attribute[:, column_index].transpose(0,1)
+        #         features_train.append(z)
+        #         target_train.append(attribute)
+                        
+        #     features_test = []
+        #     target_test = []
+        #     for batch, (image, attribute) in enumerate(test_data):
+        #         attribute, z = attribute[:, column_index].transpose(0,1)
+        #         features_test.append(z)
+        #         target_test.append(attribute)
+
+        #     features_train_int = np.concatenate(features_train)
+        #     features_test_int = np.concatenate(features_test)
+        #     features_total = np.append(features_train_int, features_test_int)
+
+        #     features_total_chr = np.array([str(x) for x in features_total])
+
+        #     enc = OneHotEncoder()
+        #     enc.fit(features_total_chr.reshape(-1, 1))
+        #     features_total_oh = enc.transform(features_total_chr.reshape(-1, 1)).toarray()
+
+        #     features_train = features_total_oh[range(len(features_train_int)), :]
+        #     features_test = features_total_oh[-len(features_test_int):, :]
+
+        #     target_train = np.concatenate(target_train)
+        #     target_test = np.concatenate(target_test)
 
         # work with the labels here as well!
         if function == 'knn_regressor':
@@ -131,10 +158,6 @@ class Evaluator(nn.Module):
         np.fill_diagonal(mutual_info_matrix, 0)
         mutual_info_score = np.sum(mutual_info_matrix) / (num_latents**2 - num_latents)
         self.scores['mutual_info_score'] = mutual_info_score
-
-        num_au, au_var = self.calculate_num_active_units(data=data)
-
-        self.scores['num_active_units'] = num_au
  
     def gaussian_total_correlation(self, cov):
         """
@@ -147,27 +170,6 @@ class Evaluator(nn.Module):
         sqrtm = scipy.linalg.sqrtm(cov * np.expand_dims(np.diag(cov), axis=1))
         return 2 * np.trace(cov) - 2 * np.trace(sqrtm)
     
-    def calculate_num_active_units(self, mus):
-        """computes the number of active units in the latent space.
-        """
-        #question here: is this the same!?
-        means = []
-        for batch, (image, attribute) in enumerate(data):
-            if torch.cuda.is_available():
-                image = image.cuda()
-            mean, _, _ = self._embed(image)
-            means.append(mean)
-        
-        means = torch.cat(means, dim=0)
-        au_mean = mus.mean(0, keepdim=True)
-
-        au_var = mus - au_mean
-        ns = au_var.size(0)
-
-        au_var = (au_var ** 2).sum(dim=0) / (ns - 1)
-
-        return (au_var >= delta).sum().item(), au_var
-  
 
     def log_metrics(self, storage_path):
         """
@@ -179,4 +181,3 @@ class Evaluator(nn.Module):
             
             df = pd.DataFrame(self.scores, index=[0])
             df.to_csv(f"{storage_path}eval_metrics.csv")
-

@@ -124,6 +124,8 @@ class InfoVae(VaeBase):
         self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
         self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
 
+        return mu, logvar, z, embedding
+
     def _mm_reparameterization(self, mu, logvar):
         std = torch.exp(0.5*logvar)
         eps = torch.randn_like(std)

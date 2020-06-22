@@ -128,7 +128,6 @@ class RlExperiment(pl.LightningModule):
                                         run_id=self.logger.run_id)
 
         image, attribute = utils.accumulate_batches(self.val_gen)
-
         self.model._embed(image)
         
         self.model._sample_images(image,
@@ -149,6 +148,9 @@ class RlExperiment(pl.LightningModule):
         self.model._cluster_freq(path=f"images/{self.params['dataset']}/",
                                 epoch=self.current_epoch,
                                 experiment_name=self.experiment_name)
+
+        del image, attribute 
+        del self.model.store_z
 
         return {'val_loss': avg_loss}    
 
@@ -191,12 +193,22 @@ class RlExperiment(pl.LightningModule):
                             storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/training/")
         plot_train_progress(self.val_history,
                             storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/validation/")
+        
 
+        train_images, train_attributes = utils.accumulate_batches(self.train_gen)
+        test_images, test_attributes = utils.accumulate_batches(self.test_gen)
 
+        _, _, features_train, _ = self.model._embed(train_images, store=False)
+        _, _, features_test, _ = self.model._embed(test_image, store=False)
 
-        self.model._downstream_task(self.train_gen, self.test_gen, 'knn_regressor', [1])
-        self.model._downstream_task(self.train_gen, self.test_gen, 'knn_classifier', [2])
-        self.model._downstream_task(self.train_gen, self.test_gen, 'knn_regressor', [1,2])
+        del train_images, test_images
+
+        train_data = (features_train, train_attributes)
+        test_data = (features_test, test_attributes)
+
+        #self.model._downstream_task(train_data, test_data, 'knn_regressor', [1])
+        self.model._downstream_task(train_data, test_data, 'knn_classifier', [2])
+        #self.model._downstream_task(train_data, test_data, 'knn_regressor', [1,2])
         self.model.unsupervised_metrics(self.test_gen)
         #self.model.unsupervised_metrics(self.test_gen, ...)
         self.model.log_metrics(storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/test/")

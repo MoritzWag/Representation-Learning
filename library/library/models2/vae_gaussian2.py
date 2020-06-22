@@ -93,7 +93,7 @@ class VaeGaussian(nn.Module):
 
         return samples
 
-    def _embed(self, data):
+    def _embed(self, data, store=True, return_values=False):
         """
         """
 
@@ -103,10 +103,15 @@ class VaeGaussian(nn.Module):
         z = self._reparameterization(embedding)
 
         # Store variables
-        self.store_z = z
-        self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
-        self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
+        if store == True:
+            self.store_z = z
+            self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
+            self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
 
+        if return_values == False:
+            mu, logvar, z, embedding
+        
+        return mu, logvar, z, embedding
 
     def _parameterize(self, h_enc, img=None, attrs=None):
 
