@@ -32,6 +32,22 @@ def plot_train_progress(history,
 
 
 
+def get_mlflow_results(mlflow_id):
+    path = f"../../mlruns{mlflow_id}"
+
+    # select only runy with 32-lenghts hashes
+    runs = [run for run in os.listdir(path) if len(run) == 32 and not run.startswith('performance')]
+    frame = pd.DataFrame(columns=['run_id', 'seed', 'model', 'num_epochs', 'dataset', ])
+
+
+    #i = 0 
+    #for run in runs:
+    #    model = open()
+
+
+
+
 def sort_list_by_other(to_sort, other, reverse=True):
     """Sort a list by an other."""
     return [el for _, el in sorted(zip(other, to_sort), reverse=reverse)]
+

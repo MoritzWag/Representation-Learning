@@ -149,4 +149,7 @@ class DIPVae(nn.Module):
 
         cov_diag = torch.diag(cov_z)
         cov_offdiag = cov_z - torch.diag(cov_diag)
-        dip_loss = self.lambda_offdiag 
+        dip_loss = self.lambda_offdiag * torch.sum(cov_offdiad ** 2) + \
+                    self.lambda_diag * torch.sum((cov_diag - 1) ** 2)
+        
+        return {'loss': loss, 'image_recon_loss': image_recon_loss, 'latent_loss': latent_loss, 'dip_loss': dip_loss}
