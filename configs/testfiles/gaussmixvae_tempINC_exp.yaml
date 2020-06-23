@@ -3,14 +3,12 @@ model_params:
   base: 'VaeBase'
 
 model_hyperparams:
-  temperature: 0.01
-  anneal_rate: 0.2
-  anneal_interval: 100
-  alpha: 1250.
-  temperature_bound: 500
+  temperature: 0.001
+  temperature_bound: 20
+  anneal_rate: 0.02
   decrease_temp: False
-  beta1: 1
-  beta2: 1
+  anneal_interval: 200
+  alpha: 1250.
 
 architecture:
   img_encoder: 'ConvEncoder'
@@ -42,7 +40,7 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 41
+  max_epochs: 131
 
 logging_params:
   save_dir: "logs/"

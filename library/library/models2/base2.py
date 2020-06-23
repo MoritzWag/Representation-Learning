@@ -63,6 +63,9 @@ class ReprLearner(Visualizer, Evaluator):
         """
         pass
 
+    @abstractmethod
+    def _embed(self):
+        pass
 
 ###########################################
 #
@@ -98,6 +101,10 @@ class MMVaeBase(ReprLearner):
         batch_size = image.size(0) if image is not None else attrs.size(0)
         
         mu, logvar = prior_experts((1, batch_size, 10))
+        # mu, logvar unsqueeze(0) or squeeze(0)
+        if torch.cuda.is_available():
+            #mu, logvar = mu.squeeze(0).float().cuda(), logvar.squeeze(0).float().cuda()
+            mu, logvar = mu.float().cuda(), logvar.float().cuda()
 
         if image is not None and attrs is not None:
             img_henc = self.img_encoder(image)
@@ -154,3 +161,27 @@ class VaeBase(ReprLearner):
 
         return x
 
+    def _generate_batch(self, data, output=['mu', 'logvar', 'embedding']):
+        """
+        """
+
+        mus, logvars, embeddings, attributes = [], [], [], []
+        for batch, (image, attribute) in enumerate(data):
+            image = image.float()
+            if torch.cuda.is_available():
+                image.cuda()
+            mu, logvar, embedding = self._embed(image)
+            mus.append(mu)
+            logvars.append(logvar)
+            embeddings.append(embedding)
+        
+        mus = np.vstack(mus)
+        mus = np.squeeze(mus)
+        logvars = np.vstack(logvars)
+        logvars = np.squeeze(logvars)
+        embeddings = np.vstack(embeddings)
+        embeddings = np.squezee(embeddings)
+
+
+        return {'mus': mus, 'logvars': logvars, 'embeddings': embeddings}
+        

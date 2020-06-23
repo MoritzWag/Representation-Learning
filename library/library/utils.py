@@ -7,6 +7,7 @@ import pandas as pd
 import sklearn as sk 
 import os 
 import pdb 
+import torch
 
 
 ######################
@@ -99,7 +100,15 @@ def img_to_npy(path,
 	else:
 		X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
 		Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values
-
+	
+	# store values of Y differently:
+	#pdb.set_trace()
+	
+	if Y.ndim > 1: 
+		Y_attr = []
+		for attr in range(Y.shape[1]):
+			Y_attr.append(Y[:, attr])
+	
 	if data_suffix is not None:
 		classes = np.unique(Y[:, 0])
 	else:
@@ -132,6 +141,22 @@ def img_to_npy(path,
 # Data Augmentation
 #
 #########################
+
+def accumulate_batches(data):
+	image_ = []
+	attribute_ = []
+	for batch, (image, attribute) in enumerate(data):
+		image_.append(image)
+		attribute_.append(attribute)
+	
+	image_ = torch.cat(image_)
+	attribute_ = torch.cat(attribute_)
+
+	if torch.cuda.is_available():
+            image_, attribute_ = image_.cuda(), attribute_.cuda()
+
+	return image_, attribute_
+
 
 class Transform1(object):
 
