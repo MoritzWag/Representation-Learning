@@ -124,23 +124,21 @@ class BetaVae(nn.Module):
 
         return samples
 
-    def _embed(self, data, store=True):
+    def _embed(self, data, return_latents=False):
         """
         """
-
         embedding = self.img_encoder(data.float())
         mu = self.mu(embedding)
         logvar = self.logvar(embedding)
         z = self._reparameterization(embedding)
 
-        # Store variables
-        if store == True:
-            self.store_z = z
-            self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
-            self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
-        else:
-            pass
-        return mu, logvar, z, embedding
+        if return_latents == True:
+            return z
+
+        self.store_z = z
+        self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
+        self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
+
     
     def _mm_reparameterization(self, mu, logvar):
         std = torch.exp(0.5*logvar)

@@ -21,126 +21,25 @@ class Evaluator(nn.Module):
         super(Evaluator, self).__init__(**kwargs)
         self.scores = {}
 
-    def _downstream_task(self, train_data, test_data, function, column_index):
+    def _downstream_task(self, train_data, test_data, function):
         
-        features_train, train_attributes = train_data[0], train_data[1]
-        features_test, test_attributes = test_data[0], test_data[2] 
-
-        if len(column_index) == 1:
-            target_train = train_attributes[:, column_index].cpu().detach().numpy()
-            target_test = test_attributes[:, column_index].cpu().detach().numpy()
-
+        features_train, target_train = train_data[0].cpu().numpy(), train_data[1].cpu().numpy()
+        features_test, target_test = test_data[0].cpu().numpy(), test_data[1].cpu().numpy()
+            
+        if target_train.shape[1] > 1:
+            
+            for i in range(target_train.shape[1]):
+                acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
+                self.scores['downstream_task_acc'+str(i+1)] = acc.round(5)
         else:
-            target_train = train_attributes[:, column_index].tranpose(0, 1).cpu().detach().numpy()
-            target_test = test_attributes[:, column_index].transpose(0, 1).cpu().detach().numpy()
-
-            features_total = np.append(features_train_int, features_test_int)
-            features_total_chr = np.array([str(x) for x in features_total])
-
-            enc = OneHotEncoder()
-            enc.fit(features_total_chr.reshape(-1, 1))
-            features_total_oh = enc.transform(features_total_chr.reshape(-1, 1)).toarray()
-
-            features_train = features_total_oh[range(len(features_train_int)), :]
-            features_test = features_total_oh[-len(features_test_int):, :]
-
-            target_train = np.concatenate(target_train)
-            target_test = np.concatenate(target_test)
-
-        # if len(column_index) == 1:
-        #     features_train = []
-        #     target_train = []
-        #     for batch, (image, attribute) in enumerate(train_data):
-        #         attribute = attribute[:, column_index]
-        #         if torch.cuda.is_available():
-        #             image = image.cuda()
-        #         h_enc = self.img_encoder(image.float())
-        #         z = self._reparameterization(h_enc)
-        #         z = z.cpu().detach().numpy()
-        #         features_train.append(z)
-        #         target_train.append(attribute)
-                        
-        #     features_test = []
-        #     target_test = []
-        #     for batch, (image, attribute) in enumerate(test_data):
-        #         attribute = attribute[:, column_index]
-        #         if torch.cuda.is_available():
-        #             image = image.cuda()
-        #         h_enc = self.img_encoder(image.float())
-        #         z = self._reparameterization(h_enc)
-        #         z = z.cpu().detach().numpy()
-        #         features_test.append(z)
-        #         target_test.append(attribute)
-
-        #     features_train = np.vstack(features_train)
-        #     target_train = np.concatenate(target_train)
-
-        #     features_test = np.vstack(features_test)
-        #     target_test = np.concatenate(target_test)
-
-        # else:
-        #     features_train = []
-        #     target_train = []
-        #     for batch, (image, attribute) in enumerate(train_data):
-        #         attribute, z = attribute[:, column_index].transpose(0,1)
-        #         features_train.append(z)
-        #         target_train.append(attribute)
-                        
-        #     features_test = []
-        #     target_test = []
-        #     for batch, (image, attribute) in enumerate(test_data):
-        #         attribute, z = attribute[:, column_index].transpose(0,1)
-        #         features_test.append(z)
-        #         target_test.append(attribute)
-
-        #     features_train_int = np.concatenate(features_train)
-        #     features_test_int = np.concatenate(features_test)
-        #     features_total = np.append(features_train_int, features_test_int)
-
-        #     features_total_chr = np.array([str(x) for x in features_total])
-
-        #     enc = OneHotEncoder()
-        #     enc.fit(features_total_chr.reshape(-1, 1))
-        #     features_total_oh = enc.transform(features_total_chr.reshape(-1, 1)).toarray()
-
-        #     features_train = features_total_oh[range(len(features_train_int)), :]
-        #     features_test = features_total_oh[-len(features_test_int):, :]
-
-        #     target_train = np.concatenate(target_train)
-        #     target_test = np.concatenate(target_test)
-
-        # work with the labels here as well!
-        if function == 'knn_regressor':
-            if len(column_index) == 1:
-                mse, mae = knn_regressor(features_train, target_train, features_test, target_test)
-                self.scores['downstream_task_mse'] = mse.round(3)
-                self.scores['downstream_task_mae'] = mae.round(3)
-            else:
-                mse, mae = knn_regressor(features_train, target_train, features_test, target_test)
-                self.scores['baseline_mse'] = mse.round(3)
-                self.scores['baseline_mae'] = mae.round(3)
-        elif function == 'knn_classifier':
             acc = knn_classifier(features_train, target_train, features_test, target_test)
             self.scores['downstream_task_acc'] = acc.round(5)
-            #self.scores['downstream_task_auc'] = auc
-        else: 
-            pass
     
     def unsupervised_metrics(self, data):
         """
         """        
-        zs = []
-        for batch, (image, attribute) in enumerate(data):
-            if torch.cuda.is_available():
-                    image = image.cuda()
-            h_enc = self.img_encoder(image.float())
-            z = self._reparameterization(h_enc)
-            z = z.cpu().detach().cpu()
-            zs.append(z)
         
-        zs = np.vstack(zs)
-        zs = np.squeeze(zs)
-
+        zs = data.cpu().numpy()
         num_latents = zs.shape[1]
         zs_transposed = np.transpose(zs)
         cov_zs = np.cov(zs_transposed)

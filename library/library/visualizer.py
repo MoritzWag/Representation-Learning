@@ -15,7 +15,7 @@ from library.viz_helpers import sort_list_by_other
 
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
-import umap 
+import umap.umap_ as umap  
 
 torch.set_default_dtype(torch.float64)
 
@@ -394,7 +394,7 @@ class Visualizer(nn.Module):
             else:
                 imgplot[tl_y:br_y, tl_x:br_x] = img
 
-        img_storage_path = f"{storage_path}/clusterimg_{epoch}.png"
+        img_storage_path = f"{storage_path}/{method}img_{epoch}.png"
         cv2.imwrite(img_storage_path, imgplot)
 
         # plot scatterplot t-SNE results:
@@ -411,7 +411,7 @@ class Visualizer(nn.Module):
             hue='category',
             palette=palette,
             alpha=0.7)
-        fig.savefig(f"{storage_path}/cluster_{epoch}.png")
+        fig.savefig(f"{storage_path}/{method}_{epoch}.png")
 
     def _cluster_freq(self, path, experiment_name, epoch):
         try:

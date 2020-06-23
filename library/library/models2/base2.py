@@ -67,6 +67,38 @@ class ReprLearner(Visualizer, Evaluator):
     def _embed(self):
         pass
 
+    def accumulate_batches(self, data, return_latents=False):
+
+        image_ = []
+        attribute_ = []
+
+        if return_latents == False:
+            for batch, (image, attribute) in enumerate(data):
+                image_.append(image)
+                attribute_.append(attribute)
+        
+            image_ = torch.cat(image_)
+            attribute_ = torch.cat(attribute_)
+        else:
+            for batch, (image, attribute) in enumerate(data):
+                if torch.cuda.is_available():
+                    image = image.cuda()
+                z = self._embed(image, return_latents=True)
+                image_.append(z)
+                attribute_.append(attribute)
+        
+            image_ = torch.cat(image_)
+            attribute_ = torch.cat(attribute_)
+
+
+        if torch.cuda.is_available():
+            image_, attribute_ = image_.cuda(), attribute_.cuda()
+
+        return image_, attribute_
+
+    
+
+
 ###########################################
 #
 # Unimodal vae image base learner

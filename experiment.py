@@ -127,7 +127,7 @@ class RlExperiment(pl.LightningModule):
                                         value=avg_loss,
                                         run_id=self.logger.run_id)
 
-        image, attribute = utils.accumulate_batches(self.val_gen)
+        image, attribute = self.model.accumulate_batches(self.val_gen)
         self.model._embed(image)
         
         self.model._sample_images(image,
@@ -143,14 +143,22 @@ class RlExperiment(pl.LightningModule):
                             attribute=attribute[:,0],
                             path=f"images/{self.params['dataset']}/",
                             epoch=self.current_epoch,
-                            experiment_name=self.experiment_name)
+                            experiment_name=self.experiment_name,
+                            method='umap')
+                            
+        self.model._cluster(image=image,
+                            attribute=attribute[:,0],
+                            path=f"images/{self.params['dataset']}/",
+                            epoch=self.current_epoch,
+                            experiment_name=self.experiment_name,
+                            method='tsne')
 
         self.model._cluster_freq(path=f"images/{self.params['dataset']}/",
                                 epoch=self.current_epoch,
                                 experiment_name=self.experiment_name)
 
-        del image, attribute 
-        del self.model.store_z
+        del image
+        del attribute
 
         return {'val_loss': avg_loss}    
 
@@ -182,6 +190,8 @@ class RlExperiment(pl.LightningModule):
         return test_loss
 
     def test_epoch_end(self, outputs):
+
+        # Loss
         avg_test_loss = torch.stack([x['loss'] for x in outputs]).mean().to(torch.double)
         avg_test_loss = avg_test_loss.cpu().detach().numpy() + 0
         ## log everything with mlflow
@@ -194,23 +204,16 @@ class RlExperiment(pl.LightningModule):
         plot_train_progress(self.val_history,
                             storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/validation/")
         
+        # Evaluation Metrics
+        train_features, train_attributes = self.model.accumulate_batches(data=self.train_gen, return_latents=True)
+        test_features, test_attributes = self.model.accumulate_batches(data=self.test_gen, return_latents=True)
 
-        train_images, train_attributes = utils.accumulate_batches(self.train_gen)
-        test_images, test_attributes = utils.accumulate_batches(self.test_gen)
+        train_data = (train_features, train_attributes)
+        test_data = (test_features, test_attributes)
 
-        _, _, features_train, _ = self.model._embed(train_images, store=False)
-        _, _, features_test, _ = self.model._embed(test_image, store=False)
+        self.model._downstream_task(train_data, test_data, 'knn_classifier')
+        self.model.unsupervised_metrics(test_features)
 
-        del train_images, test_images
-
-        train_data = (features_train, train_attributes)
-        test_data = (features_test, test_attributes)
-
-        #self.model._downstream_task(train_data, test_data, 'knn_regressor', [1])
-        self.model._downstream_task(train_data, test_data, 'knn_classifier', [2])
-        #self.model._downstream_task(train_data, test_data, 'knn_regressor', [1,2])
-        self.model.unsupervised_metrics(self.test_gen)
-        #self.model.unsupervised_metrics(self.test_gen, ...)
         self.model.log_metrics(storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/test/")
 
         for key, value in zip(self.model.scores.keys(), self.model.scores.values()):
@@ -222,6 +225,41 @@ class RlExperiment(pl.LightningModule):
             self.logger.experiment.log_param(key=_name, 
                                             value=_param,
                                             run_id=self.logger.run_id)
+
+        del train_data
+        del test_data
+        ## Visualization
+
+        image, attribute = self.model.accumulate_batches(self.test_gen)
+        self.model._embed(image)
+
+        self.model._sample_images(image,
+                        path=f"images/{self.params['dataset']}/test/",
+                        epoch=self.current_epoch,
+                        experiment_name=self.experiment_name)
+        
+        self.model.traversals(epoch=self.current_epoch,
+                                experiment_name=self.experiment_name,
+                                path=f"images/{self.params['dataset']}/test/")
+
+        self.model._cluster(image=image,
+                            attribute=attribute[:,0],
+                            path=f"images/{self.params['dataset']}/test/",
+                            epoch=self.current_epoch,
+                            experiment_name=self.experiment_name,
+                            method='umap')
+                            
+        self.model._cluster(image=image,
+                            attribute=attribute[:,0],
+                            path=f"images/{self.params['dataset']}/test/",
+                            epoch=self.current_epoch,
+                            experiment_name=self.experiment_name,
+                            method='tsne')
+
+        self.model._cluster_freq(path=f"images/{self.params['dataset']}/test/",
+                                epoch=self.current_epoch,
+                                experiment_name=self.experiment_name)
+
 
         return {'avg_test_loss': avg_test_loss}
 

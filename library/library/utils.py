@@ -72,7 +72,7 @@ def img_to_npy(path,
 				train=True, 
 				val_split_ratio=0.0, 
 				data_suffix=None,
-				attributes=['labels', 'SOLD_QTY_AVG', 'PRODUCT_TYPE_DESCR']):
+				attributes=['COLOR_GRP_1_x','labels','PRODUCT_TYPE_DESCR','GENDER_x','AGE_GROUP_x']):
 	"""
 	Args:
 		path: {string} path to the dataset
@@ -93,16 +93,13 @@ def img_to_npy(path,
 			attr = attr[attributes].values
 			Y.append(attr)
 
-		X = np.stack(X)
+		X = np.vstack(X)
 		X = np.squeeze(X)
-		Y = np.stack(Y)
-		Y = np.squeeze(Y)
+		Y = np.vstack(Y)
 	else:
 		X = np.load(file='{}X_{}.npy'.format(path, suffix)).astype('float64')
 		Y = pd.read_csv('{}Y_{}.csv'.format(path, suffix))['labels'].values
-	
-	# store values of Y differently:
-	#pdb.set_trace()
+
 	
 	if Y.ndim > 1: 
 		Y_attr = []
@@ -142,20 +139,46 @@ def img_to_npy(path,
 #
 #########################
 
-def accumulate_batches(data):
+def accumulate_batches(data, accum_img=True, accum_attr=True):
 	image_ = []
 	attribute_ = []
-	for batch, (image, attribute) in enumerate(data):
-		image_.append(image)
-		attribute_.append(attribute)
+
+	if accum_img == True and accum_attr == True:
+		for batch, (image, attribute) in enumerate(data):
+			image_.append(image)
+			attribute_.append(attribute)
 	
-	image_ = torch.cat(image_)
-	attribute_ = torch.cat(attribute_)
+		image_ = torch.cat(image_)
+		attribute_ = torch.cat(attribute_)
 
-	if torch.cuda.is_available():
-            image_, attribute_ = image_.cuda(), attribute_.cuda()
+		if torch.cuda.is_available():
+				image_, attribute_ = image_.cuda(), attribute_.cuda()
 
-	return image_, attribute_
+		return image_, attribute_
+	elif accum_img == True and accum_attr == False: 
+		for batch, (image, attribute) in enumerate(data):
+			image_.append(image)
+	
+		image_ = torch.cat(image_)
+
+		if torch.cuda.is_available():
+				image_ = image_.cuda()
+
+		return image_
+	elif accum_img == False and accum_attr == True:
+		for batch, (image, attribute) in enumerate(data):
+			attribute_.append(attribute)
+	
+		attribute_ = torch.cat(attribute_)
+
+		if torch.cuda.is_available():
+				attribute_ = attribute_.cuda()
+
+		return attribute_
+
+
+		
+
 
 
 class Transform1(object):
