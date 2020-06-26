@@ -47,7 +47,7 @@ class ConvEncoder(nn.Module):
         self.enc_stride = enc_stride
 
         modules = []
-        
+
         output_dims = np.repeat(img_size, len(self.enc_hidden_dims)+1)
         for i in range(len(self.enc_hidden_dims)):
             if i == 0:

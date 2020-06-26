@@ -15,6 +15,7 @@ from library.viz_helpers import sort_list_by_other
 
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
+import umap.umap_ as umap  
 
 torch.set_default_dtype(torch.float64)
 
@@ -318,6 +319,7 @@ class Visualizer(nn.Module):
                  path,
                  epoch,
                  experiment_name,
+                 method='umap',
                  num_samples=320,
                  plot_size=1000):
         """Clustering algorithm with t-SNE visualization capability
@@ -343,15 +345,21 @@ class Visualizer(nn.Module):
             feature_labels = np.array([str(x) for x in feature_labels])
 
         # t-SNE:
-        tsne_results = TSNE(
-            n_components=2,
-            verbose=1,
-            metric='euclidean',
-            perplexity=50,
-            n_iter=1000,
-            learning_rate=200).fit_transform(latents)
+        if method == 'tsne':
 
-        tx, ty = tsne_results[:, 0], tsne_results[:, 1]
+            results = TSNE(
+                n_components=2,
+                verbose=1,
+                metric='euclidean',
+                perplexity=50,
+                n_iter=1000,
+                learning_rate=200).fit_transform(latents)
+        else:
+            results = umap.UMAP(n_neighbors=10,
+                                min_dist=0.3,
+                                metric='correlation').fit_transform(latents)
+
+        tx, ty = results[:, 0], results[:, 1]
         tx = (tx - np.min(tx)) / (np.max(tx) - np.min(tx))
         ty = (ty - np.min(ty)) / (np.max(ty) - np.min(ty))
 
@@ -361,9 +369,9 @@ class Visualizer(nn.Module):
             os.makedirs(storage_path)
 
         if self.img_encoder.in_channels == 1:
-            tsne_imgplot = 255 * np.ones((plot_size, plot_size), np.uint8)
+            imgplot = 255 * np.ones((plot_size, plot_size), np.uint8)
         else:
-            tsne_imgplot = 255 * \
+            imgplot = 255 * \
                 np.ones(
                     (plot_size,
                      plot_size,
@@ -373,7 +381,7 @@ class Visualizer(nn.Module):
         # Fill the blank plot with the coordinates of the images according to
         # tSNE
         for img, label, x, y in tqdm(zip(image, feature_labels, tx, ty),
-                                     desc='Plotting t-SNE with images',
+                                     desc='Plotting t-SNE/UMAP with images',
                                      total=len(image)):
 
             img = self.reshape_image(img, 25)
@@ -382,18 +390,18 @@ class Visualizer(nn.Module):
             # draw a rectangle with a color corresponding to the image class
             #image = draw_rectangle_by_class(img, label)
             if self.img_encoder.in_channels > 1:
-                tsne_imgplot[tl_y:br_y, tl_x:br_x, :] = img
+                imgplot[tl_y:br_y, tl_x:br_x, :] = img
             else:
-                tsne_imgplot[tl_y:br_y, tl_x:br_x] = img
+                imgplot[tl_y:br_y, tl_x:br_x] = img
 
-        img_storage_path = f"{storage_path}/clusterimg_{epoch}.png"
-        cv2.imwrite(img_storage_path, tsne_imgplot)
+        img_storage_path = f"{storage_path}/{method}img_{epoch}.png"
+        cv2.imwrite(img_storage_path, imgplot)
 
         # plot scatterplot t-SNE results:
         plt.close()
 
         df = pd.DataFrame(
-            {'x': tsne_results[:, 0], 'y': tsne_results[:, 1], 'category': feature_labels})
+            {'x': results[:, 0], 'y': results[:, 1], 'category': feature_labels})
         num_unique_cats = len(df['category'].unique())
         palette = sns.color_palette("bright", num_unique_cats)
         fig = sns.relplot(
@@ -403,7 +411,7 @@ class Visualizer(nn.Module):
             hue='category',
             palette=palette,
             alpha=0.7)
-        fig.savefig(f"{storage_path}/cluster_{epoch}.png")
+        fig.savefig(f"{storage_path}/{method}_{epoch}.png")
 
     def _cluster_freq(self, path, experiment_name, epoch):
         try:
