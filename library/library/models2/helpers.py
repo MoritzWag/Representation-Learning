@@ -84,3 +84,36 @@ def parse_architecture_config(config):
                     model_dict[instance[0]] = instance[1]()
 
     return model_dict
+
+
+def update_config(config, args):
+    """
+    """
+    for name, value in vars(args).items():
+        if value is None:
+            continue
+        
+        try: 
+            config['model_params'][name] = value
+        except:
+            try:
+                config['model_hyperparams'][name] = value
+            except:
+                try:
+                   config['architecture'][name] = value
+                except:
+                    try:
+                        config['img_arch_params'][name] = value
+                    except:
+                        try:
+                            config['exp_params'][name] = value
+                        except:
+                            try: 
+                                config['trainer_params'][name] = value
+                            except:
+                                try:
+                                    config['logging_params'][name] = value
+                                except:
+                                    pass 
+
+    return config 

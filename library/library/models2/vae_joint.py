@@ -30,7 +30,7 @@ class JointVae(nn.Module):
 
         self.mu = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
         self.logvar = nn.Linear(self.hidden_dim[-1] * self.ouput_dim, self.latent_dim)
-        self.q = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.categorical_dim)
+        self.cat = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.categorical_dim)
 
         self.temperature = temperature
         self.min_temperature = temperature
@@ -50,35 +50,89 @@ class JointVae(nn.Module):
         self.latent_num_iter = latent_num_iter 
         self.categorical_num_iter = categorical_num_iter
     
-    def _reparameterization(self, h_enc, epsilon=1e-7):
+    def _reparameterization(self, h_enc, constant=1e-7):
         """
         """
         mu = self.mu(h_enc)
         logvar = self.logvar(h_enc)
-        q = self.q(h_enc)
-        q = q.view(-1, self.categorical_dim)
+        logits = self.cat(h_enc)
+        logits = logits.view(-1, self.categorical_dim)
 
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
 
         self.loss_item['mu'] = mu
         self.loss_item['logvar'] = logvar
-        self.loss_item['q'] = q
+        self.loss_item['logits'] = logits
 
         z = eps * std + mu 
 
-        u = torch.randn_like(q)
-        g = - torch.log(-torch.log(u + epsilon) + epsilon)
+        uniform_samples = torch.randn_like(q)
+        gumbel_samples = - torch.log(-torch.log(uniform_samples + constant) + constant)
 
-        s = F.softmax((q + g) / self.temp, dim=-1)
-        s = s.view(-1, self.categorical_dim)
+        if not self.training:
+            probs = F.softmax((logits + gumbel_samples), dim=-1)
+        else:
+            probs = F.softmax((logits + gumbel_samples / self.temp), dim=-1)
 
-        return torch.cat([z, s], dim=1)
+        probs = probs.view(-1, self.categorical_dim)
+
+        return torch.cat([z, probs], dim=1)
+
+    def _sample(self, num_samples):
+        """Samples from the latent space and returns 
+        the corresponding image space map.
+        """
+        z = torch.randn(num_samples,
+                        self.latent_dim)
+        
+        np_y = np.zeros((num_samples, self.categorical_dim), dtype=np.float32)
+        np_y[range(num_samples), np.random.choice(self.categorical_dim, num_samples)] = 1
+        np_y = np.reshape(np_y, [num_samples, self.categorical_dim])
+        q = torch.from_numpy(np_y)
+
+        z = torch.cat([z, q], dim=1)
+
+        
+        if torch.cuda.is_available():
+            z = z.cuda()
+        
+        samples = self.img_encoder(z.float())
+
+        return samples
+
+    def _embed(self, data, constant=1e-7):
+        """
+        """
+        embedding = self.img_encoder(data.float())
+        mu = self.mu(embedding)
+        logvar = self.logvar(embedding)
+        logits = self.cat(embedding)
+        probs = F.softmax(logit, dim=-1)
+
+        probs = probs.view(-1, self.categorical_dim)
+        
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+
+        z = eps * std + mu 
+
+        z_probs = torch.cat([z, probs], dim=1)
+        self.store_z_probs = z_probs
+        self.store_individual_z = z
+        self.store_probs = probs
+        self.mu_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).mean(dim=2)
+        self.sigma_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).var(dim=2).sqrt()
+
+
+    
+    def _parameterize(self, h_enc, img=None, attrs=None):
+        pass 
     
     def _loss_function(self, image=None, text=None, recon_image=None,
-                    recon_text=None, mu=None, logvar=None, q=None, *args, **kwargs):
+                    recon_text=None, mu=None, logvar=None, logits=None, *args, **kwargs):
 
-        q_p = F.softmax(q, dim=1)
+        q_p = F.softmax(logits, dim=1)
 
         kld_weight = 32 / 40000
         if batch_idx % self.anneal_interval == 0 and self.training:

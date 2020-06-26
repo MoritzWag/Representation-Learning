@@ -10,6 +10,9 @@ from experiment import RlExperiment
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import MLFlowLogger
 
+import confuse
+
+
 torch.set_default_dtype(torch.float64)
 
 parser = argparse.ArgumentParser(description='Generic runner for Representation Learning with VAE')
@@ -21,23 +24,81 @@ parser.add_argument('--config', '-c',
 parser.add_argument('--experiment_name',
                     type=str, default='VaeExperiment',
                     metavar='N', help='specifies the experiment name for better tracking later')
+# model/architecture params
+parser.add_argument('--img_encoder', type=str, default=None,
+                    help='specifies the encoder for image data (default: config file)')
+parser.add_argument('--img_decoder', type=str, default=None,
+                    help='specifies the decoder for image data (default: config file)')
+parser.add_argument('--attr_encoder', type=str, default=None,
+                    help='specifies the encoder for attribute data (default: config file')
+parser.add_argument('--attr_decoder', type=str, default=None,
+                    help='specifies the decoder for attribute data (default: config file')
+parser.add_argument('--latent_dim', type=int, default=None,
+                    help='latent dim for VAE (default: config file)')
+# experiment params
+parser.add_argument('--batch_size', type=int, default=None,
+                    help='size of batch (default: config file)')
+parser.add_argument('--learning_rate', type=float, default=None,
+                    help='learning rate for training (default: config file)')
+parser.add_argument('--weight_decay', type=float, default=None,
+                    help='weight_decay for learning rate scheduler (default: config file)')
+parser.add_argument('--scheduler_gamma', type=float, default=None,
+                    help='scheduler gamma for learning rate scheduler (default: config file)')
+# trainer params
+parser.add_argument('--gpus', type=int, default=None,
+                    help='number of gpus available (default: config file)')
+
+# model params
+# GaussianVae
+#parser.add_argument()
+
+# BetaVae 
+#parser.add_argument()
+
+# InfoVae   
+#parser.add_argument()
+
+# CatVae
+parser.add_argument('--temperature', type=float, default=None, metavar='N',
+                    help='sets the temperature')
+parser.add_argument('--anneal_rate', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--anneal_interval', type=int, metavar='N',
+                    help='')
+parser.add_argument('--alpha', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--probability', type=bool, default=None, metavar='N',
+                    help='')
+
+# GaussianMixVae 
+parser.add_argument('--temperature_bound', type=int, default=None, metavar='N',
+                    help='')
+parser.add_argument('--decrease_temp', type=bool, default=None, metavar='N',
+                    help='')
+parser.add_argument('--beta1', type=int, default=None, metavar='N',
+                    help='')
+parser.add_argument('--beta2', type=int, default=None, metavar='N',
+                    help='')
+
+# JointVae
+#parser.add_argument()
+
+# DIPVae
+#parser.add_argument()
+
 
 args = parser.parse_args()
+
 with open(args.filename, 'r') as file:
     try:
         config = yaml.safe_load(file)
     except yaml.YAMLError as exc:
         print(exc)
 
+config = update_config(config=config, args=args)
 
 model = parse_model_config(config)
 
-
-## build logger
-#mlflow_logger = MLFlowLogger(
-#                    experiment_name=args.experiment_name,
-#                    tracking_uri=None,
-#                    tags=None)
 
 mlflow_logger = MLFlowLogger(
                     experiment_name=args.experiment_name)
