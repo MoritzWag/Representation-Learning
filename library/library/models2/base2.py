@@ -217,3 +217,17 @@ class VaeBase(ReprLearner):
 
         return {'mus': mus, 'logvars': logvars, 'embeddings': embeddings}
         
+class AutoencoderBase(ReprLearner):
+    """ Create Base class for VAE which inherits the architecture.
+    """
+    def __init__(self, img_encoder, img_decoder, **kwargs):
+        super(AutoencoderBase, self).__init__(**kwargs)
+        self.img_encoder = img_encoder
+        self.img_decoder = img_decoder
+
+    def forward(self, image):
+
+        x = self.img_encoder(image)
+        x = self.img_decoder(x)
+
+        return x

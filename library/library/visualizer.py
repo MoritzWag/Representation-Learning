@@ -184,15 +184,15 @@ class Visualizer(nn.Module):
                     self.latent_dim * probabilities.size()[-1],
                     self.latent_dim
                 )
-
                 total = 0
+                median = copy.deepcopy(quantiles[:, 6])
                 with tqdm(total = self.latent_dim * len(probabilities),
                 desc='Buildung traversal plots') as pbar:
                     for lat in range(self.latent_dim):
                         for prob in range(len(probabilities)):
-                            mu = copy.deepcopy(self.mu_hat)
-                            mu[lat] = quantiles[lat, prob]
-                            traversal[total, :] = mu
+                            med = copy.deepcopy(median)
+                            med[lat] = quantiles[lat, prob]
+                            traversal[total, :] = med
                             total += 1
                             pbar.update(1)
 

@@ -1,0 +1,30 @@
+model_params:
+  name: 'LinearAutoencoder'
+  base: 'AutoencoderBase'
+
+architecture:
+  img_encoder: 'LinearEncoder'
+  img_decoder: 'LinearDecoder'
+
+img_arch_params:
+  in_channels: 3
+  latent_dim: 50 
+  img_size: 224
+
+exp_params:
+  dataset: 'adidas'
+  data_path: "data/"
+  img_size: 224
+  batch_size: 32
+  learning_rate: 0.005
+  weight_decay: 0.0
+  scheduler_gamma: 0.95
+
+trainer_params:
+  gpus: 1
+  max_epochs: 5
+
+logging_params:
+  save_dir: "logs/"
+  name: "PCA"
+  manual_seed: 1265
