@@ -355,9 +355,9 @@ class Visualizer(nn.Module):
                 n_iter=1000,
                 learning_rate=200).fit_transform(latents)
         else:
-            results = umap.UMAP(n_neighbors=10,
-                                min_dist=0.3,
-                                metric='correlation').fit_transform(latents)
+            results = umap.UMAP(n_neighbors=15,
+                                min_dist=0.30,
+                                metric='euclidean').fit_transform(latents)
 
         tx, ty = results[:, 0], results[:, 1]
         tx = (tx - np.min(tx)) / (np.max(tx) - np.min(tx))
@@ -384,7 +384,7 @@ class Visualizer(nn.Module):
                                      desc='Plotting t-SNE/UMAP with images',
                                      total=len(image)):
 
-            img = self.reshape_image(img, 25)
+            img = self.reshape_image(img, 20)
             tl_x, tl_y, br_x, br_y = self.get_coordinates(img, x, y, plot_size)
 
             # draw a rectangle with a color corresponding to the image class

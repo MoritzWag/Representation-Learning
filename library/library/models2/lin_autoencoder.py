@@ -44,9 +44,13 @@ class LinearAutoencoder(nn.Module):
 
         return samples
 
-    def _embed(self, data):
+    def _embed(self, data, return_latents=False):
 
         embedding = self.img_encoder(data.float())
+
+        if return_latents == True:
+            return embedding
+
         self.store_z = embedding
 
     def _loss_function(self, image=None, recon_image=None, *args, **kwargs):

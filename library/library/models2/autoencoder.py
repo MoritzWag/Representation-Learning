@@ -80,18 +80,17 @@ class Autoencoder(nn.Module):
 
         return samples
 
-    def _embed(self, data):
+    def _embed(self, data, return_latents=False):
         """
         """
-        #x = self.resnet(data.float())
-        if torch.cuda.is_available():
-            data = data.cuda()
-        embedding = self.img_encoder(data.float())
-        mu = self.mu(embedding)
-        logvar = self.logvar(embedding)
-        z = self._reparameterization(embedding)
 
-        return mu, logvar, embedding
+        embedding = self.img_encoder(data.float())
+
+        if return_latents == True:
+            return embedding
+
+        self.store_z = embedding
+
 
     def _loss_function(self, image=None, recon_image=None, code=None, *args, **kwargs):
 
