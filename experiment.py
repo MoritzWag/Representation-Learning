@@ -150,7 +150,7 @@ class RlExperiment(pl.LightningModule):
                             attribute=attribute[:,0],
                             path=f"images/{self.params['dataset']}/",
                             epoch=self.current_epoch,
-                            experiment_name=self.experiment_name,
+                            run_name=self.run_name,
                             method='tsne')
 
         self.model._cluster_freq(path=f"images/{self.params['dataset']}/",

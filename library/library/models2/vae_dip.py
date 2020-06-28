@@ -43,7 +43,7 @@ class DIPVae(nn.Module):
         self.logvar = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
 
         self.lambda_dig = lambda_dig
-        self.lambda_offdif = lambda_offdig
+        self.lambda_offdig = lambda_offdig
 
         try:
             self.attr_mu = nn.Linear(50, self.text_encoder.num_attr)
@@ -129,7 +129,7 @@ class DIPVae(nn.Module):
         return eps * std + mu
 
 
-    def loss_function(self, image=None, text=None, recon_image=None,
+    def _loss_function(self, image=None, text=None, recon_image=None,
                     recon_text=None, mu=None, logvar=None, *args, **kwargs):
         
         if recon_image is not None and image is not None:
@@ -149,7 +149,9 @@ class DIPVae(nn.Module):
 
         cov_diag = torch.diag(cov_z)
         cov_offdiag = cov_z - torch.diag(cov_diag)
-        dip_loss = self.lambda_offdiag * torch.sum(cov_offdiad ** 2) + \
-                    self.lambda_diag * torch.sum((cov_diag - 1) ** 2)
+        dip_loss = self.lambda_offdig * torch.sum(cov_offdiag ** 2) + \
+                    self.lambda_dig * torch.sum((cov_diag - 1) ** 2)
         
+        loss = image_recon_loss + kld_weight * latent_loss + dip_loss
+
         return {'loss': loss, 'image_recon_loss': image_recon_loss, 'latent_loss': latent_loss, 'dip_loss': dip_loss}

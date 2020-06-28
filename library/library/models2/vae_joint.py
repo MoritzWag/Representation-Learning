@@ -28,7 +28,7 @@ class JointVae(nn.Module):
     num_iter = 1
     def __init__(self, 
                 latent_min_capacity: float = 0.,
-                latent_max_capactiy: float = 25.,
+                latent_max_capacity: float = 25.,
                 latent_gamma: float = 30,
                 latent_num_iter: int = 25000,
                 categorical_min_capacity: float = 0., 
@@ -47,9 +47,10 @@ class JointVae(nn.Module):
         self.latent_dim = self.img_encoder.latent_dim
         self.hidden_dim = self.img_encoder.enc_hidden_dims
         self.output_dim = self.img_encoder.enc_output_dim
+        self.categorical_dim = self.img_decoder.categorical_dim
 
         self.mu = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
-        self.logvar = nn.Linear(self.hidden_dim[-1] * self.ouput_dim, self.latent_dim)
+        self.logvar = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
         self.cat = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.categorical_dim)
 
         self.temperature = temperature
@@ -87,7 +88,7 @@ class JointVae(nn.Module):
 
         z = eps * std + mu 
 
-        uniform_samples = torch.randn_like(q)
+        uniform_samples = torch.randn_like(logits)
         gumbel_samples = - torch.log(-torch.log(uniform_samples + constant) + constant)
 
         if not self.training:

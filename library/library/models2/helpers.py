@@ -22,7 +22,7 @@ vae_models = {'GaussianVae': VaeGaussian,
             'Autoencoder': Autoencoder,
             'GaussmixVae': GaussmixVae,
             'JointVae': JointVae,
-            'DIPVae': DIPVae}
+            'DIPVae': DIPVae,
             'LinearAutoencoder': LinearAutoencoder}
 
 vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
