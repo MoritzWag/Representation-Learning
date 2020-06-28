@@ -143,7 +143,7 @@ class Visualizer(nn.Module):
                 num_latent_trav = probabilities.size()[0]
 
                 if normal_traversals == False:
-                    pdb.set_trace()
+                    
                     # Compute emprical quantiels according to "probabilities"
                     z = copy.deepcopy(self.store_z.transpose(0,1).cpu().numpy())
 

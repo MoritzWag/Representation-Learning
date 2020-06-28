@@ -109,18 +109,20 @@ class DIPVae(nn.Module):
 
         return samples
 
-    def _embed(self, data):
+    def _embed(self, data, return_latents=False):
         """
         """
-        #x = self.resnet(data.float())
-        if torch.cuda.is_available():
-            data = data.cuda()
         embedding = self.img_encoder(data.float())
         mu = self.mu(embedding)
         logvar = self.logvar(embedding)
         z = self._reparameterization(embedding)
 
-        return mu, logvar, embedding
+        if return_latents == True:
+            return z
+
+        self.store_z = z
+        self.mu_hat = z.transpose(dim0 = 0, dim1 = 1).mean(dim = 1)
+        self.sigma_hat = z.transpose(dim0 = 0, dim1 = 1).var(dim = 1).sqrt()
     
     def _mm_reparameterization(self, mu, logvar):
         std = torch.exp(0.5*logvar)
@@ -140,7 +142,10 @@ class DIPVae(nn.Module):
         
         latent_loss = torch.sum(-0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0)
 
-        kld_weight = 1
+        if image.shape[1] == 3:
+            kld_weight = 32 / 400000
+        else:
+            kld_weight = 32 / 40000
 
         centered_mu = mu - mu.mean(dim=1, keepdim=True)
         cov_mu = centered_mu.t().matmul(centered_mu).squeeze()

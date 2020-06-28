@@ -52,12 +52,12 @@ class ReprLearner(nn.Module):
         model.train()
 
         for batch, (X, Y) in enumerate(train_gen):
-            #pdb.set_trace()
+            
             optimizer.zero_grad()
             x_recons = model(X.float())
             self.loss_item['recon_x'] = x_recons
             losses = self._loss_function(X.float(), **self.loss_item)
-            #pdb.set_trace()
+            
             loss = losses['loss']
             loss.backward()
             optimizer.step()

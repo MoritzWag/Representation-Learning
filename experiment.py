@@ -225,10 +225,9 @@ class RlExperiment(pl.LightningModule):
             self.logger.experiment.log_param(key=_name, 
                                             value=_param,
                                             run_id=self.logger.run_id)
-
         # log hyperparams
         for _name, _param in zip(self.model_hyperparams.keys(), self.model_hyperparams.values()):
-            self.logger.experiment.log_hyperparams(key=_name,
+            self.logger.experiment.log_param(key=_name,
                                                 value=_param,
                                                 run_id=self.logger.run_id)
         
@@ -242,29 +241,29 @@ class RlExperiment(pl.LightningModule):
         self.model._sample_images(image,
                         path=f"images/{self.params['dataset']}/test/",
                         epoch=self.current_epoch,
-                        experiment_name=self.experiment_name)
+                        run_name=self.run_name)
         
         self.model.traversals(epoch=self.current_epoch,
-                                experiment_name=self.experiment_name,
+                                run_name=self.run_name,
                                 path=f"images/{self.params['dataset']}/test/")
 
         self.model._cluster(image=image,
                             attribute=attribute[:,0],
                             path=f"images/{self.params['dataset']}/test/",
                             epoch=self.current_epoch,
-                            experiment_name=self.experiment_name,
+                            run_name=self.run_name,
                             method='umap')
                             
         self.model._cluster(image=image,
                             attribute=attribute[:,0],
                             path=f"images/{self.params['dataset']}/test/",
                             epoch=self.current_epoch,
-                            experiment_name=self.experiment_name,
+                            run_name=self.run_name,
                             method='tsne')
 
         self.model._cluster_freq(path=f"images/{self.params['dataset']}/test/",
                                 epoch=self.current_epoch,
-                                experiment_name=self.experiment_name)
+                                run_name=self.run_name)
 
 
         return {'avg_test_loss': avg_test_loss}

@@ -148,7 +148,7 @@ class BetaVae(nn.Module):
 
     def _loss_function(self, image=None, text=None, recon_image=None, 
                         recon_text=None, mu=None, logvar=None, *args, **kwargs):
-        #pdb.set_trace()
+        
         self.num_iter += torch.tensor(1).float()
 
         if recon_image is not None and image is not None:
