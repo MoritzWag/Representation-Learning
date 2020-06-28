@@ -145,7 +145,6 @@ class GaussmixVae(nn.Module):
         self.store_z = mixtures
         
     def _parameterize(self, h_enc, img=None, attrs=None):
-
         pass
 
     def _loss_function(

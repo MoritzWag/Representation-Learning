@@ -47,7 +47,6 @@ class ConvEncoder(nn.Module):
         self.enc_stride = enc_stride
 
         modules = []
-
         output_dims = np.repeat(img_size, len(self.enc_hidden_dims)+1)
         for i in range(len(self.enc_hidden_dims)):
             if i == 0:
@@ -223,7 +222,7 @@ class ConvEncoder28x28(nn.Module):
         self.enc_output_dim = dimensions[2] * dimensions[3] 
         
     def forward(self, input: Tensor) -> Tensor:
-        #pdb.set_trace()
+        
         output = self.encoder(input)
         output = torch.flatten(output, start_dim=1)
         return output
@@ -418,7 +417,7 @@ class ConvDecoder64x64(nn.Module):
                                     nn.Sigmoid())
 
     def forward(self, input) -> Tensor:
-        #pdb.set_trace()
+        
         x = self.decoder_input(input)
         x = x.view(-1, 512, 2, 2)
         x = self.decoder(x)

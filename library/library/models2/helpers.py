@@ -6,6 +6,8 @@ from library.architectures import *
 from library.models2.vae_beta import *
 from library.models2.autoencoder import *
 from library.models2.vae_gaussmix import *
+from library.models2.vae_joint import *
+from library.models2.vae_dip import *
 from library.models2.lin_autoencoder import * 
 import pdb 
 
@@ -19,6 +21,8 @@ vae_models = {'GaussianVae': VaeGaussian,
             'CatVae': CatVae, 
             'Autoencoder': Autoencoder,
             'GaussmixVae': GaussmixVae,
+            'JointVae': JointVae,
+            'DIPVae': DIPVae,
             'LinearAutoencoder': LinearAutoencoder}
 
 vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
@@ -89,3 +93,36 @@ def parse_architecture_config(config):
                     model_dict[instance[0]] = instance[1]()
 
     return model_dict
+
+
+def update_config(config, args):
+    """
+    """
+    for name, value in vars(args).items():
+        if value is None:
+            continue
+        
+        try: 
+            config['model_params'][name] = value
+        except:
+            try:
+                config['model_hyperparams'][name] = value
+            except:
+                try:
+                   config['architecture'][name] = value
+                except:
+                    try:
+                        config['img_arch_params'][name] = value
+                    except:
+                        try:
+                            config['exp_params'][name] = value
+                        except:
+                            try: 
+                                config['trainer_params'][name] = value
+                            except:
+                                try:
+                                    config['logging_params'][name] = value
+                                except:
+                                    pass 
+
+    return config 

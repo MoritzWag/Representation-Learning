@@ -19,7 +19,7 @@ train_loader = DataLoader(
                                             transform=transforms
                                             )
 )
-pdb.set_trace()
+
 train_set, val_set = torch.utils.data.random_split(train_loader.dataset, (50000, 10000))
 
 
