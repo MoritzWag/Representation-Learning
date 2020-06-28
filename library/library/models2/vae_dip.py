@@ -1,17 +1,25 @@
-import pandas as pd 
-import numpy as np 
-import pdb 
-import logging 
-import os 
-from library import architectures 
-from library.arc
+import pandas as pd
+import numpy as np
+import pdb
+import logging
+import os
+from library import architectures
+from library.architectures import ConvEncoder28x28, ConvDecoder28x28
 
-from library.models2.helpers import * 
+from library.models2.helpers import *
+
+from library.models2 import base2
 from library.models2.base2 import VaeBase
 
 import torch
-import torch.utils.data 
+import torch.utils.data
+from torch.autograd import Variable
+from torch import nn, optim, Tensor
+from torch.nn import functional as F
+from torchvision import datasets, transforms
+import torchvision.utils as vutils
 
+torch.set_default_dtype(torch.float64)
 
 
 
@@ -69,7 +77,7 @@ class DIPVae(nn.Module):
 
         return z
 
-        def _parameterize(self, h_enc, img=None, attrs=None):
+    def _parameterize(self, h_enc, img=None, attrs=None):
 
         if img:
             mu = self.mu(h_enc)

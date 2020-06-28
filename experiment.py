@@ -21,21 +21,21 @@ class RlExperiment(pl.LightningModule):
     def __init__(self, 
                 model: ReprLearner,
                 params, 
+                model_hyperparams,
+                run_name,
                 experiment_name):
         super(RlExperiment, self).__init__()
 
         self.model = model.float()
         self.model.epoch = self.current_epoch
         self.params = params
+        self.model_hyperparams = model_hyperparams
         self.curr_device = None
         self.train_history = pd.DataFrame()
         self.val_history = pd.DataFrame()
         self.test_score = None
+        self.run_name = run_name
         self.experiment_name = experiment_name
-        #for key, value in zip(self.params.keys(), self.params.values()):
-        #    self.logger.experiment.log_param(key=key, value=value)
-        #self.logger.experiment.log_param()
-        #self.logger.experiment.log_hyperparams(self.params)
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
@@ -134,21 +134,21 @@ class RlExperiment(pl.LightningModule):
         self.model._sample_images(image,
                                 path=f"images/{self.params['dataset']}/",
                                 epoch=self.current_epoch,
-                                experiment_name=self.experiment_name)
+                                run_name=self.run_name)
 
         self.model.traversals(epoch=self.current_epoch,
-                                experiment_name=self.experiment_name,
+                                run_name=self.run_name,
                                 path=f"images/{self.params['dataset']}/")
 
         self.model._cluster(image=image,
                             attribute=attribute[:,0],
                             path=f"images/{self.params['dataset']}/",
                             epoch=self.current_epoch,
-                            experiment_name=self.experiment_name)
+                            run_name=self.run_name)
 
         self.model._cluster_freq(path=f"images/{self.params['dataset']}/",
                                 epoch=self.current_epoch,
-                                experiment_name=self.experiment_name)
+                                run_name=self.run_name)
 
         return {'val_loss': avg_loss}    
 
@@ -188,9 +188,9 @@ class RlExperiment(pl.LightningModule):
                                         run_id=self.logger.run_id)
 
         plot_train_progress(self.train_history,
-                            storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/training/")
+                            storage_path=f"logs/{self.run_name}/{self.params['dataset']}/training/")
         plot_train_progress(self.val_history,
-                            storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/validation/")
+                            storage_path=f"logs/{self.run_name}/{self.params['dataset']}/validation/")
 
 
 
@@ -199,7 +199,7 @@ class RlExperiment(pl.LightningModule):
         self.model._downstream_task(self.train_gen, self.test_gen, 'knn_regressor', [1,2])
         self.model.unsupervised_metrics(self.test_gen)
         #self.model.unsupervised_metrics(self.test_gen, ...)
-        self.model.log_metrics(storage_path=f"logs/{self.experiment_name}/{self.params['dataset']}/test/")
+        self.model.log_metrics(storage_path=f"logs/{self.run_name}/{self.params['dataset']}/test/")
 
         for key, value in zip(self.model.scores.keys(), self.model.scores.values()):
             self.logger.experiment.log_metric(key=key,
@@ -210,6 +210,13 @@ class RlExperiment(pl.LightningModule):
             self.logger.experiment.log_param(key=_name, 
                                             value=_param,
                                             run_id=self.logger.run_id)
+
+        # log hyperparams
+        for _name, _param in zip(self.model_hyperparams.keys(), self.model_hyperparams.values()):
+            self.logger.experiment.log_hyperparams(key=_name,
+                                                value=_param,
+                                                run_id=self.logger.run_id)
+        
 
         return {'avg_test_loss': avg_test_loss}
 

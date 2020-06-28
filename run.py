@@ -24,6 +24,9 @@ parser.add_argument('--config', '-c',
 parser.add_argument('--experiment_name',
                     type=str, default='VaeExperiment',
                     metavar='N', help='specifies the experiment name for better tracking later')
+parser.add_argument('--run_name',
+                    type=str, default='VaeGuassian',
+                    metavar='N', help='specifies the subfolder name where visualization shall be stored')
 # model/architecture params
 parser.add_argument('--img_encoder', type=str, default=None,
                     help='specifies the encoder for image data (default: config file)')
@@ -82,9 +85,29 @@ parser.add_argument('--beta2', type=int, default=None, metavar='N',
 
 # JointVae
 #parser.add_argument()
+parser.add_argument('--latent_min_capacity', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--latent_max_capacity', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--latent_gamma', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--latent_num_iter', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--categorical_min_capacity', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--categorical_max_capacity', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--categorical_gamma', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--categorical_num_iter',  type=float, default=None, metavar='N',
+                    help='')
 
 # DIPVae
 #parser.add_argument()
+parser.add_argument('--lambda_dig', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--lambda_offdig', type=float, default=None, metavar='N',
+                    help='')
 
 
 args = parser.parse_args()
@@ -107,6 +130,8 @@ mlflow_logger = MLFlowLogger(
 ## build experiment
 experiment = RlExperiment(model,
                         params=config['exp_params'],
+                        model_hyperparams=config['model_hyperparams'],
+                        run_name=args.run_name,
                         experiment_name=args.experiment_name)
 
 

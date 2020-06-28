@@ -202,7 +202,7 @@ class Visualizer(nn.Module):
 
     def traversals(self,
                    epoch,
-                   experiment_name,
+                   run_name,
                    path,
                    data=None):
 
@@ -225,7 +225,7 @@ class Visualizer(nn.Module):
         )
 
         path = os.path.expanduser(path)
-        storage_path = f"{path}{experiment_name}/"
+        storage_path = f"{path}{run_name}/"
         if not os.path.exists(storage_path):
             os.makedirs(storage_path)
         
@@ -280,14 +280,14 @@ class Visualizer(nn.Module):
                        image,
                        epoch,
                        path,
-                       experiment_name):
+                       run_name):
 
         carry_on = (epoch < 10) or ((epoch % 10) == 0)
         if not carry_on:
             return
 
         path = os.path.expanduser(path)
-        storage_path = f"{path}{experiment_name}/"
+        storage_path = f"{path}{run_name}/"
         if not os.path.exists(storage_path):
             os.makedirs(storage_path)
 
@@ -317,7 +317,7 @@ class Visualizer(nn.Module):
                  attribute,
                  path,
                  epoch,
-                 experiment_name,
+                 run_name,
                  num_samples=320,
                  plot_size=1000):
         """Clustering algorithm with t-SNE visualization capability
@@ -356,7 +356,7 @@ class Visualizer(nn.Module):
         ty = (ty - np.min(ty)) / (np.max(ty) - np.min(ty))
 
         path = os.path.expanduser(path)
-        storage_path = f"{path}{experiment_name}/"
+        storage_path = f"{path}{run_name}/"
         if not os.path.exists(storage_path):
             os.makedirs(storage_path)
 
@@ -405,7 +405,7 @@ class Visualizer(nn.Module):
             alpha=0.7)
         fig.savefig(f"{storage_path}/cluster_{epoch}.png")
 
-    def _cluster_freq(self, path, experiment_name, epoch):
+    def _cluster_freq(self, path, run_name, epoch):
         try:
             self.store_probs * 1
         except:
@@ -414,7 +414,7 @@ class Visualizer(nn.Module):
         # carry_on = (epoch < 10) or ((epoch % 10) == 0)
         # if not carry_on:
         #     return
-        storage_path = f"{path}{experiment_name}/"
+        storage_path = f"{path}{run_name}/"
 
         probs = copy.deepcopy(self.store_probs.cpu().numpy())
         probs2 = copy.deepcopy(self.store_probs.cpu().numpy())

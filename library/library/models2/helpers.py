@@ -6,6 +6,8 @@ from library.architectures import *
 from library.models2.vae_beta import *
 from library.models2.autoencoder import *
 from library.models2.vae_gaussmix import *
+from library.models2.vae_joint import *
+from library.models2.vae_dip import *
 import pdb 
 
 base_models = {'VaeBase': VaeBase,
@@ -16,7 +18,9 @@ vae_models = {'GaussianVae': VaeGaussian,
             'InfoVae': InfoVae,
             'CatVae': CatVae, 
             'Autoencoder': Autoencoder,
-            'GaussmixVae': GaussmixVae}
+            'GaussmixVae': GaussmixVae,
+            'JointVae': JointVae,
+            'DIPVae': DIPVae}
 
 vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
                 'ConvDecoder28x28': ConvDecoder28x28,
