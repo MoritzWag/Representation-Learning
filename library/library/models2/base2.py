@@ -67,6 +67,38 @@ class ReprLearner(Visualizer, Evaluator):
     def _embed(self):
         pass
 
+    def accumulate_batches(self, data, return_latents=False):
+
+        image_ = []
+        attribute_ = []
+
+        if return_latents == False:
+            for batch, (image, attribute) in enumerate(data):
+                image_.append(image)
+                attribute_.append(attribute)
+        
+            image_ = torch.cat(image_)
+            attribute_ = torch.cat(attribute_)
+        else:
+            for batch, (image, attribute) in enumerate(data):
+                if torch.cuda.is_available():
+                    image = image.cuda()
+                z = self._embed(image, return_latents=True)
+                image_.append(z)
+                attribute_.append(attribute)
+        
+            image_ = torch.cat(image_)
+            attribute_ = torch.cat(attribute_)
+
+
+        if torch.cuda.is_available():
+            image_, attribute_ = image_.cuda(), attribute_.cuda()
+
+        return image_, attribute_
+
+    
+
+
 ###########################################
 #
 # Unimodal vae image base learner
@@ -185,3 +217,17 @@ class VaeBase(ReprLearner):
 
         return {'mus': mus, 'logvars': logvars, 'embeddings': embeddings}
         
+class AutoencoderBase(ReprLearner):
+    """ Create Base class for VAE which inherits the architecture.
+    """
+    def __init__(self, img_encoder, img_decoder, **kwargs):
+        super(AutoencoderBase, self).__init__(**kwargs)
+        self.img_encoder = img_encoder
+        self.img_decoder = img_decoder
+
+    def forward(self, image):
+
+        x = self.img_encoder(image)
+        x = self.img_decoder(x)
+
+        return x

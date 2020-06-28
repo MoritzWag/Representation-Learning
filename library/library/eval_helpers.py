@@ -57,9 +57,9 @@ def knn_regressor(train_X, train_y, test_X, test_y):
     return mse, mae 
 
 def knn_classifier(train_X, train_y, test_X, test_y):
-
-    knn = KNeighborsClassifier(n_neighbors = 5)
-    knn.fit(train_X, train_y.ravel())
+    
+    knn = KNeighborsClassifier(n_neighbors = 10)
+    knn.fit(train_X, train_y)
     acc = knn.score(test_X, test_y)
     
     return acc

@@ -770,3 +770,56 @@ class CustomizedResNet101(nn.Module):
         return output
 
 
+##############################################################
+#
+#
+# Linear Autoencoder Architecture / PCA
+#
+#
+###############################################################
+
+class LinearEncoder(nn.Module):
+    """
+    """
+
+    def __init__(self,
+                img_size: float,
+                in_channels: float,
+                latent_dim: float,
+                **kwargs) -> None:
+        super(LinearEncoder, self).__init__()
+            
+        self.latent_dim = latent_dim
+        self.in_channels = in_channels
+        self.img_size = img_size
+        self.encoder = nn.Sequential(nn.Linear(img_size**2 * in_channels, self.latent_dim))
+        
+    def forward(self, input: Tensor) -> Tensor:
+        
+        flattend = torch.flatten(input, start_dim=1)
+        output = self.encoder(flattend)
+        return output
+
+
+class LinearDecoder(nn.Module):
+    """
+    """
+    
+    def __init__(self,
+                img_size: float,
+                in_channels: float,
+                latent_dim: float,
+                **kwargs) -> None:
+        super(LinearDecoder, self).__init__()
+
+        self.latent_dim = latent_dim
+        self.in_channels = in_channels
+        self.img_size = img_size
+        self.decoder = nn.Sequential(nn.Linear(self.latent_dim, img_size**2 * in_channels))
+        
+
+
+    def forward(self, input) -> Tensor:
+        x = self.decoder(input)
+        output = x.view(-1, self.in_channels, self.img_size, self.img_size)
+        return output

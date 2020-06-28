@@ -122,7 +122,7 @@ class GaussmixVae(nn.Module):
 
         return samples
 
-    def _embed(self, data):
+    def _embed(self, data, return_latents=False):
         """
         """
         
@@ -134,13 +134,16 @@ class GaussmixVae(nn.Module):
         probs_ = probs.unsqueeze(1)
         mixtures = torch.matmul(probs_, z).squeeze(1)
 
+        if return_latents == True:
+            return mixtures
+
         # Store variables
         self.store_probs = probs
         self.store_individual_z = z
         self.mu_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).mean(dim=2)
         self.sigma_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).var(dim=2).sqrt()
         self.store_z = mixtures
-
+        
     def _parameterize(self, h_enc, img=None, attrs=None):
         pass
 

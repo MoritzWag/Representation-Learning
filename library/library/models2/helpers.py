@@ -8,10 +8,12 @@ from library.models2.autoencoder import *
 from library.models2.vae_gaussmix import *
 from library.models2.vae_joint import *
 from library.models2.vae_dip import *
+from library.models2.lin_autoencoder import * 
 import pdb 
 
 base_models = {'VaeBase': VaeBase,
-            'MMVaeBase': MMVaeBase}
+            'MMVaeBase': MMVaeBase,
+            'AutoencoderBase': AutoencoderBase}
 
 vae_models = {'GaussianVae': VaeGaussian,
             'BetaVae': BetaVae,
@@ -21,6 +23,7 @@ vae_models = {'GaussianVae': VaeGaussian,
             'GaussmixVae': GaussmixVae,
             'JointVae': JointVae,
             'DIPVae': DIPVae}
+            'LinearAutoencoder': LinearAutoencoder}
 
 vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
                 'ConvDecoder28x28': ConvDecoder28x28,
@@ -33,7 +36,9 @@ vae_architectures = {'ConvEncoder28x28': ConvEncoder28x28,
                 'expert': ProductOfExperts,
                 'CustomizedResNet101': CustomizedResNet101,
                 'ConvEncoder': ConvEncoder,
-                'ConvDecoder': ConvDecoder}
+                'ConvDecoder': ConvDecoder,
+                'LinearEncoder': LinearEncoder,
+                'LinearDecoder': LinearDecoder}
 
 def createClass(vae_model, base_model):
     #class vae_model(base_model): pass
