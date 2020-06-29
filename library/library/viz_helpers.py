@@ -37,7 +37,19 @@ def get_mlflow_results(mlflow_id):
 
     # select only runy with 32-lenghts hashes
     runs = [run for run in os.listdir(path) if len(run) == 32 and not run.startswith('performance')]
-    frame = pd.DataFrame(columns=['run_id', 'seed', 'model', 'num_epochs', 'dataset', ])
+    frame = pd.DataFrame(columns=['run_id', 'model', 'num_epochs', 'dataset', 
+                                'avg_test_loss', 'val_avg_loss', 'mutual_info_score',
+                                'gaussian_total_correlation', 'gaussian_wassserstein_correlation',
+                                'gaussian_wasserstein_correlation_norm',
+                                'downstream_task_acc1', 'downstream_task_acc2',
+                                'downstream_task_acc3', 'downstream_task_acc4',
+                                'downstream_task_acc5',
+                                ])
+    
+    i = 0 
+    for run in runs:
+        dataset = open(f'{path}{run}/params/dataset').read()
+        
 
 
     #i = 0 
