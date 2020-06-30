@@ -101,27 +101,10 @@ def update_config(config, args):
     for name, value in vars(args).items():
         if value is None:
             continue
-        try: 
-            config['model_params'][name] = value
-        except:
-            try:
-                config['model_hyperparams'][name] = value
-            except:
-                try:
-                   config['architecture'][name] = value
-                except:
-                    try:
-                        config['img_arch_params'][name] = value
-                    except:
-                        try:
-                            config['exp_params'][name] = value
-                        except:
-                            try: 
-                                config['trainer_params'][name] = value
-                            except:
-                                try:
-                                    config['logging_params'][name] = value
-                                except:
-                                    pass 
+        
+        for key in config.keys():
+            if config[key].__contains__(name):
+                config[key][name] = value
+    
+    return config
 
-    return config 
