@@ -101,7 +101,6 @@ def update_config(config, args):
     for name, value in vars(args).items():
         if value is None:
             continue
-        
         try: 
             config['model_params'][name] = value
         except:

@@ -50,6 +50,8 @@ parser.add_argument('--scheduler_gamma', type=float, default=None,
 # trainer params
 parser.add_argument('--gpus', type=int, default=None,
                     help='number of gpus available (default: config file)')
+parser.add_argument('--max_epochs', type=int, default=None,
+                    help='number of epochs (default: config file)')
 
 # model params
 # GaussianVae
