@@ -2,9 +2,6 @@ model_params:
   name: 'LinearAutoencoder'
   base: 'AutoencoderBase'
 
-model_hyperparams:
-  l2: True
-
 architecture:
   img_encoder: 'LinearEncoder'
   img_decoder: 'LinearDecoder'
