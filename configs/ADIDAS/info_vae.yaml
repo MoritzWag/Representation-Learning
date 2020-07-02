@@ -2,6 +2,13 @@ model_params:
   name: 'InfoVae'
   base: 'VaeBase'
 
+model_hyperparams:
+  alpha: -0.5
+  beta: 5.0
+  reg_weight: 100
+  kernel_type: 'imq'
+  latent_var: 2.
+
 architecture:
   img_encoder: 'ConvEncoder'
   img_decoder: 'ConvDecoder'

@@ -25,11 +25,13 @@ class LinearAutoencoder(nn.Module):
     """
 
     def __init__(self,
+                placeholder=False,
                 **kwargs):
         super(LinearAutoencoder, self).__init__(
             **kwargs
         )
         
+        self.placeholder = placeholder
         self.latent_dim = self.img_encoder.latent_dim
 
     def _sample(self, num_samples):

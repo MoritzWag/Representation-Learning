@@ -61,7 +61,14 @@ parser.add_argument('--max_epochs', type=int, default=None,
 #parser.add_argument()
 
 # InfoVae   
-#parser.add_argument()
+parser.add_argument('--beta', type=float, default=None, metavar='N',
+                    help='')
+parser.add_argument('--reg_weight', type=int, default=None, metavar='N',
+                    help='')
+parser.add_argument('--kernel_type', type=str, default=None, metavar='N',
+                    help='')
+parser.add_argument('--latent_var', type=float, default=None, metavar='N',
+                    help='')
 
 # CatVae
 parser.add_argument('--temperature', type=float, default=None, metavar='N',
