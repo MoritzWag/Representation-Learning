@@ -13,7 +13,7 @@ architecture:
 img_arch_params:
   in_channels: 3
   img_size: 224
-  latent_dim: 5
+  latent_dim: 20
   categorical_dim: 3
   enc_hidden_dims: [8, 16, 32, 64, 128, 256, 512]
   enc_kernel_size: [3, 3, 3, 3, 3, 3, 3]
@@ -36,7 +36,7 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 5
+  max_epochs: 80
 
 logging_params:
   save_dir: "logs/"

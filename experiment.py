@@ -240,29 +240,29 @@ class RlExperiment(pl.LightningModule):
 
         self.model._sample_images(image,
                         path=f"images/{self.params['dataset']}/test/",
-                        epoch=self.current_epoch,
+                        epoch=1,
                         run_name=self.run_name)
         
-        self.model.traversals(epoch=self.current_epoch,
+        self.model.traversals(epoch=1,
                                 run_name=self.run_name,
                                 path=f"images/{self.params['dataset']}/test/")
 
         self.model._cluster(image=image,
                             attribute=attribute[:,0],
                             path=f"images/{self.params['dataset']}/test/",
-                            epoch=self.current_epoch,
+                            epoch=1,
                             run_name=self.run_name,
                             method='umap')
                             
         self.model._cluster(image=image,
                             attribute=attribute[:,0],
                             path=f"images/{self.params['dataset']}/test/",
-                            epoch=self.current_epoch,
+                            epoch=1,
                             run_name=self.run_name,
                             method='tsne')
 
         self.model._cluster_freq(path=f"images/{self.params['dataset']}/test/",
-                                epoch=self.current_epoch,
+                                epoch=1,
                                 run_name=self.run_name)
 
 

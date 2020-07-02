@@ -210,7 +210,7 @@ class Visualizer(nn.Module):
 
         self.epoch = epoch
 
-        carry_on = (epoch < 10) or ((epoch % 10) == 0)
+        carry_on = (epoch <= 10) or ((epoch % 20) == 0)
         if not carry_on:
             return
         
@@ -284,7 +284,7 @@ class Visualizer(nn.Module):
                        path,
                        run_name):
 
-        carry_on = (epoch < 10) or ((epoch % 10) == 0)
+        carry_on = (epoch <= 10) or ((epoch % 20) == 0)
         if not carry_on:
             return
 
@@ -330,7 +330,7 @@ class Visualizer(nn.Module):
             experiment_name {}:
         """
 
-        carry_on = (epoch < 10) or ((epoch % 10) == 0)
+        carry_on = (epoch <= 10) or ((epoch % 20) == 0)
         if not carry_on:
             return
         
@@ -420,9 +420,10 @@ class Visualizer(nn.Module):
         except:
             return
 
-        # carry_on = (epoch < 10) or ((epoch % 10) == 0)
-        # if not carry_on:
-        #     return
+        carry_on = (epoch <= 10) or ((epoch % 20) == 0)
+        if not carry_on:
+            return
+        
         storage_path = f"{path}{run_name}/"
 
         probs = copy.deepcopy(self.store_probs.cpu().numpy())

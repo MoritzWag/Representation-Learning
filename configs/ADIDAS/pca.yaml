@@ -2,13 +2,16 @@ model_params:
   name: 'LinearAutoencoder'
   base: 'AutoencoderBase'
 
+model_hyperparams:
+  l2: True
+
 architecture:
   img_encoder: 'LinearEncoder'
   img_decoder: 'LinearDecoder'
 
 img_arch_params:
   in_channels: 3
-  latent_dim: 50 
+  latent_dim: 10 
   img_size: 224
 
 exp_params:
@@ -22,7 +25,7 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 5
+  max_epochs: 10
 
 logging_params:
   save_dir: "logs/"

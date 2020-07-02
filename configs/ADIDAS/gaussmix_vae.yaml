@@ -3,12 +3,12 @@ model_params:
   base: 'VaeBase'
 
 model_hyperparams:
-  temperature: 0.01
+  temperature: 40
   anneal_rate: 0.2
   anneal_interval: 100
   alpha: 1250.
   temperature_bound: 500
-  decrease_temp: False
+  decrease_temp: True
   beta1: 1
   beta2: 1
 
@@ -19,7 +19,7 @@ architecture:
 img_arch_params:
   in_channels: 3
   img_size: 224
-  latent_dim: 5
+  latent_dim: 10
   categorical_dim: 3
   enc_hidden_dims: [8, 16, 32, 64, 128, 256, 512]
   enc_kernel_size: [3, 3, 3, 3, 3, 3, 3]
@@ -42,7 +42,7 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 41
+  max_epochs: 80
 
 logging_params:
   save_dir: "logs/"
