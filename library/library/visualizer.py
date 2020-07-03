@@ -11,7 +11,7 @@ import copy
 from tqdm import tqdm
 
 import torchvision.utils as vutils
-from library.viz_helpers import sort_list_by_other
+from library.viz_helpers import sort_list_by_other, get_coordinates, reshape_image
 
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
@@ -186,7 +186,7 @@ class Visualizer(nn.Module):
                     self.latent_dim
                 )
                 total = 0
-                median = copy.deepcopy(quantiles[:, 6])
+                median = copy.deepcopy(quantiles[:, 5])
                 with tqdm(total = self.latent_dim * len(probabilities),
                 desc='Buildung traversal plots') as pbar:
                     for lat in range(self.latent_dim):
@@ -385,8 +385,8 @@ class Visualizer(nn.Module):
                                      desc='Plotting t-SNE/UMAP with images',
                                      total=len(image)):
 
-            img = self.reshape_image(img, 20)
-            tl_x, tl_y, br_x, br_y = self.get_coordinates(img, x, y, plot_size)
+            img = reshape_image(img, 20)
+            tl_x, tl_y, br_x, br_y = get_coordinates(img, x, y, plot_size)
 
             # draw a rectangle with a color corresponding to the image class
             #image = draw_rectangle_by_class(img, label)
@@ -442,61 +442,6 @@ class Visualizer(nn.Module):
         ax = df.plot.bar(rot=0)
         fig = ax.get_figure()
         fig.savefig(f"{storage_path}/cluster_distribution{epoch}.png")
-
-    def get_coordinates(self, image, dimred_x, dimred_y, global_size):
-        # changed from https://www.learnopencv.com/t-sne-for-feature-visualization/
-        # Get height and width of image
-
-        height, width, _ = image.shape
-
-        # compute the image center coordinates for dimensionality reduction
-        # plot
-        center_x = int(global_size * dimred_x)
-
-        # to have the same here, we need to mirror the y coordinate
-        center_y = int(global_size * (1 - dimred_y))
-
-        # Compute edge coordinates
-        topleft_x = center_x - int(width / 2)
-        topleft_y = center_y - int(height / 2)
-
-        bottomright_x = center_x + int(width / 2)
-        bottomright_y = center_y + int(height / 2)
-
-        if topleft_x < 0:
-            bottomright_x = bottomright_x + abs(topleft_x)
-            topleft_x = topleft_x + abs(topleft_x)
-
-        if topleft_y < 0:
-            bottomright_y = bottomright_y + abs(topleft_y)
-            topleft_y = topleft_y + abs(topleft_y)
-
-        if bottomright_x > global_size:
-            topleft_x = topleft_x - (bottomright_x - global_size)
-            bottomright_x = bottomright_x - (bottomright_x - global_size)
-
-        if bottomright_y > global_size:
-            topleft_y = topleft_y - (bottomright_y - global_size)
-            bottomright_y = bottomright_y - (bottomright_y - global_size)
-
-        return topleft_x, topleft_y, bottomright_x, bottomright_y
-
-    def reshape_image(self, img, scaling):
-        """
-        Input: NumpyArray {[H,W,C]}
-        Output: Resized numpy array {[H,W,C]}
-        """
-        # Undo scaling
-        img = img * 255
-
-        width = int(img.shape[1] * (scaling / 100))
-        height = int(img.shape[0] * (scaling / 100))
-        dim = (width, height)
-
-        # resize image
-        resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
-
-        return resized
 
 
 
