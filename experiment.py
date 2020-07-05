@@ -231,6 +231,10 @@ class RlExperiment(pl.LightningModule):
                                                 value=_param,
                                                 run_id=self.logger.run_id)
         
+        self.logger.experiment.log_param(key='run_name',
+                                        value=self.run_name, 
+                                        run_id=self.logger.run_id)
+        
         del train_data
         del test_data
         ## Visualization
