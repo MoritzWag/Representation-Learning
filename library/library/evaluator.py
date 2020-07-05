@@ -25,15 +25,27 @@ class Evaluator(nn.Module):
         
         features_train, target_train = train_data[0].cpu().numpy(), train_data[1].cpu().numpy()
         features_test, target_test = test_data[0].cpu().numpy(), test_data[1].cpu().numpy()
+
+        if function == 'knn_classifier':
+            for i in range(target_train.shape[0]):
+                acc = knn_classifier(featurs_train, target_train[:, i], features_test, target_test[:, i])
+                self.scores['downstream_taks'+str(i+1)] = acc.round(5)
+        
+        if function == 'randomforest':
+            for i in range(target_train.shape[0]):
+                acc = random_forest(features_train, target_train[:, i], features_test, target_test[:, i])
+                self.scores['downstream_tasks'+str(i+1)] = acc.round(5)
+
+
+        # pdb.set_trace()
+        # if target_train.shape[1] > 1:
             
-        if target_train.shape[1] > 1:
-            
-            for i in range(target_train.shape[1]):
-                acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
-                self.scores['downstream_task_acc'+str(i+1)] = acc.round(5)
-        else:
-            acc = knn_classifier(features_train, target_train, features_test, target_test)
-            self.scores['downstream_task_acc'] = acc.round(5)
+        #     for i in range(target_train.shape[1]):
+        #         acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
+        #         self.scores['downstream_task_acc'+str(i+1)] = acc.round(5)
+        # else:
+        #     acc = knn_classifier(features_train, target_train, features_test, target_test)
+        #     self.scores['downstream_task_acc'] = acc.round(5)
     
     def unsupervised_metrics(self, data):
         """

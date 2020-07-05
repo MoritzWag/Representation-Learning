@@ -4,6 +4,7 @@ import sklearn as sk
 import pdb
 from sklearn.metrics import mutual_info_score
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
 #from sklearn.neibors import KNeighborsClassifier
 
 
@@ -71,3 +72,21 @@ def save_metrics(scores, save_path, epoch=None):
         pass 
     else:
         pass
+
+
+def random_forest(features, labels):
+    """
+    """
+    pdb.set_trace()
+    model = RandomForestClassifier()
+    model.fit(features, labels)
+    importance = model.feature_importances
+
+    plt.bar([x for x in range(len(importance))], importance)
+    plt.show()
+
+    yhat = model.predict()
+
+    
+
+    return yhat

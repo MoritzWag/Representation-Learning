@@ -61,73 +61,67 @@ def get_data(args):
         os.system(f'rm -rf {img_path}')
 
         ## prepare meta data
-        meta_data_image = pd.read_csv(f"{storage_path}Data/Image_Dataset/adidas_lmu_practicals_image_data.csv", sep=";")
-        meta_data_info = pd.read_csv(f"{storage_path}Data/adidas_lmu_practicals_data.csv", sep=",")
-
-        pdb.set_trace()
-        meta_data_total = pd.read_csv(f"{storage_path}attributes.csv", sep=",")
-
-        ## get SOLD_QTY_SUM and
-        meta_SOLD_QTY_SUM = meta_data_info.groupby(['ARTICLE_NUMBER'], as_index=False).sum()
-        meta_SOLD_QTY_AVG = meta_data_info.groupby(['ARTICLE_NUMBER'], as_index=False).mean() 
-        #meta_SOLD_QTY_MAX = meta_data_info.groupby(['ARTICLE_NUMBER'], as_index=False).max()
-
-        # keep only ARTICLE_NUMBER and SOLD_QTY
-        meta_SOLD_QTY_SUM = meta_SOLD_QTY_SUM[['ARTICLE_NUMBER', 'SOLD_QTY']]
-        meta_SOLD_QTY_AVG = meta_SOLD_QTY_AVG[['ARTICLE_NUMBER', 'SOLD_QTY']]
-        #meta_SOLD_QTY_MAX = meta_SOLD_QTY_MAX[['ARTICLE_NUMBER', 'SOLD_QTY']]
-
-        meta_data_info = meta_data_info.drop_duplicates('ARTICLE_NUMBER')
-
-        meta_SOLD_QTY_SUM = meta_SOLD_QTY_SUM.rename(columns={'SOLD_QTY': 'SOLD_QTY_SUM'})
-        meta_SOLD_QTY_AVG = meta_SOLD_QTY_AVG.rename(columns={'SOLD_QTY': 'SOLD_QTY_AVG'})
-
-        meta_data_info = pd.merge(meta_data_info, meta_SOLD_QTY_SUM, on='ARTICLE_NUMBER', how='left')
-        meta_data_info = pd.merge(meta_data_info, meta_SOLD_QTY_AVG, on='ARTICLE_NUMBER', how='left')
-        #meta_data_info = pd.merge(meta_data_info, meta_SOLD_QTY_MAX, on='ARTICLE_NUMBER', how='left')
 
 
-        meta_data_all = pd.merge(meta_data_image, meta_data_info, on='ARTICLE_NUMBER', how='left', indicator='indicator_column')
+        meta_data_all = pd.read_csv(f"{storage_path}attributes.csv", sep=",")
+
+        meta_data_all = meta_data_all.drop(columns=['ASSET_CATEGORY', 'PRICE', 'COLOR_GRP_2', 'COLOR_GRP_3',
+                                    'COLOR_GRP_4', 'BUSINESS_UNIT_DESCR', 'PRODUCT_FRANCHISE_DESCR',
+                                    'SPORTS_CATEGORY_DESCR', 'SALES_LINE_DESCR'])
+
+
+        
 
         # remove all variables with too many NaNs
         #meta_data_all = meta_data_all.iloc[:, :-4]
-        meta_data_all = meta_data_all.drop(columns=['COLOR_GRP_2_x', 'COLOR_GRP_3_x', 'COLOR_GRP_4_x', 'GENDER_y', 
-                                                    'AGE_GROUP_y', 'PRICE_y', 'PRODUCT_DIVISION_DESCR_y', 'COLOR_GRP_1_y',
-                                                    'BUSINESS_UNIT_DESCR', 'SEASON', 'WEEK', 'SALES_LINE_DESCR',
-                                                    'CAMPAIGN', 'TOTAL_MARKDOWN_PCT', 'PRODUCT_FRANCHISE_DESCR',
-                                                    'COLOR_GRP_2_y', 'COLOR_GRP_3_y', 'COLOR_GRP_4_y', 'SOLD_QTY', 'PRICE_x',
-                                                    'indicator_column'])
+        #meta_data_all = meta_data_all.drop(columns=['COLOR_GRP_2_x', 'COLOR_GRP_3_x', 'COLOR_GRP_4_x', 'GENDER_y', 
+        #                                            'AGE_GROUP_y', 'PRICE_y', 'PRODUCT_DIVISION_DESCR_y', 'COLOR_GRP_1_y',
+        #                                            'BUSINESS_UNIT_DESCR', 'SEASON', 'WEEK', 'SALES_LINE_DESCR',
+        #                                            'CAMPAIGN', 'TOTAL_MARKDOWN_PCT', 'PRODUCT_FRANCHISE_DESCR',
+        #                                            'COLOR_GRP_2_y', 'COLOR_GRP_3_y', 'COLOR_GRP_4_y', 'SOLD_QTY', 'PRICE_x',
+        #                                            'indicator_column'])
 
         # determine remaining missing values
         data_missings = meta_data_all[meta_data_all.isnull().any(axis=1)]
         tids_missing = data_missings.ARTICLE_NUMBER.tolist()
+        #meta_data_all = meta_data_all.dropna(how='any', subset=['COLOR_GRP_1_x'])
 
-        meta_data_all = meta_data_all.dropna(how='any', subset=['COLOR_GRP_1_x'])
+        # def prepare_attributes(data, cols):
+        #     remaining_data = data.drop(cols, axis=1)
+
+        #     categorical_data = data[cols]
+        #     oe = OrdinalEncoder()
+        #     oe.fit(categorical_data)
+        #     categorical_data = oe.transform(categorical_data)
+
+        #     categorical_data = pd.DataFrame(categorical_data, columns=cols)
+
+        #     df_all = pd.concat([remaining_data, categorical_data], axis=1, ignore_index=False)
+
+        #     return df_all
 
         def prepare_attributes(data, cols):
             remaining_data = data.drop(cols, axis=1)
-
             categorical_data = data[cols]
-            oe = OrdinalEncoder()
-            oe.fit(categorical_data)
-            categorical_data = oe.transform(categorical_data)
+            transformed_data = categorical_data.apply(LabelEncoder().fit_transform)
 
-            categorical_data = pd.DataFrame(categorical_data, columns=cols)
-
-            df_all = pd.concat([remaining_data, categorical_data], axis=1, ignore_index=False)
+            df_all = pd.concat([remaining_data, transformed_data], axis=1, ignore_index=False)
 
             return df_all
         
-        categorical_features = ['PRODUCT_GROUP_DESCR','PRODUCT_DIVISION_DESCR_x', 'GENDER_x', 
-                                'AGE_GROUP_x', 'COLOR_GRP_1_x', 'PRODUCT_TYPE_DESCR']
+        meta_data_all = meta_data_all.dropna(how='any', subset=['COLOR_GRP_1'])
+
+        categorical_features = ['PRODUCT_GROUP_DESCR','PRODUCT_DIVISION_DESCR', 'GENDER', 
+                                'AGE_GROUP', 'COLOR_GRP_1', 'PRODUCT_TYPE_DESCR']
         
         #categorical_features = ['ASSET_CATEGORY', 'PRODUCT_DIVISION_DESCR_x',
         #                        'GENDER_x', 'AGE_GROUP_x', 'PRICE_x',
         #                        'COLOR_GRP_1_x', 'SEASON', 'PRODUCT_GROUP_DESCR',
         #                        'PRODUCT_TYPE_DESCR', 'PRODUCT_FRANCHISE_DESCR',
         #                        'SPORTS_CATEGORY_DESCR']
-        meta_data = prepare_attributes(data=meta_data_all, cols=categorical_features)        
+        meta_data = prepare_attributes(data=meta_data_all, cols=categorical_features)    
 
+        #meta_data = meta_data.dropna(how='any', subset=['COLOR_GRP_1'])    
         #meta_data = meta_data.dropna(how='any', subset=['COLOR_GRP_1_x'])
 
         array_fv = []
@@ -141,6 +135,7 @@ def get_data(args):
         file_ids_sl = []
         file_ids_sv = []
         file_ids_tp = []
+
 
         for file in tqdm(files_list):
             arr = np.load(img_unzipped + '/' + file[:-3], allow_pickle=True)
@@ -188,7 +183,7 @@ def get_data(args):
         sv_list = [array_sv, file_ids_sv]
         tp_list = [array_tp, file_ids_tp]
 
-        pdb.set_trace()
+        meta_data = meta_data.reset_index()
         
         #meta_data = meta_data.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
 
@@ -199,8 +194,8 @@ def get_data(args):
         standard_view_idx = meta_data.index[meta_data['PRODUCT_VIEW'] == 'Standard View'].tolist()
         top_portrait_idx = meta_data.index[meta_data['PRODUCT_VIEW'] == 'Top Portrait View'].tolist()
 
-        features = ['SOLD_QTY_SUM', 'SOLD_QTY_AVG']
-        features.extend(categorical_features)
+        #features = ['SOLD_QTY_SUM', 'SOLD_QTY_AVG']
+        #features.extend(categorical_features)
 
 
         meta_data_fv = meta_data.iloc[front_view_idx, :]
@@ -230,19 +225,19 @@ def get_data(args):
         meta_data_sv.reset_index(drop=True, inplace=True)
         meta_data_tp.reset_index(drop=True, inplace=True)
 
-        meta_data_fv = meta_data_fv[features]
+        meta_data_fv = meta_data_fv[categorical_features]
         #meta_data_fv = meta_data_fv.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
 
-        meta_data_bv = meta_data_bv[features]
+        meta_data_bv = meta_data_bv[categorical_features]
         #meta_data_bv = meta_data_bv.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
 
-        meta_data_sl = meta_data_sl[features]
+        meta_data_sl = meta_data_sl[categorical_features]
         #meta_data_sl = meta_data_sl.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
 
-        meta_data_sv = meta_data_sv[features]
+        meta_data_sv = meta_data_sv[categorical_features]
         #meta_data_sv = meta_data_sv.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
 
-        meta_data_tp = meta_data_tp[features]
+        meta_data_tp = meta_data_tp[categorical_features]
         #meta_data_tp = meta_data_tp.rename(columns={'PRODUCT_GROUP_DESCR': 'labels'})
 
         
