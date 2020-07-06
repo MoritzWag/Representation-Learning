@@ -78,7 +78,7 @@ def random_forest(features, labels):
     """
     """
     pdb.set_trace()
-    model = RandomForestClassifier()
+    model = RandomForestClassifier(class_weight="balanced")
     model.fit(features, labels)
     importance = model.feature_importances
 
