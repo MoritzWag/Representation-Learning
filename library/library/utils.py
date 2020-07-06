@@ -72,7 +72,7 @@ def img_to_npy(path,
 				train=True, 
 				val_split_ratio=0.0, 
 				data_suffix=None,
-				attributes=['COLOR_GRP_1_x','labels','PRODUCT_TYPE_DESCR','GENDER_x','AGE_GROUP_x']):
+				attributes=['COLOR_GRP_1','PRODUCT_GROUP_DESCR','PRODUCT_TYPE_DESCR','GENDER','AGE_GROUP']):
 	"""
 	Args:
 		path: {string} path to the dataset
