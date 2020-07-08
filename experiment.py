@@ -211,6 +211,7 @@ class RlExperiment(pl.LightningModule):
         train_data = (train_features, train_attributes)
         test_data = (test_features, test_attributes)
         
+        self.model._downstream_task(train_data, test_data, 'random_forest', storage_path=f"images/{self.params['dataset']}/test/{self.run_name}/")
         self.model._downstream_task(train_data, test_data, 'knn_classifier')
         self.model.unsupervised_metrics(test_features)
 

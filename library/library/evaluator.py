@@ -10,7 +10,7 @@ import csv
 import os
 from torch import nn, optim, Tensor
 
-from library.eval_helpers import histogram_discretize, discrete_mutual_info, knn_regressor, knn_classifier
+from library.eval_helpers import histogram_discretize, discrete_mutual_info, knn_regressor, knn_classifier, random_forest
 from library.utils import accumulate_batches
 
 
@@ -21,19 +21,54 @@ class Evaluator(nn.Module):
         super(Evaluator, self).__init__(**kwargs)
         self.scores = {}
 
-    def _downstream_task(self, train_data, test_data, function):
-        
+    def _downstream_task(self, train_data, test_data, function, storage_path):
+
         features_train, target_train = train_data[0].cpu().numpy(), train_data[1].cpu().numpy()
         features_test, target_test = test_data[0].cpu().numpy(), test_data[1].cpu().numpy()
+        
+        # cluster_names = ['latent_{num}'.format(num=x) for x in range(self.latent_dim+1)]
+        # cluster_names = cluster_names[1:]
+        # features_train.rename(columns=cluster_names)
+        # features_test.rename(columns=cluster_names)
+        if function == 'random_forest':
+            if target_train.shape[1] > 1:
+                
+                for i in range(target_train.shape[1]):
+                    #acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
+                    acc, auc = random_forest(
+                        features_train,
+                        target_train[:,i],
+                        features_test,
+                        target_test[:,i],
+                        'downstream_task_'+str(i+1),
+                        storage_path
+                    )
+
+                    self.scores['dst_rf_acc'+str(i+1)] = acc.round(5)
+                    self.scores['dst_rf_auc'+str(i+1)] = auc
+            else:
+                acc, auc = random_forest(
+                        features_train,
+                        target_train[:,i],
+                        features_test,
+                        target_test[:,i],
+                        'downstream_task',
+                        storage_path
+                    )
+        
+                self.scores['dst_rf_acc'] = acc.round(5)
+                self.scores['dst_rf_auc'] = auc
+
+        elif function == 'knn_classifier':
+            if target_train.shape[1] > 1:
             
-        if target_train.shape[1] > 1:
-            
-            for i in range(target_train.shape[1]):
-                acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
-                self.scores['downstream_task_acc'+str(i+1)] = acc.round(5)
-        else:
-            acc = knn_classifier(features_train, target_train, features_test, target_test)
-            self.scores['downstream_task_acc'] = acc.round(5)
+                for i in range(target_train.shape[1]):
+                    acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
+
+                    self.scores['dst_knn_acc'+str(i+1)] = acc.round(5)
+            else:
+                acc = knn_classifier(features_train, target_train, features_test, target_test)
+                self.scores['dst_knn_acc'] = acc.round(5)
     
     def unsupervised_metrics(self, data):
         """
@@ -44,7 +79,6 @@ class Evaluator(nn.Module):
         zs_transposed = np.transpose(zs)
         cov_zs = np.cov(zs_transposed)
 
-    
         self.scores['gaussian_total_correlation'] = self.gaussian_total_correlation(cov_zs)
         self.scores['gaussian_wasserstein_correlation'] = self.gaussian_wasserstein_correlation(cov_zs)
         self.scores['gaussian_wasserstein_correlation_norm'] = (
