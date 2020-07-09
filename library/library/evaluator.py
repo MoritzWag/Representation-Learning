@@ -1,6 +1,8 @@
 import pandas as pd 
 import numpy as np 
 import sklearn as sk 
+import seaborn as sns
+import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import OneHotEncoder
 import scipy 
@@ -21,51 +23,56 @@ class Evaluator(nn.Module):
         super(Evaluator, self).__init__(**kwargs)
         self.scores = {}
 
-    def _downstream_task(self, train_data, test_data, function, storage_path):
+    def _downstream_task(self, train_data, test_data, model, storage_path, downstream_task_names=None):
 
         features_train, target_train = train_data[0].cpu().numpy(), train_data[1].cpu().numpy()
         features_test, target_test = test_data[0].cpu().numpy(), test_data[1].cpu().numpy()
-        
-        # cluster_names = ['latent_{num}'.format(num=x) for x in range(self.latent_dim+1)]
-        # cluster_names = cluster_names[1:]
-        # features_train.rename(columns=cluster_names)
-        # features_test.rename(columns=cluster_names)
-        if function == 'random_forest':
+
+        if downstream_task_names is None:
+            downstream_task_names = 'downstream task ' * target_train.shape[1]
+
+        if model == 'random_forest':
             if target_train.shape[1] > 1:
                 
+                feature_imp = []
+
                 for i in range(target_train.shape[1]):
-                    #acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
-                    acc, auc = random_forest(
+                    acc, auc, aupr, avg_pr, importances = random_forest(
                         features_train,
                         target_train[:,i],
                         features_test,
                         target_test[:,i],
-                        'downstream_task_'+str(i+1),
+                        downstream_task_names[i],
                         storage_path
                     )
 
-                    self.scores['dst_rf_acc'+str(i+1)] = acc.round(5)
-                    self.scores['dst_rf_auc'+str(i+1)] = auc
+                    self.scores['rf_acc'+downstream_task_names[i]] = acc.round(5)
+                    self.scores['rf_auc'+downstream_task_names[i]] = auc
+                    self.scores['rf_aupr'+downstream_task_names[i]] = aupr.round(5)
+                    self.scores['rf_avg_pr'+downstream_task_names[i]] = avg_pr.round(5)
+
             else:
-                acc, auc = random_forest(
+                acc, auc, aupr, avg_pr = random_forest(
                         features_train,
                         target_train[:,i],
                         features_test,
                         target_test[:,i],
-                        'downstream_task',
+                        'downstream task',
                         storage_path
                     )
         
                 self.scores['dst_rf_acc'] = acc.round(5)
                 self.scores['dst_rf_auc'] = auc
+                self.scores['dst_rf_aupr'] = aupr.round(5)
+                self.scores['dst_rf_avg_pr'] = avg_pr.round(5)
 
-        elif function == 'knn_classifier':
+        elif model == 'knn_classifier':
             if target_train.shape[1] > 1:
             
                 for i in range(target_train.shape[1]):
                     acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
 
-                    self.scores['dst_knn_acc'+str(i+1)] = acc.round(5)
+                    self.scores['knn_acc'+downstream_task_names[i]] = acc.round(5)
             else:
                 acc = knn_classifier(features_train, target_train, features_test, target_test)
                 self.scores['dst_knn_acc'] = acc.round(5)

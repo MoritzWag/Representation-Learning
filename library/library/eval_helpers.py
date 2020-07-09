@@ -4,7 +4,7 @@ import sklearn as sk
 import matplotlib.pyplot as plt
 import pdb
 import os
-from sklearn.metrics import mutual_info_score, balanced_accuracy_score, roc_auc_score
+from sklearn.metrics import mutual_info_score, balanced_accuracy_score, roc_auc_score, average_precision_score, precision_recall_curve, auc
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.inspection import permutation_importance
@@ -81,21 +81,12 @@ def save_metrics(scores, save_path, epoch=None):
 def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     """
     """
-    pdb.set_trace()
-    # Check if there are any excess classes in test data
-    if len(np.unique(test_y)) > len(np.unique(train_y)):
-        unique_test = pd.Series(np.unique(test_y))
-        indices = unique_test.isin(np.unique(train_y))
-        not_contained = np.where(indices == False)[0]
-        test_y_new = pd.Series(test_y)
-        test_y = test_y_new[~test_y_new.isin(not_contained)]
-        test_X = test_X[~test_y_new.isin(not_contained)]
 
     # Create one-hot-encoding
     y = np.concatenate((train_y, test_y))
-    lb = LabelBinarizer().fit(y)
-    train_yb = lb.transform(train_y)
-    test_yb = lb.transform(test_y)
+    ybin = LabelBinarizer().fit(y).transform(y)
+    train_yb = ybin[:train_y.shape[0], :]
+    test_yb = ybin[train_y.shape[0]:, :]
 
     sparse_cat_test = test_yb.sum(axis=0) != 0 
     sparse_cat_train = train_yb.sum(axis=0) != 0
@@ -103,18 +94,19 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     train_yb = train_yb[:, drop_index]
     test_yb = test_yb[:, drop_index]
 
-    drop_cat = where(drop_index==False)
+    cats = np.union1d(np.unique(test_y), np.unique(train_y))
+    drop_cat = cats[np.where(drop_index==False)[0]]
     test_y_new = pd.Series(test_y)
     train_y_new = pd.Series(train_y)
     test_y = test_y_new[~test_y_new.isin(drop_cat)]
-    test_X = test_X[~test_y_new.isin(drop_cat)]
+    test_X = test_X[~test_y_new.isin(drop_cat),:]
     train_y = train_y_new[~train_y_new.isin(drop_cat)]
-    train_X = train_X[~train_y_new.isin(drop_cat)]
+    train_X = train_X[~train_y_new.isin(drop_cat),:]
 
     y = np.concatenate((train_y, test_y))
-    lb = LabelBinarizer().fit(y)
-    train_yb = lb.transform(train_y)
-    test_yb = lb.transform(test_y)
+    ybin = LabelBinarizer().fit(y).transform(y)
+    train_yb = ybin[:train_y.shape[0], :]
+    test_yb = ybin[train_y.shape[0]:, :]
 
     # Instatiate model
     rf = RandomForestClassifier(
@@ -126,13 +118,24 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     probs_hat = rf.predict_proba(test_X)
     y_hat = rf.predict(test_X)
 
-    #weighted_auc_ovo = roc_auc_score(test_yb, probs_hat, multi_class="ovo", average='weighted')
     try:
         weighted_auc = roc_auc_score(y_true=test_yb, y_score=probs_hat, multi_class="ovr", average='weighted')
     except:
         weighted_auc = 0.5
     balanced_acc = balanced_accuracy_score(test_y, y_hat)
+    avg_precision = average_precision_score(test_yb, probs_hat, average='weighted')
 
+    prevalence = ybin.sum(axis=0) / ybin.sum()
+    aupr = []
+
+    for i in range(len(prevalence)):
+        precision, recall, thresholds = precision_recall_curve(test_yb[:,i], probs_hat[:,i])
+        auc_ = auc(recall, precision)
+        aupr.append(auc_)
+    
+    aupr = np.array(aupr)
+    aupr_wmean = (aupr * prevalence).sum() 
+    
     # Obtain permutation importance
     importance = permutation_importance(rf, test_X, test_y, n_repeats=15, random_state=0)
     sorted_idx = importance.importances_mean.argsort()
@@ -150,4 +153,4 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
         os.makedirs(path)
     fig.savefig(f"{path}FI_{dst_name}.png")    
 
-    return balanced_acc, weighted_auc
+    return balanced_acc, weighted_auc, aupr_wmean, avg_precision, importance.importances
