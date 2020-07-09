@@ -214,3 +214,12 @@ def crop_center(img, cropx, cropy):
     startx = x // 2 - (cropx // 2)
     starty = y // 2 - (cropy // 2)
     return img[:, starty:starty + cropy, startx:startx + cropx]
+
+
+def permute_dims(z):
+	"""
+	"""
+	B, _ = z.size()
+	perm = torch.randperm(B)
+	perm_z = z[perm]
+	return perm_z

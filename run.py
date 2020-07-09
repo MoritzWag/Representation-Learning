@@ -6,6 +6,7 @@ from library import models2
 #from library.models2 import helpers
 #from library.models2.helpers import vae_models, vae_architectures, #
 from library.models2.helpers import *
+from library.architectures import Discriminator 
 from experiment import RlExperiment
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import MLFlowLogger
@@ -136,8 +137,11 @@ mlflow_logger = MLFlowLogger(
                     experiment_name=args.experiment_name)
 
 
+discriminator = Discriminator(latent_dim=config['img_arch_params']['latent_dim'])
+
 ## build experiment
 experiment = RlExperiment(model,
+                        discriminator=discriminator,
                         params=config['exp_params'],
                         model_hyperparams=config['model_hyperparams'],
                         run_name=args.run_name,

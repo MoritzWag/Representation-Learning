@@ -9,6 +9,7 @@ import pdb
 from torch import optim 
 from library.models2.base2 import ReprLearner
 from library import utils
+from library.utils import permute_dims
 import pytorch_lightning as pl 
 from torchvision import transforms 
 from torch.utils.data import DataLoader
@@ -20,6 +21,7 @@ class RlExperiment(pl.LightningModule):
 
     def __init__(self, 
                 model: ReprLearner,
+                discriminator,
                 params, 
                 model_hyperparams,
                 run_name,
@@ -28,11 +30,14 @@ class RlExperiment(pl.LightningModule):
 
         self.model = model.float()
         self.model.epoch = self.current_epoch
+        self.discriminator = discriminator 
         self.params = params
         self.model_hyperparams = model_hyperparams
         self.curr_device = None
         self.train_history = pd.DataFrame()
         self.val_history = pd.DataFrame()
+        self.mi_train = pd.DataFrame()
+        self.mi_val = pd.DataFrame()
         self.test_score = None
         self.run_name = run_name
         self.experiment_name = experiment_name
@@ -40,7 +45,7 @@ class RlExperiment(pl.LightningModule):
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
 
-    def training_step(self, batch, batch_idx, optimizer_idx=0):
+    def training_step(self, batch, batch_idx, optimizer_idx):
 
         batch_idx = {'batch_idx': batch_idx}
         image, attribute = batch
@@ -70,17 +75,32 @@ class RlExperiment(pl.LightningModule):
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             train_loss = self.model._loss_function(image.float(), **self.model.loss_item)
+
+
         
         train_history = pd.DataFrame([[value.cpu().detach().numpy() for value in train_loss.values()]],
                                     columns=[key for key in train_loss.keys()])   
             
         self.train_history = self.train_history.append(train_history, ignore_index=True)
 
+        if optimizer_idx == 0:
+            return train_loss
+        
+        if optimizer_idx == 1:
+            z = self.model._embed(image.float(), return_latents=True)
+            D_xz = self.discriminator(image.float(), z.double())
+            z_perm = permute_dims(z.double())
+            D_x_z = self.discriminator(image.float(), z_perm.double())
 
-        return train_loss
+            Info_xz = -(D_xz.mean() - torch.exp(D_x_z - 1).mean())
+            info_loss = Info_xz
+
+            #self.mi_train = self.mi_train.append(info_loss, ignore_index=True)
+
+            return {'loss': info_loss}
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
-    
+        
         batch_idx = {'batch_idx': batch_idx}
         image, attribute = batch
         self.curr_device = image.device
@@ -110,6 +130,16 @@ class RlExperiment(pl.LightningModule):
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
+
+            z = self.model._embed(image.float(), return_latents=True)
+            D_xz = self.discriminator(image.float(), z.double())
+            z_perm = permute_dims(z)
+            D_x_z = self.discriminator(image.float(), z_perm.double())
+
+            Info_xz = -(D_xz.mean() - torch.exp(D_x_z - 1).mean())
+            info_loss = Info_xz
+
+            #self.mi_val = self.mi_val.append(info_loss, ignore_index=True)
         
         val_history = pd.DataFrame([[value.cpu().detach().numpy() for value in val_loss.values()]],
                                     columns=[key for key in val_loss.keys()])
@@ -280,6 +310,13 @@ class RlExperiment(pl.LightningModule):
                                 lr=self.params['learning_rate'],
                                 weight_decay=self.params['weight_decay'])
         optims.append(optimizer)
+
+        optimizer_D = optim.Adam(self.discriminator.parameters(),
+                                lr=0.00001,
+                                weight_decay=self.params['weight_decay'])
+        
+        optims.append(optimizer_D)
+
         try:
             if self.params['scheduler_gamma'] is not None:
                 scheduler = optim.lr_scheduler.ExponentialLR(optims[0],
