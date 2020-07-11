@@ -241,7 +241,22 @@ class RlExperiment(pl.LightningModule):
         train_data = (train_features, train_attributes)
         test_data = (test_features, test_attributes)
         
-        self.model._downstream_task(train_data, test_data, 'knn_classifier')
+        self.model._downstream_task(
+            train_data=train_data,
+            test_data=test_data,
+            model='random_forest',
+            storage_path=f"images/{self.params['dataset']}/test/{self.run_name}/",
+            downstream_task_names=['color group','product group','product type','gender','age group']
+        )
+
+        self.model._downstream_task(
+            train_data,
+            test_data,
+            'knn_classifier',
+            storage_path=f"images/{self.params['dataset']}/test/{self.run_name}/",
+            downstream_task_names=['color group','product group','product type','gender','age group']
+        )
+
         self.model.unsupervised_metrics(test_features)
 
         self.model.log_metrics(storage_path=f"logs/{self.run_name}/{self.params['dataset']}/test/")
