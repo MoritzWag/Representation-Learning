@@ -540,6 +540,34 @@ class ConvDecoder224x224(nn.Module):
 
 
 
+################################################
+#
+# Discriminator for InfoMax
+#
+################################################
+
+class Discriminator(nn.Module):
+    """
+    """
+    def __init__(self, latent_dim=10):
+        super(Discriminator, self).__init__()
+        self.latent_dim = latent_dim
+        self.net = nn.Sequential(
+                        nn.Linear(224*224*3 + self.latent_dim, 1000),
+                        nn.ReLU(True),
+                        nn.Linear(1000, 400),
+                        nn.ReLU(True),
+                        nn.Linear(400, 100),
+                        nn.ReLU(True),
+                        nn.Linear(100, 1)
+        )
+
+    def forward(self, x, z):
+        x = x.view(-1, 224*224*3).double()
+        x = torch.cat((x, z), dim=1)
+        return self.net(x).squeeze()
+
+
 
 
 
