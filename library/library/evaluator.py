@@ -10,7 +10,6 @@ import pdb
 import torch
 import csv
 import os
-from npeet import entropy_estimators
 from torch import nn, optim, Tensor
 from torch.distributions import MultivariateNormal
 from torch.distributions import kl_divergence
