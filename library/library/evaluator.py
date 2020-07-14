@@ -11,6 +11,8 @@ import torch
 import csv
 import os
 from torch import nn, optim, Tensor
+from torch.distributions import MultivariateNormal
+from torch.distributions import kl_divergence
 
 from library.eval_helpers import histogram_discretize, discrete_mutual_info, knn_regressor, knn_classifier, random_forest
 from library.utils import accumulate_batches
@@ -98,6 +100,18 @@ class Evaluator(nn.Module):
         np.fill_diagonal(mutual_info_matrix, 0)
         mutual_info_score = np.sum(mutual_info_matrix) / (num_latents**2 - num_latents)
         self.scores['mutual_info_score'] = mutual_info_score
+
+    def mutual_information(self, latent_loss):
+        
+        z = self.store_z.transpose(1,0).cpu().numpy()
+        z_mean = z.mean(-1)
+        z_cov = np.cov(z)
+        p_z = MultivariateNormal(loc=torch.tensor(z_mean), covariance_matrix=torch.tensor(z_cov))
+        q_z = MultivariateNormal(loc=torch.zeros(z_mean.shape[0]), covariance_matrix=torch.eye(z_mean.shape[0]))
+
+        kldiv_priors = kl_divergence(p_z, q_z)
+        
+        return latent_loss - kldiv_priors
  
     def gaussian_total_correlation(self, cov):
         """

@@ -41,6 +41,8 @@ class RlExperiment(pl.LightningModule):
         self.test_score = None
         self.run_name = run_name
         self.experiment_name = experiment_name
+        self.accum_index = 0
+        self.mut_info = []
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
@@ -53,7 +55,6 @@ class RlExperiment(pl.LightningModule):
         image, attribute = Variable(image), Variable(attribute)
 
         try:
-            ## here, SOLD_QTY must be deleted 
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
@@ -144,8 +145,9 @@ class RlExperiment(pl.LightningModule):
         val_history = pd.DataFrame([[value.cpu().detach().numpy() for value in val_loss.values()]],
                                     columns=[key for key in val_loss.keys()])
 
+        self.accum_index += val_history.shape[0]
         self.val_history = self.val_history.append(val_history, ignore_index=True)
-
+        
         return val_loss
 
     def validation_epoch_end(self, outputs):
@@ -158,6 +160,7 @@ class RlExperiment(pl.LightningModule):
                                         run_id=self.logger.run_id)
 
         image, attribute = self.model.accumulate_batches(self.val_gen)
+
         self.model._embed(image)
         
         self.model._sample_images(image,
@@ -190,9 +193,11 @@ class RlExperiment(pl.LightningModule):
         del image
         del attribute
 
-        #return {'val_loss': avg_loss}    
-        # pass the accuracy to the DictLogger via the 'log' key
-        return {'log': {'val_loss': avg_loss}}
+        mi = self.model.mutual_information(latent_loss=self.val_history.loc[-self.accum_index:,:]['latent_loss'].mean())
+        self.mut_info.append(mi.numpy())
+        self.accum_index = 0
+
+        return {'val_loss': avg_loss}    
 
     def test_step(self, batch, batch_idx):
         image, attribute = batch
@@ -262,6 +267,9 @@ class RlExperiment(pl.LightningModule):
         self.model.unsupervised_metrics(test_features)
 
         self.model.log_metrics(storage_path=f"logs/{self.run_name}/{self.params['dataset']}/test/")
+
+        mut_inf = pd.DataFrame(self.mut_info) 
+        mut_inf.to_csv(f"logs/{self.run_name}/{self.params['dataset']}/test/mutual_information.csv")
 
         for key, value in zip(self.model.scores.keys(), self.model.scores.values()):
             self.logger.experiment.log_metric(key=key,
