@@ -190,7 +190,9 @@ class RlExperiment(pl.LightningModule):
         del image
         del attribute
 
-        return {'val_loss': avg_loss}    
+        #return {'val_loss': avg_loss}    
+        # pass the accuracy to the DictLogger via the 'log' key
+        return {'log': {'val_loss': avg_loss}}
 
     def test_step(self, batch, batch_idx):
         image, attribute = batch
