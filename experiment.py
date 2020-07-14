@@ -53,7 +53,6 @@ class RlExperiment(pl.LightningModule):
         image, attribute = Variable(image), Variable(attribute)
 
         try:
-            ## here, SOLD_QTY must be deleted 
             reconstruction1 = self.forward(image=image.float(), attrs=attribute)
             reconstruction2 = self.forward(image=image.float())
             reconstruction3 = self.forward(attrs=attribute)
@@ -158,6 +157,7 @@ class RlExperiment(pl.LightningModule):
                                         run_id=self.logger.run_id)
 
         image, attribute = self.model.accumulate_batches(self.val_gen)
+
         self.model._embed(image)
         
         self.model._sample_images(image,
@@ -190,7 +190,9 @@ class RlExperiment(pl.LightningModule):
         del image
         del attribute
 
-        return {'val_loss': avg_loss}    
+        mi = self.model.mutual_information(latent_loss=self.val_history.loc[-5:,:]['latent_loss'].mean())
+
+        return {'val_loss': avg_loss, 'mutual_information': mi.to(torch.double)}    
 
     def test_step(self, batch, batch_idx):
         image, attribute = batch
