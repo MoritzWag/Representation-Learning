@@ -156,32 +156,33 @@ class RlExperiment(pl.LightningModule):
 
         self.model._embed(image)
         
-        self.model._sample_images(image,
-                                path=f"images/{self.params['dataset']}/",
-                                epoch=self.current_epoch,
-                                run_name=self.run_name)
+        # COMMENTED OUT FOR EASY ACCESS
+        # self.model._sample_images(image,
+        #                         path=f"images/{self.params['dataset']}/",
+        #                         epoch=self.current_epoch,
+        #                         run_name=self.run_name)
 
-        self.model.traversals(epoch=self.current_epoch,
-                                run_name=self.run_name,
-                                path=f"images/{self.params['dataset']}/")
+        # self.model.traversals(epoch=self.current_epoch,
+        #                         run_name=self.run_name,
+        #                         path=f"images/{self.params['dataset']}/")
 
-        self.model._cluster(image=image,
-                            attribute=attribute[:,0],
-                            path=f"images/{self.params['dataset']}/",
-                            epoch=self.current_epoch,
-                            run_name=self.run_name,
-                            method='umap')
+        # self.model._cluster(image=image,
+        #                     attribute=attribute[:,0],
+        #                     path=f"images/{self.params['dataset']}/",
+        #                     epoch=self.current_epoch,
+        #                     run_name=self.run_name,
+        #                     method='umap')
                             
-        self.model._cluster(image=image,
-                            attribute=attribute[:,0],
-                            path=f"images/{self.params['dataset']}/",
-                            epoch=self.current_epoch,
-                            run_name=self.run_name,
-                            method='tsne')
+        # self.model._cluster(image=image,
+        #                     attribute=attribute[:,0],
+        #                     path=f"images/{self.params['dataset']}/",
+        #                     epoch=self.current_epoch,
+        #                     run_name=self.run_name,
+        #                     method='tsne')
 
-        self.model._cluster_freq(path=f"images/{self.params['dataset']}/",
-                                epoch=self.current_epoch,
-                                run_name=self.run_name)
+        # self.model._cluster_freq(path=f"images/{self.params['dataset']}/",
+        #                         epoch=self.current_epoch,
+        #                         run_name=self.run_name)
 
         del image
         del attribute
@@ -312,6 +313,10 @@ class RlExperiment(pl.LightningModule):
                                 epoch=1,
                                 run_name=self.run_name)
 
+        
+        self.model._corplot(path=f"images/{self.params['dataset']}/test/",
+                            epoch=1,
+                            run_name=self.run_name)
 
         return {'avg_test_loss': avg_test_loss}
 
