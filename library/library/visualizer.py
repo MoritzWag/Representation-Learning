@@ -209,7 +209,6 @@ class Visualizer(nn.Module):
                    data=None):
 
         self.epoch = epoch
-
         carry_on = (epoch <= 10) or ((epoch % 20) == 0)
         if not carry_on:
             return
