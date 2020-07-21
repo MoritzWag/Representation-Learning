@@ -26,9 +26,10 @@ class BetaVae(nn.Module):
     num_iter = 0 # Global static variable to keep track of iterations
 
     def __init__(self,
+                trial=None,
                 beta: int = 4,
                 max_capacity: int = 25, # essentially the distance that we allow the prior and the posterior to have; 0 means: no distance is allowed/wanted
-                restrict_capacity = False,
+                restrict_capacity = True,
                 capacity_max_iter: int = 1e5,
                 **kwargs):
         super(BetaVae, self).__init__(
@@ -44,8 +45,12 @@ class BetaVae(nn.Module):
         self.logvar = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
 
         # Hyperparameters
-        self.beta = beta
-        self.c_max = torch.Tensor([max_capacity])
+        if trial is not None:
+            self.beta = trial.suggest_int("beta", 1, 50, 5)
+            self.c_max = trial.suggest_int('c_max', 1, 50, 5)
+        else:
+            self.beta = beta
+            self.c_max = torch.Tensor([max_capacity])
         self.c_stop_iter = capacity_max_iter
         self.restrict_capacity = restrict_capacity
 
@@ -180,6 +185,8 @@ class BetaVae(nn.Module):
         else:
             
             #self.c_max = self.c_max.to(input.device)
+
+            self.c_max = torch.Tensor([self.c_max])
             if torch.cuda.is_available():
                 capacity = torch.clamp(self.c_max/self.c_stop_iter * self.num_iter, 0, self.c_max.data[0]).cuda()
             else:

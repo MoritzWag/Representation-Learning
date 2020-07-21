@@ -21,7 +21,6 @@ class RlExperiment(pl.LightningModule):
 
     def __init__(self, 
                 model: ReprLearner,
-                discriminator,
                 params, 
                 model_hyperparams,
                 run_name,
@@ -30,7 +29,6 @@ class RlExperiment(pl.LightningModule):
 
         self.model = model.float()
         self.model.epoch = self.current_epoch
-        self.discriminator = discriminator 
         self.params = params
         self.model_hyperparams = model_hyperparams
         self.curr_device = None
@@ -47,7 +45,7 @@ class RlExperiment(pl.LightningModule):
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
 
-    def training_step(self, batch, batch_idx, optimizer_idx=0):
+    def training_step(self, batch, batch_idx):
 
         batch_idx = {'batch_idx': batch_idx}
         image, attribute = batch
@@ -82,21 +80,23 @@ class RlExperiment(pl.LightningModule):
             
         self.train_history = self.train_history.append(train_history, ignore_index=True)
 
-        if optimizer_idx == 0:
-            return train_loss
+        #if optimizer_idx == 0:
+        #    return train_loss
         
-        if optimizer_idx == 1:
-            z = self.model._embed(image.float(), return_latents=True)
-            D_xz = self.discriminator(image.float(), z.double())
-            z_perm = permute_dims(z.double())
-            D_x_z = self.discriminator(image.float(), z_perm.double())
+        #if optimizer_idx == 1:
+        #    z = self.model._embed(image.float(), return_latents=True)
+        #    D_xz = self.discriminator(image.float(), z.double())
+        #    z_perm = permute_dims(z.double())
+        #    D_x_z = self.discriminator(image.float(), z_perm.double())
 
-            Info_xz = -(D_xz.mean() - torch.exp(D_x_z - 1).mean())
-            info_loss = Info_xz
+        #    Info_xz = -(D_xz.mean() - torch.exp(D_x_z - 1).mean())
+        #    info_loss = Info_xz
 
-            #self.mi_train = self.mi_train.append(info_loss, ignore_index=True)
+        #    #self.mi_train = self.mi_train.append(info_loss, ignore_index=True)
 
-            return {'loss': info_loss}
+        #    return {'loss': info_loss}
+
+        return train_loss 
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
         
@@ -130,10 +130,10 @@ class RlExperiment(pl.LightningModule):
             self.model.loss_item['recon_image'] = reconstruction
             val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
 
-            z = self.model._embed(image.float(), return_latents=True)
-            D_xz = self.discriminator(image.float(), z.double())
-            z_perm = permute_dims(z)
-            D_x_z = self.discriminator(image.float(), z_perm.double())
+            #z = self.model._embed(image.float(), return_latents=True)
+            #D_xz = self.discriminator(image.float(), z.double())
+            #z_perm = permute_dims(z)
+            #D_x_z = self.discriminator(image.float(), z_perm.double())
 
             Info_xz = -(D_xz.mean() - torch.exp(D_x_z - 1).mean())
             info_loss = Info_xz
@@ -194,7 +194,8 @@ class RlExperiment(pl.LightningModule):
         self.mut_info.append(mi.numpy())
         self.accum_index = 0
 
-        return {'val_loss': avg_loss}    
+        #return {'val_loss': avg_loss}  
+        return {'log': {'mut_info': mi.float()}}  
 
     def test_step(self, batch, batch_idx):
         image, attribute = batch
@@ -250,7 +251,7 @@ class RlExperiment(pl.LightningModule):
             test_data=test_data,
             model='random_forest',
             storage_path=f"images/{self.params['dataset']}/test/{self.run_name}/",
-            downstream_task_names=['color group','product group','product type','gender','age group']
+            downstream_task_names=['color_group','product_group','product_type','gender','age_group']
         )
 
         self.model._downstream_task(
@@ -258,7 +259,7 @@ class RlExperiment(pl.LightningModule):
             test_data,
             'knn_classifier',
             storage_path=f"images/{self.params['dataset']}/test/{self.run_name}/",
-            downstream_task_names=['color group','product group','product type','gender','age group']
+            downstream_task_names=['color_group','product_group','product_type','gender','age_group']
         )
 
         self.model.unsupervised_metrics(test_features)
@@ -337,11 +338,11 @@ class RlExperiment(pl.LightningModule):
                                 weight_decay=self.params['weight_decay'])
         optims.append(optimizer)
 
-        optimizer_D = optim.Adam(self.discriminator.parameters(),
-                                lr=0.00001,
-                                weight_decay=self.params['weight_decay'])
+        #optimizer_D = optim.Adam(self.discriminator.parameters(),
+        #                        lr=0.00001,
+        #                        weight_decay=self.params['weight_decay'])
         
-        optims.append(optimizer_D)
+        #optims.append(optimizer_D)
 
         try:
             if self.params['scheduler_gamma'] is not None:

@@ -25,6 +25,7 @@ class InfoVae(VaeBase):
     """
     
     def __init__(self,
+            trial=None,
             alpha = -0.5,
             beta = 5.0,
             reg_weight = 100,
@@ -37,13 +38,19 @@ class InfoVae(VaeBase):
 
         self.latent_dim = self.img_encoder.latent_dim
         self.hidden_dim = self.img_encoder.enc_hidden_dims
-        self.reg_weight = reg_weight
-        self.kernel_type = kernel_type
-        self.z_var = latent_var
 
-        assert alpha <= 0, "alpha must be negative or zero"
-        self.alpha = alpha
-        self.beta = beta
+        if trial is not None:
+            self.reg_weight = trial.suggest_int("reg_weight", 1, 100, 10)
+            self.alpha = trial.suggest_float("alpha", -10., 0., step=1)
+            self.beta = trial.suggest_float("beta", 0, 20, step=2)
+            self.z_var = trial.suggest_float("latent_var", 0., 40, step=5)
+        else:
+            self.reg_weight = reg_weight
+            self.z_var = latent_var
+            self.alpha = alpha
+            self.beta = beta
+
+        assert self.alpha <= 0        
 
         self.mu = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
         self.logvar = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
