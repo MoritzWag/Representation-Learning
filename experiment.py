@@ -75,8 +75,6 @@ class RlExperiment(pl.LightningModule):
             self.model.loss_item['recon_image'] = reconstruction
             train_loss = self.model._loss_function(image.float(), **self.model.loss_item)
 
-
-        
         train_history = pd.DataFrame([[value.cpu().detach().numpy() for value in train_loss.values()]],
                                     columns=[key for key in train_loss.keys()])   
             
@@ -137,10 +135,8 @@ class RlExperiment(pl.LightningModule):
             #z_perm = permute_dims(z)
             #D_x_z = self.discriminator(image.float(), z_perm.double())
 
-            #Info_xz = -(D_xz.mean() - torch.exp(D_x_z - 1).mean())
-            #info_loss = Info_xz
-
-            #self.mi_val = self.mi_val.append(info_loss, ignore_index=True)
+            Info_xz = -(D_xz.mean() - torch.exp(D_x_z - 1).mean())
+            info_loss = Info_xz
         
         val_history = pd.DataFrame([[value.cpu().detach().numpy() for value in val_loss.values()]],
                                     columns=[key for key in val_loss.keys()])
@@ -163,32 +159,33 @@ class RlExperiment(pl.LightningModule):
 
         self.model._embed(image)
         
-        self.model._sample_images(image,
-                                path=f"images/{self.params['dataset']}/",
-                                epoch=self.current_epoch,
-                                run_name=self.run_name)
+        # COMMENTED OUT FOR EASY ACCESS
+        # self.model._sample_images(image,
+        #                         path=f"images/{self.params['dataset']}/",
+        #                         epoch=self.current_epoch,
+        #                         run_name=self.run_name)
 
-        self.model.traversals(epoch=self.current_epoch,
-                                run_name=self.run_name,
-                                path=f"images/{self.params['dataset']}/")
+        # self.model.traversals(epoch=self.current_epoch,
+        #                         run_name=self.run_name,
+        #                         path=f"images/{self.params['dataset']}/")
 
-        self.model._cluster(image=image,
-                            attribute=attribute[:,0],
-                            path=f"images/{self.params['dataset']}/",
-                            epoch=self.current_epoch,
-                            run_name=self.run_name,
-                            method='umap')
+        # self.model._cluster(image=image,
+        #                     attribute=attribute[:,0],
+        #                     path=f"images/{self.params['dataset']}/",
+        #                     epoch=self.current_epoch,
+        #                     run_name=self.run_name,
+        #                     method='umap')
                             
-        self.model._cluster(image=image,
-                            attribute=attribute[:,0],
-                            path=f"images/{self.params['dataset']}/",
-                            epoch=self.current_epoch,
-                            run_name=self.run_name,
-                            method='tsne')
+        # self.model._cluster(image=image,
+        #                     attribute=attribute[:,0],
+        #                     path=f"images/{self.params['dataset']}/",
+        #                     epoch=self.current_epoch,
+        #                     run_name=self.run_name,
+        #                     method='tsne')
 
-        self.model._cluster_freq(path=f"images/{self.params['dataset']}/",
-                                epoch=self.current_epoch,
-                                run_name=self.run_name)
+        # self.model._cluster_freq(path=f"images/{self.params['dataset']}/",
+        #                         epoch=self.current_epoch,
+        #                         run_name=self.run_name)
 
         del image
         del attribute
@@ -325,6 +322,10 @@ class RlExperiment(pl.LightningModule):
                                 epoch=1,
                                 run_name=self.run_name)
 
+        
+        self.model._corplot(path=f"images/{self.params['dataset']}/test/",
+                            epoch=1,
+                            run_name=self.run_name)
 
         return {'avg_test_loss': avg_test_loss}
 

@@ -283,9 +283,6 @@ class Visualizer(nn.Module):
                        path,
                        run_name):
 
-        carry_on = (epoch <= 10) or ((epoch % 20) == 0)
-        if not carry_on:
-            return
 
         path = os.path.expanduser(path)
         storage_path = f"{path}{run_name}/"
@@ -328,10 +325,6 @@ class Visualizer(nn.Module):
             path {str}:
             experiment_name {}:
         """
-
-        carry_on = (epoch <= 10) or ((epoch % 20) == 0)
-        if not carry_on:
-            return
         
         indices = np.random.choice(a=image.size()[0],
                                    size=int(num_samples),
@@ -418,10 +411,6 @@ class Visualizer(nn.Module):
             self.store_probs * 1
         except:
             return
-
-        carry_on = (epoch <= 10) or ((epoch % 20) == 0)
-        if not carry_on:
-            return
         
         storage_path = f"{path}{run_name}/"
 
@@ -443,7 +432,43 @@ class Visualizer(nn.Module):
         fig.savefig(f"{storage_path}/cluster_distribution{epoch}.png")
 
 
+    def _corplot(self, path, run_name, epoch):
 
+            storage_path = f"{path}{experiment_name}/"
+
+            latent_names = ['latent_{num}'.format(num=x) for x in range(self.latent_dim+1)]
+
+            df = pd.DataFrame(
+                data=self.store_z.cpu().numpy(),
+                index=range(self.store_z.size()[0]),
+                columns=latent_names[1:]
+            )
+
+            indices = np.random.choice(a=df.shape[0],
+                            size=int(500),
+                            replace=False)
+            
+            plt.close()
+            g = sns.PairGrid(df.iloc[indices,:])
+            g.map_upper(plt.scatter)
+            g.map_lower(sns.kdeplot)
+            g.map_diag(sns.kdeplot, lw=3, legend=False)
+
+            g.savefig(f"{storage_path}/corplot{epoch}.png")
+            plt.close()
+
+            features_discrete = histogram_discretize(self.store_z.cpu(), num_bins=400) 
+            mutual_info_matrix = discrete_mutual_info(features_discrete, features_discrete)
+
+            df_mi = pd.DataFrame(
+                data=mutual_info_matrix,
+                index=latent_names[1:],
+                columns=latent_names[1:]
+            )
+
+            mi_plot = sns.heatmap(df_mi, cmap = 'YlOrBr')
+
+            mi_plot.figure.savefig(f"{storage_path}/mutual_information{epoch}.png")
         
 
         
