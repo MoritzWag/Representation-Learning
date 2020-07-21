@@ -26,6 +26,7 @@ class VaeGaussian(nn.Module):
     """
     """
     def __init__(self,
+                trial=None,
                 loss_type = "l2", 
                 **kwargs):
         super(VaeGaussian, self).__init__(

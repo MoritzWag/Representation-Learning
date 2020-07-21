@@ -29,6 +29,7 @@ class DIPVae(nn.Module):
     """
     
     def __init__(self,
+                trial=None,
                 lambda_dig: float = 10.,
                 lambda_offdig: float = 5.,
                 **kwargs):
@@ -42,8 +43,12 @@ class DIPVae(nn.Module):
         self.mu = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
         self.logvar = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
 
-        self.lambda_dig = lambda_dig
-        self.lambda_offdig = lambda_offdig
+        if trial is not None:
+            self.lambda_dig = trial.suggest_float("lambda_dig", 1, 50, step=2)
+            self.lambda_offdig = trial.suggest_float("lambda_offdig", 1, 30, step=2)
+        else:
+            self.lambda_dig = lambda_dig
+            self.lambda_offdig = lambda_offdig  
 
         try:
             self.attr_mu = nn.Linear(50, self.text_encoder.num_attr)
@@ -142,10 +147,12 @@ class DIPVae(nn.Module):
         
         latent_loss = torch.sum(-0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0)
 
-        if image.shape[1] == 3:
-            kld_weight = 32 / 400000
-        else:
-            kld_weight = 32 / 40000
+        #if image.shape[1] == 3:
+        #    kld_weight = 32 / 400000
+        #else:
+        #    kld_weight = 32 / 40000
+
+        kld_weight = 1
 
         centered_mu = mu - mu.mean(dim=1, keepdim=True)
         cov_mu = centered_mu.t().matmul(centered_mu).squeeze()

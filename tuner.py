@@ -13,10 +13,15 @@ from library.models2.helpers import *
 from library.architectures import Discriminator 
 from experiment import RlExperiment
 from pytorch_lightning import Trainer
+import pytorch_lightning as pl
 from pytorch_lightning.loggers import MLFlowLogger
 
-import confuse
+import optuna
+from optuna.integration import PyTorchLightningPruningCallback
+from datetime import datetime
 
+import plotly.io as pio 
+pio.orca.config.use_xvfb = True 
 
 torch.set_default_dtype(torch.float64)
 
@@ -25,7 +30,7 @@ parser.add_argument('--config', '-c',
                     dest='filename',
                     metavar='FILE',
                     help='path to config file',
-                    default='configs/ADIDAS/vae.yaml')
+                    default='configs/ADIDAS/beta_vae.yaml')
 parser.add_argument('--experiment_name',
                     type=str, default='VaeExperiment',
                     metavar='N', help='specifies the experiment name for better tracking later')
@@ -136,6 +141,8 @@ with open(args.filename, 'r') as file:
 config = update_config(config=config, args=args)
 
 
+DIR = os.getcwd()
+MODEL_DIR = os.path.join(DIR, "result")
 
 
 
@@ -154,67 +161,104 @@ class MetricsCallback(Callback):
 
 
 
-
+start = datetime.now()
 
 ## define objective
 
-def objective(trial, config, args):
-
-
-
+def objective(trial):
+    """
+    """
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
-                                os.path.join(MODEL_DIR, f"trial_{trial.number}, {epoch}"), monitor='val_loss'
+        os.path.join(MODEL_DIR, "trial_{}".format(trial.number), "{epoch}"), monitor="val_acc"
     )
 
     metrics_callback = MetricsCallback()
     
-    model = parse_model_config(config)
+    model = parse_model_config(config, trial=trial)
     mlflow_logger = MLFlowLogger(experiment_name=args.experiment_name)
 
-    experiment = RlExperiment(model,
-                            discriminator=discriminator, 
+    experiment = RlExperiment(model, 
                             params=config['exp_params'],
                             model_hyperparams=config['model_hyperparams'],
                             run_name=args.run_name,
                             experiment_name=args.experiment_name)
 
-    trainer = Trainer(default_save_path=config['logging_params']['save_dir'],
+    runner = Trainer(default_save_path=config['logging_params']['save_dir'],
                     logger=mlflow_logger,
                     check_val_every_n_epoch=1,
-                    train_percent_check=1.,
-                    val_percent_check=1.,
+                    train_percent_check=.1,
+                    val_percent_check=.1,
                     num_sanity_val_steps=0,
-                    callback=[metrics_callback],
-                    early_stop_callback=PytorchLightningPruningCallback(trial, monitor='val_acc'),
+                    callbacks=[metrics_callback],
+                    early_stop_callback=PyTorchLightningPruningCallback(trial, monitor='mut_info'),
                     fast_dev_run=False,
                     **config['trainer_params'])
     
 
+    runner.fit(experiment)
+
+
+    return metrics_callback.metrics[-1]['mut_info'].item()
 
 
 
 
 
 # create optuna study
-pruner = optuna.pruners.MedianPruner() if args.pruning else optuna.pruners.NopPruner()
+#pruner = optuna.pruners.MedianPruner() if args.pruning else optuna.pruners.NopPruner()
+#pruner = optuna.pruners.MedianPruner()
 
-study = optuna.create_study(direction='maximize', pruner=pruner)
-study.optimize(objective, n_trials=100, timeout=600)
+#study = optuna.create_study(direction='maximize', pruner=pruner)
+#study.optimize(objective, n_trials=2, timeout=600)
 
+n_train_iter = 1000
+study = optuna.create_study(
+    direction='maximize',
+    pruner=optuna.pruners.HyperbandPruner(
+        min_resource=5,
+        max_resource=n_train_iter,
+        reduction_factor=3
+    )
+)
+
+study.optimize(objective, n_trials=40)
 print("Number of finished traisl")
 
+#try:
+#    trial = study.best_trial
+#except:
+#    pass
+
+end = datetime.now()
+
+# print total running duration
+print(end - start)
+
+# retrieve/print best trial
+best_trial = study.best_trial
+print(best_trial)
+
+# retrieve/print best params
+best_params = study.best_params
+print(best_params)
 
 
+# save results in dateframe
+df = study.trials_dataframe()
+df.to_csv(f"hb_{args.run_name}.csv")
+
+#pdb.set_trace()
+#optuna.visualization.plot_optimization_history(study)
 
 ## store best values!
 
-trial = study.best_trial
 
-for key, value in trial.params.items():
-    print("  {}: {}".format(key, value))
+
+#for key, value in trial.params.items():
+#    print("  {}: {}".format(key, value))
 
 
 
 
 # do not what this is doing!
-shutil.rmtree(MODEL_DIR)
+#shutil.rmtree(MODEL_DIR)

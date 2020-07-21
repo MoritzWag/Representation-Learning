@@ -48,10 +48,10 @@ class Evaluator(nn.Module):
                         storage_path
                     )
 
-                    self.scores['rf_acc'+downstream_task_names[i]] = acc.round(5)
-                    self.scores['rf_auc'+downstream_task_names[i]] = auc
-                    self.scores['rf_aupr'+downstream_task_names[i]] = aupr.round(5)
-                    self.scores['rf_avg_pr'+downstream_task_names[i]] = avg_pr.round(5)
+                    self.scores['rf_acc_'+downstream_task_names[i]] = acc.round(5)
+                    self.scores['rf_auc_'+downstream_task_names[i]] = auc
+                    self.scores['rf_aupr_'+downstream_task_names[i]] = aupr.round(5)
+                    self.scores['rf_avg_pr_'+downstream_task_names[i]] = avg_pr.round(5)
 
             else:
                 acc, auc, aupr, avg_pr = random_forest(
@@ -74,7 +74,7 @@ class Evaluator(nn.Module):
                 for i in range(target_train.shape[1]):
                     acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
 
-                    self.scores['knn_acc'+downstream_task_names[i]] = acc.round(5)
+                    self.scores['knn_acc_'+downstream_task_names[i]] = acc.round(5)
             else:
                 acc = knn_classifier(features_train, target_train, features_test, target_test)
                 self.scores['dst_knn_acc'] = acc.round(5)

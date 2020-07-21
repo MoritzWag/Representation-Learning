@@ -11,7 +11,6 @@ from experiment import RlExperiment
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import MLFlowLogger
 
-import confuse
 
 
 torch.set_default_dtype(torch.float64)
@@ -21,7 +20,7 @@ parser.add_argument('--config', '-c',
                     dest='filename',
                     metavar='FILE',
                     help='path to config file',
-                    default='configs/ADIDAS/vae.yaml')
+                    default='configs/ADIDAS/beta_vae.yaml')
 parser.add_argument('--experiment_name',
                     type=str, default='VaeExperiment',
                     metavar='N', help='specifies the experiment name for better tracking later')
@@ -130,18 +129,17 @@ with open(args.filename, 'r') as file:
 
 config = update_config(config=config, args=args)
 
-model = parse_model_config(config)
+model = parse_model_config(config, trial=None)
 
 
 mlflow_logger = MLFlowLogger(
                     experiment_name=args.experiment_name)
 
 
-discriminator = Discriminator(latent_dim=config['img_arch_params']['latent_dim'])
+#ddiscriminator = Discriminator(latent_dim=config['img_arch_params']['latent_dim'])
 
 ## build experiment
 experiment = RlExperiment(model,
-                        discriminator=discriminator,
                         params=config['exp_params'],
                         model_hyperparams=config['model_hyperparams'],
                         run_name=args.run_name,
@@ -154,8 +152,8 @@ runner = Trainer(default_save_path=config['logging_params']['save_dir'],
                 min_epochs=1,
                 logger=mlflow_logger,
                 check_val_every_n_epoch=1,
-                train_percent_check=1.,
-                val_percent_check=1.,
+                train_percent_check=.1,
+                val_percent_check=.1,
                 num_sanity_val_steps=5,
                 early_stop_callback=False,
                 fast_dev_run=False,

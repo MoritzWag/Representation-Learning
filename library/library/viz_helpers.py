@@ -35,7 +35,9 @@ def plot_train_progress(history,
 
 
 def get_mlflow_results(mlflow_id):
-    path = f"../../mlruns{mlflow_id}"
+    #path = f"../../mlruns/{mlflow_id}"
+    path = f"mlruns/{mlflow_id}"
+
 
     # select only runy with 32-lenghts hashes
     runs = [run for run in os.listdir(path) if len(run) == 32 and not run.startswith('performance')]
@@ -51,6 +53,8 @@ def get_mlflow_results(mlflow_id):
     i = 0 
     for run in runs:
         dataset = open(f'{path}{run}/params/dataset').read()
+        model = open(f'{path}{run}/params/model').read()
+        
         
 
 

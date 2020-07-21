@@ -54,7 +54,7 @@ def makeWithMixins(cls, mixins):
             print("whatsoever")
     return cls
 
-def parse_model_config(config):
+def parse_model_config(config, trial=None):
     model_params = config.get('model_params')
     try:
         hyper_params = config.get('model_hyperparams')
@@ -66,7 +66,7 @@ def parse_model_config(config):
     model_dict = parse_architecture_config(config)
     if hyper_params is not None:
         model_dict.update(hyper_params)
-    model = vae_instance(**model_dict)
+    model = vae_instance(trial=trial, **model_dict)
     return model
 
 def parse_architecture_config(config):
