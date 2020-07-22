@@ -337,13 +337,7 @@ class RlExperiment(pl.LightningModule):
                                 lr=self.params['learning_rate'],
                                 weight_decay=self.params['weight_decay'])
         optims.append(optimizer)
-
-        #optimizer_D = optim.Adam(self.discriminator.parameters(),
-        #                        lr=0.00001,
-        #                        weight_decay=self.params['weight_decay'])
         
-        #optims.append(optimizer_D)
-
         try:
             if self.params['scheduler_gamma'] is not None:
                 scheduler = optim.lr_scheduler.ExponentialLR(optims[0],
