@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 import torchvision.utils as vutils
 from library.viz_helpers import sort_list_by_other, get_coordinates, reshape_image
+from library.eval_helpers import histogram_discretize, discrete_mutual_info
 
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
