@@ -21,7 +21,8 @@ class RlExperiment(pl.LightningModule):
 
     def __init__(self, 
                 model: ReprLearner,
-                params, 
+                params,
+                log_params,
                 model_hyperparams,
                 run_name,
                 experiment_name):
@@ -30,6 +31,7 @@ class RlExperiment(pl.LightningModule):
         self.model = model.float()
         self.model.epoch = self.current_epoch
         self.params = params
+        self.log_params = log_params
         self.model_hyperparams = model_hyperparams
         self.curr_device = None
         self.train_history = pd.DataFrame()
@@ -80,22 +82,6 @@ class RlExperiment(pl.LightningModule):
             
         self.train_history = self.train_history.append(train_history, ignore_index=True)
 
-        #if optimizer_idx == 0:
-        #    return train_loss
-        
-        #if optimizer_idx == 1:
-        #    z = self.model._embed(image.float(), return_latents=True)
-        #    D_xz = self.discriminator(image.float(), z.double())
-        #    z_perm = permute_dims(z.double())
-        #    D_x_z = self.discriminator(image.float(), z_perm.double())
-
-        #    Info_xz = -(D_xz.mean() - torch.exp(D_x_z - 1).mean())
-        #    info_loss = Info_xz
-
-        #    #self.mi_train = self.mi_train.append(info_loss, ignore_index=True)
-
-        #    return {'loss': info_loss}
-
         return train_loss 
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
@@ -129,14 +115,6 @@ class RlExperiment(pl.LightningModule):
             reconstruction = self.forward(image.float())
             self.model.loss_item['recon_image'] = reconstruction
             val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
-
-            #z = self.model._embed(image.float(), return_latents=True)
-            #D_xz = self.discriminator(image.float(), z.double())
-            #z_perm = permute_dims(z)
-            #D_x_z = self.discriminator(image.float(), z_perm.double())
-
-            Info_xz = -(D_xz.mean() - torch.exp(D_x_z - 1).mean())
-            info_loss = Info_xz
         
         val_history = pd.DataFrame([[value.cpu().detach().numpy() for value in val_loss.values()]],
                                     columns=[key for key in val_loss.keys()])
@@ -191,11 +169,11 @@ class RlExperiment(pl.LightningModule):
         del attribute
 
         mi = self.model.mutual_information(latent_loss=self.val_history.loc[-self.accum_index:,:]['latent_loss'].mean())
-        self.mut_info.append(mi.numpy())
+        self.mut_info.append(mi)
         self.accum_index = 0
 
         #return {'val_loss': avg_loss}  
-        return {'log': {'mut_info': mi.float()}}  
+        return {'log': {'mut_info': mi}}  
 
     def test_step(self, batch, batch_idx):
         image, attribute = batch
@@ -266,6 +244,8 @@ class RlExperiment(pl.LightningModule):
 
         self.model.log_metrics(storage_path=f"logs/{self.run_name}/{self.params['dataset']}/test/")
 
+        self.model.calc_num_au(data=self.test_gen)
+
         mut_inf = pd.DataFrame(self.mut_info) 
         mut_inf.to_csv(f"logs/{self.run_name}/{self.params['dataset']}/test/mutual_information.csv")
 
@@ -281,11 +261,17 @@ class RlExperiment(pl.LightningModule):
         # log hyperparams
         for _name, _param in zip(self.model_hyperparams.keys(), self.model_hyperparams.values()):
             self.logger.experiment.log_param(key=_name,
-                                                value=_param,
-                                                run_id=self.logger.run_id)
+                                            value=_param,
+                                            run_id=self.logger.run_id)
         
         self.logger.experiment.log_param(key='run_name',
                                         value=self.run_name, 
+                                        run_id=self.logger.run_id)
+        self.logger.experiment.log_param(key='experiment_name',
+                                        value=self.experiment_name,
+                                        run_id=self.logger.run_id)
+        self.logger.experiment.log_param(key='manual_seed',
+                                        value=self.log_params['manual_seed'],
                                         run_id=self.logger.run_id)
         
         del train_data

@@ -1,6 +1,8 @@
 import pandas as pd 
 import numpy as np 
 import os 
+import pdb 
+import matplotlib.pyplot as plt
 
 
 def get_mlflow_results(mlflow_id, path=None):
@@ -12,6 +14,9 @@ def get_mlflow_results(mlflow_id, path=None):
     
     runs = [run for run in os.listdir(path) if len(run) == 32 and not run.startswith('performance')]
     frame = pd.DataFrame(columns=['run_name',
+                                'experiment_name',
+                                'manual_seed',
+                                'num_active_units',
                                 'gaussian_total_correlation',
                                 'gaussian_wasserstein_correlation',
                                 'gaussian_wasserstein_correlation_norm',
@@ -51,11 +56,25 @@ def get_mlflow_results(mlflow_id, path=None):
     for run in runs:
     
         try:
-            run_name = open(f'{path}/{run}/params/run_name').read().    
+            run_name = open(f'{path}/{run}/params/run_name').read()
         except:
             run_name = "Nan"
+        try: 
+            experiment_name = open(f'{path}/{run}/params/experiment_name').read()
+        except:
+            experiment_name = "Nan"
+        try:
+            manual_seed = open(f'{path}/{run}/params/manual_seed').read()
+        except:
+            manual_seed = "Nan"
+
+
 
         # first scores that always appear
+        try: 
+            num_active_units = open(f'{path}/{run}/metrics/num_active_units').read().split()[1]
+        except:
+            num_active_units = 0.0
         try: 
             gaussian_total_correlation = open(f'{path}/{run}/metrics/gaussian_total_correlation').read().split()[1]
         except:
@@ -209,6 +228,9 @@ def get_mlflow_results(mlflow_id, path=None):
             dst_rf_avg_pr = 0.0
 
         frame.loc[i] = [run_name,
+                        experiment_name,
+                        manual_seed,
+                        num_active_units,
                         gaussian_total_correlation, 
                         gaussian_wasserstein_correlation, 
                         gaussian_wasserstein_correlation_norm, 
@@ -247,9 +269,32 @@ def get_mlflow_results(mlflow_id, path=None):
         i += 1 
     
     #frame.to_csv(f'{path}runs.csv')
-    frame.to_csv('runs.csv')
+    #frame.to_csv('runs.csv')
+    frame.to_csv(f'{experiment_name}_runs.csv')
 
 
 
+def plot_boxes(df, path, metrics=['rf_acc_product_group', 
+                                'rf_acc_color_group',
+                                'rf_acc_product_type',
+                                'rf_acc_gender']):
+    """
+    """
 
+    seeds = list(df['manual_seed'].unique())
+    for metric in metrics:
+        plt.close()
+        collections = []
+        #seeds = df['manual_seed'].unique()
+        collections = [df[df['manual_seed'] == seed][metric] for seed in seeds]
+        
 
+        fig = plt.figure(1, figsize=(9, 6))
+        ax = fig.add_subplot(111)
+        bp = ax.boxplot(collections)
+
+        ax.set_xticklabels(seeds)
+        ax.set_xlabel("seeds")
+        ax.set_title(f"Seed analysis: {metric}")
+
+        fig.savefig(f"{metric}_boxplot.png")

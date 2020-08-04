@@ -21,6 +21,7 @@ from optuna.integration import PyTorchLightningPruningCallback
 from datetime import datetime
 
 import plotly.io as pio 
+
 pio.orca.config.use_xvfb = True 
 
 torch.set_default_dtype(torch.float64)
@@ -179,6 +180,7 @@ def objective(trial):
 
     experiment = RlExperiment(model, 
                             params=config['exp_params'],
+                            log_params=config['logging_params'],
                             model_hyperparams=config['model_hyperparams'],
                             run_name=args.run_name,
                             experiment_name=args.experiment_name)
@@ -197,10 +199,7 @@ def objective(trial):
 
     runner.fit(experiment)
 
-
     return metrics_callback.metrics[-1]['mut_info'].item()
-
-
 
 
 
@@ -211,7 +210,10 @@ def objective(trial):
 #study = optuna.create_study(direction='maximize', pruner=pruner)
 #study.optimize(objective, n_trials=2, timeout=600)
 
-n_train_iter = 1000
+# IMPORTANT: n_train_iter should match the number of epochs for neural networks!
+n_train_iter = 80
+n_train_iter = config['trainer_params']['max_epochs']
+#n_train_iter = 1000
 study = optuna.create_study(
     direction='maximize',
     pruner=optuna.pruners.HyperbandPruner(
@@ -221,7 +223,7 @@ study = optuna.create_study(
     )
 )
 
-study.optimize(objective, n_trials=40)
+study.optimize(objective, n_trials=10)
 print("Number of finished traisl")
 
 #try:
@@ -247,8 +249,10 @@ print(best_params)
 df = study.trials_dataframe()
 df.to_csv(f"hb_{args.run_name}.csv")
 
-#pdb.set_trace()
+pdb.set_trace()
 #optuna.visualization.plot_optimization_history(study)
+fig = optuna.visualization.plot_intermediate_values(study)
+fig.write_image('test.png')
 
 ## store best values!
 

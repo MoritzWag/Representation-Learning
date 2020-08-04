@@ -434,7 +434,7 @@ class Visualizer(nn.Module):
 
     def _corplot(self, path, run_name, epoch):
 
-            storage_path = f"{path}{experiment_name}/"
+            storage_path = f"{path}{run_name}/"
 
             latent_names = ['latent_{num}'.format(num=x) for x in range(self.latent_dim+1)]
 

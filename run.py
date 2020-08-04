@@ -11,6 +11,9 @@ from experiment import RlExperiment
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import MLFlowLogger
 
+import torch.backends.cudnn as cudnn
+
+
 
 
 torch.set_default_dtype(torch.float64)
@@ -52,6 +55,10 @@ parser.add_argument('--gpus', type=int, default=None,
                     help='number of gpus available (default: config file)')
 parser.add_argument('--max_epochs', type=int, default=None,
                     help='number of epochs (default: config file)')
+
+##logging params
+parser.add_argument('--manual_seed', type=int, default=None,
+                    help='seed for reproducibility (default: config file)')
 
 # model params
 # GaussianVae
@@ -138,9 +145,16 @@ mlflow_logger = MLFlowLogger(
 
 #ddiscriminator = Discriminator(latent_dim=config['img_arch_params']['latent_dim'])
 
+#For reproducibility
+torch.manual_seed(config['logging_params']['manual_seed'])
+np.random.seed(config['logging_params']['manual_seed'])
+cudnn.deterministic = True 
+cudnn.benchmark = False
+
 ## build experiment
 experiment = RlExperiment(model,
                         params=config['exp_params'],
+                        log_params=config['logging_params'],
                         model_hyperparams=config['model_hyperparams'],
                         run_name=args.run_name,
                         experiment_name=args.experiment_name)
@@ -152,8 +166,8 @@ runner = Trainer(default_save_path=config['logging_params']['save_dir'],
                 min_epochs=1,
                 logger=mlflow_logger,
                 check_val_every_n_epoch=1,
-                train_percent_check=.1,
-                val_percent_check=.1,
+                train_percent_check=1,
+                val_percent_check=1,
                 num_sanity_val_steps=5,
                 early_stop_callback=False,
                 fast_dev_run=False,

@@ -82,7 +82,6 @@ class Evaluator(nn.Module):
     def unsupervised_metrics(self, data):
         """
         """        
-        
         zs = data.cpu().numpy()
         num_latents = zs.shape[1]
         zs_transposed = np.transpose(zs)
@@ -110,9 +109,15 @@ class Evaluator(nn.Module):
         q_z = MultivariateNormal(loc=torch.zeros(z_mean.shape[0]), covariance_matrix=torch.eye(z_mean.shape[0]))
 
         kldiv_priors = kl_divergence(p_z, q_z)
+
+        mi = latent_loss - kldiv_priors
+        zero_tensor = torch.tensor(0.0)
+        mi = max(zero_tensor, mi).numpy()
+
+        mi = np.round_(mi, 5)
         
-        return latent_loss - kldiv_priors
- 
+        return  mi
+
     def gaussian_total_correlation(self, cov):
         """
         """
@@ -124,7 +129,42 @@ class Evaluator(nn.Module):
         sqrtm = scipy.linalg.sqrtm(cov * np.expand_dims(np.diag(cov), axis=1))
         return 2 * np.trace(cov) - 2 * np.trace(sqrtm)
     
+    def calc_num_au(self, data, delta=0.01):
+        """compute the number of active units
+        """
+        count = 0 
+        for batch, (image, attribute) in enumerate(data):
+            image = image.cuda()
+            h_enc = self.img_encoder(image.float())
+            mean, _ = self._parameterize(h_enc, img=True)
+            if count == 0:
+                means_sum = mean.sum(dim=0, keepdim=True)
+            else:
+                means_sum = means_sum + mean.sum(dim=0, keepdim=True)
+            count += mean.size(0)
+        
+        mean_mean = means_sum / count
 
+        count = 0 
+        for batch, (image, attribute) in enumerate(data):
+            image = image.cuda()
+            h_enc = self.img_encoder(image.float())
+            mean, _ = self._parameterize(h_enc, img=True)
+            if count == 0:
+                var_sum = ((mean - mean_mean) ** 2).sum(dim=0)
+            else:
+                var_sum = var_sum + ((mean - mean_mean) ** 2).sum(dim=0)
+            count += mean.size(0)
+        
+        au_var = var_sum / (count + 1)
+        
+        num_au = (au_var >= delta).sum().item()
+        self.scores['num_active_units'] = num_au
+
+        # actually no need for return values =>> rather save in self.scores()!!
+        #return (au_var >= delta).sum().item(), au_var
+
+    
     def log_metrics(self, storage_path):
         """
         """
