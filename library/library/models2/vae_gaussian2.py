@@ -27,7 +27,8 @@ class VaeGaussian(nn.Module):
     """
     def __init__(self,
                 trial=None,
-                loss_type = "l2", 
+                loss_type = "l2",
+                kld_weight: float = 32/40000, 
                 **kwargs):
         super(VaeGaussian, self).__init__(
             **kwargs
@@ -37,6 +38,7 @@ class VaeGaussian(nn.Module):
         self.hidden_dim = self.img_encoder.enc_hidden_dims
         self.output_dim = self.img_encoder.enc_output_dim
         self.loss_type = loss_type
+        self.kld_weight = kld_weight
         # Define the affine linear transformations from laster layer of encoder to space of parametrization
         self.mu = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
         self.logvar = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
@@ -148,18 +150,13 @@ class VaeGaussian(nn.Module):
 
         latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
-        #kld_weight = 32 / 40000
-        if image.shape[1] == 3:
-            kld_weight = 32 / 400000
-        else:
-            kld_weight = 32 / 40000
         if recon_text is not None and text is not None:
             loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss 
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
                     'image_recon_loss': image_recon_loss.to(torch.double), 'text_recon_loss': text_recon_loss.to(torch.double)}
 
         else:
-            loss = kld_weight * latent_loss + image_recon_loss 
+            loss = self.kld_weight * latent_loss + image_recon_loss 
 
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
                     'image_recon_loss': image_recon_loss.to(torch.double)}

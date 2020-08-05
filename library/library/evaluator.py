@@ -132,37 +132,23 @@ class Evaluator(nn.Module):
     def calc_num_au(self, data, delta=0.01):
         """compute the number of active units
         """
-        count = 0 
-        for batch, (image, attribute) in enumerate(data):
-            image = image.cuda()
-            h_enc = self.img_encoder(image.float())
-            mean, _ = self._parameterize(h_enc, img=True)
-            if count == 0:
-                means_sum = mean.sum(dim=0, keepdim=True)
-            else:
-                means_sum = means_sum + mean.sum(dim=0, keepdim=True)
-            count += mean.size(0)
         
-        mean_mean = means_sum / count
+        encoding = self.img_encoder(data.float())
+        try:
+            means, _ = self._parameterize(encoding, img=True)
+        except:
+            self.scores['num_active_units'] = np.nan
+            return 
+        
+        au_mean = means.mean(0, keepdim=True)
 
-        count = 0 
-        for batch, (image, attribute) in enumerate(data):
-            image = image.cuda()
-            h_enc = self.img_encoder(image.float())
-            mean, _ = self._parameterize(h_enc, img=True)
-            if count == 0:
-                var_sum = ((mean - mean_mean) ** 2).sum(dim=0)
-            else:
-                var_sum = var_sum + ((mean - mean_mean) ** 2).sum(dim=0)
-            count += mean.size(0)
-        
-        au_var = var_sum / (count + 1)
-        
+        au_var = means - au_mean
+        ns = au_var.size(0)
+
+        au_var = (au_var ** 2).sum(dim=0) / (ns - 1)
+
         num_au = (au_var >= delta).sum().item()
         self.scores['num_active_units'] = num_au
-
-        # actually no need for return values =>> rather save in self.scores()!!
-        #return (au_var >= delta).sum().item(), au_var
 
     
     def log_metrics(self, storage_path):

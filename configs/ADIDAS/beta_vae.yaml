@@ -7,6 +7,7 @@ model_hyperparams:
   restrict_capacity: True
   capacity_max_iter: 10000
   max_capacity: 25
+  kld_weight: 0.0008
 
 architecture:
   img_encoder: 'ConvEncoder'

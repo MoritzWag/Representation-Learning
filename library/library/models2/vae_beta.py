@@ -31,6 +31,7 @@ class BetaVae(nn.Module):
                 max_capacity: int = 25, # essentially the distance that we allow the prior and the posterior to have; 0 means: no distance is allowed/wanted
                 restrict_capacity = True,
                 capacity_max_iter: int = 1e5,
+                kld_weight: float = 32 / 400000,
                 **kwargs):
         super(BetaVae, self).__init__(
             **kwargs
@@ -39,6 +40,7 @@ class BetaVae(nn.Module):
         #self.hidden_dim = self.img_encoder.hidden_dims
         self.hidden_dim = self.img_encoder.enc_hidden_dims
         self.output_dim = self.img_encoder.enc_output_dim
+        self.kld_weight = kld_weight
 
         # Define the affine linear transformations from laster layer of encoder to space of parametrization
         self.mu = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
@@ -165,9 +167,6 @@ class BetaVae(nn.Module):
         #latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar + mu ** 2 - logvar.exp(), dim=1), dim=0)
         latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
-        kld_weight = 32 / 400000
-        #loss = kld_weight * latent_loss + image_recon_loss + text_recon_loss
-        
         if self.restrict_capacity == False:
 
             if recon_text is not None and text is not None:
@@ -194,13 +193,13 @@ class BetaVae(nn.Module):
             
 
             if recon_text is not None and text is not None:
-                loss = image_recon_loss + text_recon_loss + self.beta * kld_weight * (kld_loss - capacity).abs()
+                loss = image_recon_loss + text_recon_loss + self.beta * self.kld_weight * (kld_loss - capacity).abs()
 
                 return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
                         'image_recon_loss': image_recon_loss.to(torch.double), 'text_recon_loss': text_recon_loss.to(torch.double)}
                         
             else:
-                loss = image_recon_loss + self.beta * kld_weight * (latent_loss - capacity).abs()
+                loss = image_recon_loss + self.beta * self.kld_weight * (latent_loss - capacity).abs()
 
                 return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double), 
                         'image_recon_loss': image_recon_loss.to(torch.double)}

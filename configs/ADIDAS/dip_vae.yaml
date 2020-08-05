@@ -5,6 +5,7 @@ model_params:
 model_hyperparams:
   lambda_dig: 10.
   lambda_offdig: 5.
+  kld_weight: 0.0008
 
 architecture:
   img_encoder: 'ConvEncoder'

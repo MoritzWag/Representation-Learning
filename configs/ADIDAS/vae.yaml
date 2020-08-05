@@ -4,6 +4,8 @@ model_params:
 
 model_hyperparams:
   loss_type: "l2"
+  kld_weight: 0.0008
+
 
 architecture:
   img_encoder: 'ConvEncoder'

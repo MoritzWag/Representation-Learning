@@ -467,7 +467,9 @@ class Visualizer(nn.Module):
                 columns=latent_names[1:]
             )
 
-            mi_plot = sns.heatmap(df_mi, cmap = 'YlOrBr')
+            ax = plt.axes()
+            mi_plot = sns.heatmap(df_mi, cmap = 'YlOrBr', ax = ax)
+            ax.set_title('Mutual Information between latents')
 
             mi_plot.figure.savefig(f"{storage_path}/mutual_information{epoch}.png")
         

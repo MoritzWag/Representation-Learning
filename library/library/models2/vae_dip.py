@@ -32,6 +32,7 @@ class DIPVae(nn.Module):
                 trial=None,
                 lambda_dig: float = 10.,
                 lambda_offdig: float = 5.,
+                kld_weight: float = 32/40000,
                 **kwargs):
         super(DIPVae, self).__init__(
             **kwargs
@@ -49,6 +50,8 @@ class DIPVae(nn.Module):
         else:
             self.lambda_dig = lambda_dig
             self.lambda_offdig = lambda_offdig  
+
+        self.kld_weight = kld_weight
 
         try:
             self.attr_mu = nn.Linear(50, self.text_encoder.num_attr)
@@ -147,13 +150,6 @@ class DIPVae(nn.Module):
         
         latent_loss = torch.sum(-0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0)
 
-        #if image.shape[1] == 3:
-        #    kld_weight = 32 / 400000
-        #else:
-        #    kld_weight = 32 / 40000
-
-        kld_weight = 1
-
         centered_mu = mu - mu.mean(dim=1, keepdim=True)
         cov_mu = centered_mu.t().matmul(centered_mu).squeeze()
 
@@ -164,6 +160,6 @@ class DIPVae(nn.Module):
         dip_loss = self.lambda_offdig * torch.sum(cov_offdiag ** 2) + \
                     self.lambda_dig * torch.sum((cov_diag - 1) ** 2)
         
-        loss = image_recon_loss + kld_weight * latent_loss + dip_loss
+        loss = image_recon_loss + self.kld_weight * (latent_loss + dip_loss)
 
         return {'loss': loss, 'image_recon_loss': image_recon_loss, 'latent_loss': latent_loss, 'dip_loss': dip_loss}

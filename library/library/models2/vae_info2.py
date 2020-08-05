@@ -31,6 +31,7 @@ class InfoVae(VaeBase):
             reg_weight = 100,
             kernel_type = 'imq',
             latent_var = 2.,
+            kld_weight: float = 32/40000,
             **kwargs):
         super(InfoVae, self).__init__(
             **kwargs
@@ -52,6 +53,7 @@ class InfoVae(VaeBase):
 
         assert self.alpha <= 0        
 
+        self.kld_weight = kld_weight
         self.mu = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
         self.logvar = nn.Linear(self.hidden_dim[-1]*4, self.latent_dim)
 
@@ -144,11 +146,6 @@ class InfoVae(VaeBase):
         batch_size = 32
         bias_corr = batch_size * (batch_size - 1)
 
-        if image.shape[1] == 3:
-            kld_weight = 32 / 400000
-        else:
-            kld_weight = 32 / 40000
-
         if recon_image is not None and image is not None:
             image_recon_loss = F.mse_loss(recon_image, image).to(torch.float64)
         
@@ -160,14 +157,14 @@ class InfoVae(VaeBase):
         
         if recon_text is not None and text is not None:
             loss = self.beta*(image_recon_loss + text_recon_loss) + \
-                    (1. - self.alpha) * kld_weight * latent_loss + \
+                    (1. - self.alpha) * self.kld_weight * latent_loss + \
                     (self.alpha + self.reg_weight -1.)/bias_corr * mmd_loss
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double),
                     'image_recon_loss': image_recon_loss.to(torch.double), 'text_recon_loss': text_recon_loss.to(torch.double),
                     'mmd_loss': mmd_loss.to(torch.double)}
         else: 
             loss = self.beta*(image_recon_loss) + \
-                    (1. - self.alpha) * kld_weight * latent_loss + \
+                    (1. - self.alpha) * self.kld_weight * latent_loss + \
                     (self.alpha + self.reg_weight -1.)/bias_corr * mmd_loss
             return {'loss': loss.to(torch.double), 'latent_loss': latent_loss.to(torch.double),
                     'image_recon_loss': image_recon_loss.to(torch.double), 'mmd_loss': mmd_loss.to(torch.double)}
