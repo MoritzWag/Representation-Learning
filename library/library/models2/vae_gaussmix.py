@@ -144,8 +144,25 @@ class GaussmixVae(nn.Module):
         self.sigma_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).var(dim=2).sqrt()
         self.store_z = mixtures
         
-    def _parameterize(self, h_enc, img=None, attrs=None):
-        pass
+    def _parameterize(self, h_enc):
+
+        mu = self.mu(h_enc)
+        mu = mu.view(-1, self.categorical_dim, self.latent_dim)
+        logvar = self.logvar(h_enc)
+        logvar = logvar.view(-1, self.categorical_dim, self.latent_dim)
+
+        logits = self.cat(h_enc)
+        probs = F.softmax((logits + gumbel_samples), dim=(-1))
+
+        probs = probs.unsqueeze(1)
+
+        mixtures_mu = torch.matmul(probs, mu)
+        mixtures_mu = mixtures_mu.squeeze(1)
+
+        mixtures_logvar = torch.matmul(probs, logvar)
+        mixtures_logvar = mixtures_logvar.squeeze(1)
+
+        return mixtures_mu, log_sigma
 
     def _loss_function(
         self,

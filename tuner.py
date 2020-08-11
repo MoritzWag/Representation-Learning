@@ -65,6 +65,8 @@ parser.add_argument('--max_epochs', type=int, default=None,
                     help='number of epochs (default: config file)')
 
 # model params
+parser.add_argument('--kld_weight', type=float, default=None,
+                    help='Weight for the KL-Divergence term in the ELBO of VAE Models')
 # GaussianVae
 #parser.add_argument()
 

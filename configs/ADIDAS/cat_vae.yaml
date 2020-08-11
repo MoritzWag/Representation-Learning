@@ -9,6 +9,8 @@ model_hyperparams:
   anneal_interval: 100
   alpha: 50.
   probability: True
+  kld_weight: 0.0008
+
 
 architecture:
   img_encoder: 'ConvEncoder'

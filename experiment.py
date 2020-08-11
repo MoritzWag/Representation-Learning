@@ -244,10 +244,16 @@ class RlExperiment(pl.LightningModule):
 
         self.model.log_metrics(storage_path=f"logs/{self.run_name}/{self.params['dataset']}/test/")
 
-        self.model.calc_num_au(data=self.test_gen)
-
         mut_inf = pd.DataFrame(self.mut_info) 
         mut_inf.to_csv(f"logs/{self.run_name}/{self.params['dataset']}/test/mutual_information.csv")
+
+        del train_data
+        del test_data
+
+        image, attribute = self.model.accumulate_batches(self.test_gen)
+        self.model._embed(image)
+
+        self.model.calc_num_au(data=image)
 
         for key, value in zip(self.model.scores.keys(), self.model.scores.values()):
             self.logger.experiment.log_metric(key=key,
@@ -273,13 +279,6 @@ class RlExperiment(pl.LightningModule):
         self.logger.experiment.log_param(key='manual_seed',
                                         value=self.log_params['manual_seed'],
                                         run_id=self.logger.run_id)
-        
-        del train_data
-        del test_data
-        ## Visualization
-
-        image, attribute = self.model.accumulate_batches(self.test_gen)
-        self.model._embed(image)
 
         self.model._sample_images(image,
                         path=f"images/{self.params['dataset']}/test/",
@@ -308,7 +307,6 @@ class RlExperiment(pl.LightningModule):
                                 epoch=1,
                                 run_name=self.run_name)
 
-        
         self.model._corplot(path=f"images/{self.params['dataset']}/test/",
                             epoch=1,
                             run_name=self.run_name)

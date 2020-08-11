@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 import torchvision.utils as vutils
 from library.viz_helpers import sort_list_by_other, get_coordinates, reshape_image
+from library.eval_helpers import histogram_discretize, discrete_mutual_info
 
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
@@ -466,7 +467,9 @@ class Visualizer(nn.Module):
                 columns=latent_names[1:]
             )
 
-            mi_plot = sns.heatmap(df_mi, cmap = 'YlOrBr')
+            ax = plt.axes()
+            mi_plot = sns.heatmap(df_mi, cmap = 'YlOrBr', ax = ax)
+            ax.set_title('Mutual Information between latents')
 
             mi_plot.figure.savefig(f"{storage_path}/mutual_information{epoch}.png")
         

@@ -11,6 +11,8 @@ model_hyperparams:
   decrease_temp: True
   beta1: 1
   beta2: 1
+  kld_weight: 0.0008
+
 
 architecture:
   img_encoder: 'ConvEncoder'

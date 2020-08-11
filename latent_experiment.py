@@ -1,10 +1,18 @@
-import os
+import os 
+import pandas as pd
+from library.postprocessing import get_mlflow_results, plot_boxes
 
-latent_dims = [5, 10, 15]
+command1 = 'python run.py --config configs/ADIDAS/vae.yaml --max_epochs 80 --latent_dim 5 --experiment_name latent_check --run_name latent_5'
+command2 = 'python run.py --config configs/ADIDAS/vae.yaml --max_epochs 80 --latent_dim 10 --experiment_name latent_check --run_name latent_10'
+command3 = 'python run.py --config configs/ADIDAS/vae.yaml --max_epochs 80 --latent_dim 20 --experiment_name latent_check --run_name latent_20'
+command4 = 'python run.py --config configs/ADIDAS/vae.yaml --max_epochs 80 --latent_dim 40 --experiment_name latent_check --run_name latent_40'
 
-for latent_dim in latent_dims:
-    command = f"python run.py --config configs/ADIDAS/vae.yaml --experiment_name  latents --run_name latent_{latent_dim} --latent_dim {latent_dim} --max_epochs 50"
-    
-    print(command)
-    
-    os.system(command)
+os.system(command1)
+os.system(command2)
+os.system(command3)
+os.system(command4)
+
+mlruns = os.listdir('mlruns')
+latest_mlflow_id = 2
+
+get_mlflow_results(mlflow_id=latest_mlflow_id)

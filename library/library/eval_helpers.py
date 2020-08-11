@@ -151,6 +151,8 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     path = os.path.expanduser(path)
     if not os.path.exists(path):
         os.makedirs(path)
-    fig.savefig(f"{path}FI_{dst_name}.png")    
+    fig.savefig(f"{path}FI_{dst_name}.png") 
+
+    plt.close()
 
     return balanced_acc, weighted_auc, aupr_wmean, avg_precision, importance.importances

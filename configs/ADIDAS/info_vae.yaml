@@ -8,6 +8,7 @@ model_hyperparams:
   reg_weight: 100
   kernel_type: 'imq'
   latent_var: 2.
+  kld_weight: 0.0008
 
 architecture:
   img_encoder: 'ConvEncoder'

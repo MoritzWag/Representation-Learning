@@ -61,6 +61,8 @@ parser.add_argument('--manual_seed', type=int, default=None,
                     help='seed for reproducibility (default: config file)')
 
 # model params
+parser.add_argument('--kld_weight', type=float, default=None,
+                    help='Weight for the KL-Divergence term in the ELBO of VAE Models')
 # GaussianVae
 #parser.add_argument()
 
