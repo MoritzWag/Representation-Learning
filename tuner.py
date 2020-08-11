@@ -211,7 +211,7 @@ def objective(trial):
 #study.optimize(objective, n_trials=2, timeout=600)
 
 # IMPORTANT: n_train_iter should match the number of epochs for neural networks!
-n_train_iter = 80
+n_train_iter = 50
 n_train_iter = config['trainer_params']['max_epochs']
 #n_train_iter = 1000
 study = optuna.create_study(
@@ -223,7 +223,7 @@ study = optuna.create_study(
     )
 )
 
-study.optimize(objective, n_trials=10)
+study.optimize(objective, n_trials=20)
 print("Number of finished traisl")
 
 #try:
