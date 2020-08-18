@@ -101,14 +101,23 @@ class Evaluator(nn.Module):
         self.scores['mutual_info_score'] = mutual_info_score
 
     def mutual_information(self, latent_loss):
-        
+        pdb.set_trace()
         z = self.store_z.transpose(1,0).cpu().numpy()
-        z_mean = z.mean(-1)
-        z_cov = np.cov(z)
-        p_z = MultivariateNormal(loc=torch.tensor(z_mean), covariance_matrix=torch.tensor(z_cov))
-        q_z = MultivariateNormal(loc=torch.zeros(z_mean.shape[0]), covariance_matrix=torch.eye(z_mean.shape[0]))
+        qz_mean = z.mean(-1)
+        pz_mean = np.zeros(self.latent_dim)
+        qz_cov = np.cov(z)
+        pz_cov = np.eye(self.latent_dim)
 
-        kldiv_priors = kl_divergence(p_z, q_z)
+        kldiv_priors = 0.5 * (np.trace(qz_cov) + np.sum((-qz_mean)**2) - self.latent_dim - np.log(np.linalg.det(qz_cov) + 0.0000001))
+
+        # Old code for comparison wrapped in a try/except statement
+        try:
+            q_z = MultivariateNormal(loc=torch.tensor(qz_mean), covariance_matrix=torch.tensor(qz_cov))
+            p_z = MultivariateNormal(loc=torch.zeros(qz_mean.shape[0]), covariance_matrix=torch.eye(qz_cov.shape[0]))
+
+            kldiv_priors_torch = kl_divergence(q_z, p_z)
+        except:
+            pass
 
         mi = latent_loss - kldiv_priors
         zero_tensor = torch.tensor(0.0)
