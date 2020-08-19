@@ -204,7 +204,7 @@ class GaussmixVae(nn.Module):
         loss = image_recon_loss + self.kld_weight * (self.cont_weight*kld_gaussmix + self.cat_weight*kld_categorical)
         
         return {'loss':loss.to(torch.double), 
-         'kld_gaussian_loss':kld_gaussmix.to(torch.double), 
+         'latent_loss':kld_gaussmix.to(torch.double), 
          'kld_categorical_loss':kld_categorical.to(torch.double), 
          'image_recon_loss':image_recon_loss.to(torch.double), 
          'temperature':torch.tensor(self.temp).to(torch.double), 
