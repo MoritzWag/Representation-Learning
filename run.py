@@ -67,11 +67,15 @@ parser.add_argument('--kld_weight', type=float, default=None,
 #parser.add_argument()
 
 # BetaVae 
-#parser.add_argument()
-
-# InfoVae   
 parser.add_argument('--beta', type=float, default=None, metavar='N',
                     help='')
+parser.add_argument('--restrict_capacity', type=bool, default=None, metavar='N',
+                    help='')
+parser.add_argument('--capacity_max_iter', type=int, default=None, metavar='N',
+                    help='')
+parser.add_argument('--max_capacity', type=int, default=None, metavar='N')
+
+# InfoVae   
 parser.add_argument('--reg_weight', type=int, default=None, metavar='N',
                     help='')
 parser.add_argument('--kernel_type', type=str, default=None, metavar='N',

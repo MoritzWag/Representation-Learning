@@ -5,7 +5,7 @@ model_params:
 model_hyperparams:
   lambda_dig: 10.
   lambda_offdig: 5.
-  kld_weight: 0.0008
+  kld_weight: 0.0005
 
 architecture:
   img_encoder: 'ConvEncoder'
@@ -37,9 +37,10 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 1
+  max_epochs: 80
 
 logging_params:
   save_dir: "logs/"
-  name: "GaussMix"
+  name: "DIPVae"
   manual_seed: 1265
+
