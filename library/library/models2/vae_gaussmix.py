@@ -34,9 +34,9 @@ class GaussmixVae(nn.Module):
     temperature_bound,
     decrease_temp,
     anneal_interval,
-    alpha,
-    beta1,
-    beta2,
+    kld_weight,
+    cont_weight,
+    cat_weight,
     **kwargs):
         super(GaussmixVae, self).__init__(
             **kwargs
@@ -50,9 +50,9 @@ class GaussmixVae(nn.Module):
         self.temp_bound = temperature_bound
         self.anneal_rate = anneal_rate
         self.anneal_interval = anneal_interval
-        self.alpha = alpha
-        self.beta1 = beta1
-        self.beta2 = beta2
+        self.kld_weight = kld_weight
+        self.cont_weight = cont_weight
+        self.cat_weight = cat_weight
         self.decr = decrease_temp
         self.mu = nn.Linear(
             self.hidden_dim[(-1)] * self.output_dim, self.latent_dim * self.categorical_dim)
@@ -201,10 +201,10 @@ class GaussmixVae(nn.Module):
                 else:
                     self.temp = np.minimum(self.temp * 1/np.exp(-self.anneal_rate), self.temp_bound)
         
-        loss = self.alpha * image_recon_loss + (self.beta1*kld_gaussmix + self.beta2*kld_categorical)
+        loss = image_recon_loss + self.kld_weight * (self.cont_weight*kld_gaussmix + self.cat_weight*kld_categorical)
         
         return {'loss':loss.to(torch.double), 
-         'kld_gaussian_loss':kld_gaussmix.to(torch.double), 
+         'latent_loss':kld_gaussmix.to(torch.double), 
          'kld_categorical_loss':kld_categorical.to(torch.double), 
          'image_recon_loss':image_recon_loss.to(torch.double), 
          'temperature':torch.tensor(self.temp).to(torch.double), 

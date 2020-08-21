@@ -110,6 +110,7 @@ class Evaluator(nn.Module):
 
         kldiv_priors = 0.5 * (np.trace(qz_cov) + np.sum((-qz_mean)**2) - self.latent_dim - np.log(np.linalg.det(qz_cov) + 0.0000001))
 
+
         # Old code for comparison wrapped in a try/except statement
         try:
             q_z = MultivariateNormal(loc=torch.tensor(qz_mean), covariance_matrix=torch.tensor(qz_cov))
