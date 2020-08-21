@@ -41,10 +41,11 @@ class InfoVae(VaeBase):
         self.hidden_dim = self.img_encoder.enc_hidden_dims
 
         if trial is not None:
-            self.reg_weight = trial.suggest_int("reg_weight", 1, 100, 10)
-            self.alpha = trial.suggest_float("alpha", -10., 0., step=1)
+            self.reg_weight = trial.suggest_int("reg_weight", 50, 500, step=25)
+            self.alpha = alpha
             self.beta = trial.suggest_float("beta", 0, 20, step=2)
-            self.z_var = trial.suggest_float("latent_var", 0., 40, step=5)
+            self.z_var = latent_var
+            #self.z_var = trial.suggest_float("latent_var", 0., 40, step=5)
         else:
             self.reg_weight = reg_weight
             self.z_var = latent_var

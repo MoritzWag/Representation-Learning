@@ -48,8 +48,8 @@ class BetaVae(nn.Module):
 
         # Hyperparameters
         if trial is not None:
-            self.beta = trial.suggest_int("beta", 0, 10, 2)
-            self.c_max = trial.suggest_int('c_max', 0, 10, 2)
+            self.beta = trial.suggest_int("beta", 0, 20, 2)
+            self.c_max = trial.suggest_int('c_max', 5, 50, 5)
         else:
             self.beta = beta
             self.c_max = torch.Tensor([max_capacity])

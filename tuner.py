@@ -31,7 +31,7 @@ parser.add_argument('--config', '-c',
                     dest='filename',
                     metavar='FILE',
                     help='path to config file',
-                    default='configs/ADIDAS/beta_vae.yaml')
+                    default='configs/ADIDAS/dip_vae.yaml')
 parser.add_argument('--experiment_name',
                     type=str, default='VaeExperiment',
                     metavar='N', help='specifies the experiment name for better tracking later')
@@ -132,6 +132,17 @@ parser.add_argument('--lambda_offdig', type=float, default=None, metavar='N',
                     help='')
 
 
+#tuner params
+parser.add_argument('--n_trials', type=int, default=None, metavar='N',
+                    help='specifies the number of trials for tuning')
+parser.add_argument('--timeout', type=int, default=None, metavar='N',
+                    help="specifies the total seconds used for tuning")
+parser.add_argument('--min_resource', type=int, default=None, metavar='N',
+                    help='minimum resource use for each configuration during tuning')
+parser.add_argument('--reduction_factor', type=int, default=None, metavar='N',
+                    help='factor by which number of configurations are reduced')
+
+
 args = parser.parse_args()
 
 
@@ -144,12 +155,6 @@ with open(args.filename, 'r') as file:
 config = update_config(config=config, args=args)
 
 
-DIR = os.getcwd()
-MODEL_DIR = os.path.join(DIR, "result")
-
-
-
-
 class MetricsCallback(Callback):
     """
     """
@@ -159,15 +164,13 @@ class MetricsCallback(Callback):
     
     def on_validation_end(self, trainer, pl_module):
         self.metrics.append(trainer.callback_metrics)
-    
 
-
-
+DIR = os.getcwd()
+MODEL_DIR = os.path.join(DIR, "result")
 
 start = datetime.now()
 
 ## define objective
-
 def objective(trial):
     """
     """
@@ -190,8 +193,8 @@ def objective(trial):
     runner = Trainer(default_save_path=config['logging_params']['save_dir'],
                     logger=mlflow_logger,
                     check_val_every_n_epoch=1,
-                    train_percent_check=.1,
-                    val_percent_check=.1,
+                    train_percent_check=1,
+                    val_percent_check=1,
                     num_sanity_val_steps=0,
                     callbacks=[metrics_callback],
                     early_stop_callback=PyTorchLightningPruningCallback(trial, monitor='mut_info'),
@@ -204,39 +207,26 @@ def objective(trial):
     return metrics_callback.metrics[-1]['mut_info'].item()
 
 
-
-# create optuna study
-#pruner = optuna.pruners.MedianPruner() if args.pruning else optuna.pruners.NopPruner()
-#pruner = optuna.pruners.MedianPruner()
-
-#study = optuna.create_study(direction='maximize', pruner=pruner)
-#study.optimize(objective, n_trials=2, timeout=600)
-
-# IMPORTANT: n_train_iter should match the number of epochs for neural networks!
-n_train_iter = 80
 n_train_iter = config['trainer_params']['max_epochs']
-#n_train_iter = 1000
 study = optuna.create_study(
     direction='maximize',
     pruner=optuna.pruners.HyperbandPruner(
-        min_resource=5,
+        min_resource=args.min_resource,
         max_resource=n_train_iter,
-        reduction_factor=3
+        reduction_factor=args.reduction_factor
     )
 )
 
-study.optimize(objective, n_trials=10)
-print("Number of finished traisl")
-
-#try:
-#    trial = study.best_trial
-#except:
-#    pass
+if args.n_trials is not None:
+    print(f"tune with n_trials: {args.n_trials}")
+    study.optimize(objective, n_trials=ars.n_trials)
+if args.timeout is not None:
+    print(f"tune with timeout: {args.timeout}")
+    study.optimize(objective, timeout=args.timeout)
 
 end = datetime.now()
-
-# print total running duration
-print(end - start)
+diff = end - start
+print(f"total tunning time was: {diff}")
 
 # retrieve/print best trial
 best_trial = study.best_trial
@@ -246,25 +236,14 @@ print(best_trial)
 best_params = study.best_params
 print(best_params)
 
-
 # save results in dateframe
 df = study.trials_dataframe()
 df.to_csv(f"hb_{args.run_name}.csv")
 
-pdb.set_trace()
-#optuna.visualization.plot_optimization_history(study)
-fig = optuna.visualization.plot_intermediate_values(study)
-fig.write_image('test.png')
 
-## store best values!
+fig_intermediate_values = optuna.visualization.plot_intermediate_values(study)
+fig_intermediate_values.write_image(f'hb_tune_interm_{args.run_name}.png')
 
+fig_opt_history = optuna.visualization.plot_optimization_history(study)
+fig_opt_history.write_image(f'hb_tune_opt_hist_{args.run_name}.png')
 
-
-#for key, value in trial.params.items():
-#    print("  {}: {}".format(key, value))
-
-
-
-
-# do not what this is doing!
-#shutil.rmtree(MODEL_DIR)

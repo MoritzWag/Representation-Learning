@@ -45,8 +45,8 @@ class DIPVae(nn.Module):
         self.logvar = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
 
         if trial is not None:
-            self.lambda_dig = trial.suggest_float("lambda_dig", 1, 50, step=2)
-            self.lambda_offdig = trial.suggest_float("lambda_offdig", 1, 30, step=2)
+            self.lambda_dig = trial.suggest_float("lambda_dig", 1., 20., step=2)
+            self.lambda_offdig = trial.suggest_float("lambda_offdig", 1., 30., step=2)
         else:
             self.lambda_dig = lambda_dig
             self.lambda_offdig = lambda_offdig  
