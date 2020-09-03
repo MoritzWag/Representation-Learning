@@ -26,7 +26,7 @@ class Visualizer(nn.Module):
     def __init__(self, **kwargs):
         super(Visualizer, self).__init__(**kwargs)
 
-    def _get_traversals(self, model_type, data=None, normal_traversals = False):
+    def _get_traversals(self, model_type):
         """
         Args:
             embedding: {torch} represents the
@@ -34,44 +34,67 @@ class Visualizer(nn.Module):
 
         with torch.no_grad():
             
-            if model_type == 'GaussmixVae':
+            # Get the probabilities for the quantile function
+            probabilities = torch.tensor(
+            [0.001, 0.01, 0.05, 0.15, 0.25, 0.5, 0.75, 0.85, 0.95, 0.99, 0.999]
+            )
+
+            num_latent_trav = probabilities.size()[0]
             
-                probabilities = torch.tensor(
-                    [0.01, 0.05, 0.15, 0.25, 0.45, 0.5, 0.55, 0.75, 0.85, 0.95, 0.99]
-                )
+            # Compute emprical quantiels according to "probabilities"
+            z = copy.deepcopy(self.store_z.transpose(0,1).cpu().numpy())
 
-                num_latent_trav = probabilities.size()[0]
+            quantiles = np.empty((self.latent_dim, num_latent_trav))
+            for i in range(self.latent_dim):
+                quantiles[i, :] = [np.quantile(z[i,:], prob) for prob in probabilities] 
+            
+            quantiles = torch.tensor(quantiles)
+                
+            quantiles = quantiles.view(
+                self.latent_dim, probabilities.size()[-1]
+            )
 
-                if normal_traversals == False:
-                    probs = copy.deepcopy(self.store_probs.cpu().numpy())
-                    z = copy.deepcopy(self.store_individual_z.view(-1, self.categorical_dim * self.latent_dim).transpose(0,1).cpu().numpy())
+            # Create dummy traversal tensor to be filled up in subsequent
+            # loop. The N-Dimension will be N = Latent_Dim * Probabilities.
+            # This is the total number of plots which shall be plotted
+            traversal = torch.rand(
+                self.latent_dim * probabilities.size()[-1],
+                self.latent_dim
+            )
 
-                    quantiles = np.empty((self.latent_dim*self.categorical_dim, num_latent_trav))
-                    for i in range(self.latent_dim):
-                        quantiles[i, :] = [np.quantile(z[i,:], prob) for prob in probabilities] 
-                    
-                    quantiles = torch.tensor(quantiles)
+            total = 0
+            median = copy.deepcopy(quantiles[:, 5])
+            with tqdm(total = self.latent_dim * len(probabilities),
+            desc='Buildung traversal plots') as pbar:
+                for lat in range(self.latent_dim):
+                    for prob in range(len(probabilities)):
+                        med = copy.deepcopy(median)
+                        med[lat] = quantiles[lat, prob]
+                        traversal[total, :] = med
+                        total += 1
+                        pbar.update(1)
 
-                else:
-                    mu_hat = self.mu_hat.view(
-                        self.latent_dim * self.categorical_dim)
-                    sigma_hat = self.sigma_hat.view(
-                        self.latent_dim * self.categorical_dim)
-                    normal_dist = [
-                        torch.distributions.normal.Normal(
-                            x, y) for x, y in zip(
-                            mu_hat, sigma_hat)]
+            if torch.cuda.is_available():
+                traversal = traversal.cuda()
 
-                    quantiles = torch.stack([normal_dist[x].icdf(
-                        probabilities) for x in range(len(normal_dist))])
-                        
-                quantiles = quantiles.view(
+            if model_type == 'GaussmixVae':
+
+                probs = copy.deepcopy(self.store_probs.cpu().numpy())
+                z = copy.deepcopy(self.store_individual_z.view(-1, self.categorical_dim * self.latent_dim).transpose(0,1).cpu().numpy())
+
+                quantiles_cat = np.empty((self.latent_dim*self.categorical_dim, num_latent_trav))
+                for i in range(self.latent_dim):
+                    quantiles_cat[i, :] = np.quantile(z[i,:], probabilities)
+
+                quantiles_cat = torch.tensor(quantiles_cat)
+ 
+                quantiles_cat = quantiles_cat.view(
                         self.categorical_dim,
                         self.latent_dim,
                         probabilities.size()[-1]
                 )
 
-                traversal = torch.rand(
+                traversal_cat = torch.rand(
                     self.categorical_dim * self.latent_dim *
                     probabilities.size()[-1],
                     self.latent_dim
@@ -81,125 +104,26 @@ class Visualizer(nn.Module):
                 with tqdm(total = self.latent_dim * len(probabilities) * self.categorical_dim,
                 desc='Buildung traversal plots') as pbar:
                     for cat in range(self.categorical_dim):
+                        median = copy.deepcopy(quantiles_cat[cat,:,5])
                         for lat in range(self.latent_dim):
                             for prob in range(len(probabilities)):
-                                mu = copy.deepcopy(self.mu_hat[cat])
-                                mu[lat] = quantiles[cat, lat, prob]
-                                traversal[total, :] = mu
+                                med = copy.deepcopy(median)
+                                med[lat] = quantiles_cat[cat, lat, prob]
+                                traversal_cat[total, :] = med
                                 total += 1
                                 pbar.update(1)
 
                 if torch.cuda.is_available():
-                    traversal = traversal.cuda()
+                    traversal_cat = traversal_cat.cuda()
 
-                traversal = traversal.view(
+                traversal_cat = traversal_cat.view(
                     self.categorical_dim,
                     self.latent_dim * probabilities.size()[-1],
                     self.latent_dim
                 )
 
-            elif model_type == 'CatVae':
-
-                num_latent_trav = self.categorical_dim
-
-                total_dim = self.latent_dim * self.categorical_dim
-                traversal = torch.rand(
-                    total_dim,
-                    self.latent_dim,
-                    self.categorical_dim
-                )
-
-                const_one_hot = torch.tensor(
-                    np.concatenate(
-                        (np.array([1]), np.repeat(0, self.categorical_dim - 1))
-                    )
-                ).float()
-
-                code = torch.cat(
-                    self.latent_dim * [const_one_hot]
-                ).view(self.latent_dim,self.categorical_dim)
-
-                total = 0
-                for latent in range(self.latent_dim):
-                    for cat in range(self.categorical_dim):
-
-                        traversal[total] = code
-                        one_hot = torch.zeros(self.categorical_dim)
-                        one_hot[cat] = 1
-                        traversal[total, latent, :] = one_hot
-
-                        total += 1
-
-                    traversal = traversal.view(-1, total_dim).float()
-
-                if torch.cuda.is_available():
-                    traversal = traversal.cuda()
-
-            else:
-                # Get the probabilities for the quantile function
-                probabilities = torch.tensor(
-                [0.001, 0.01, 0.05, 0.15, 0.25, 0.5, 0.75, 0.85, 0.95, 0.99, 0.999]
-                )
-
-                num_latent_trav = probabilities.size()[0]
-
-                if normal_traversals == False:
-                    
-                    # Compute emprical quantiels according to "probabilities"
-                    z = copy.deepcopy(self.store_z.transpose(0,1).cpu().numpy())
-
-                    quantiles = np.empty((self.latent_dim, num_latent_trav))
-                    for i in range(self.latent_dim):
-                        quantiles[i, :] = [np.quantile(z[i,:], prob) for prob in probabilities] 
-                    
-                    quantiles = torch.tensor(quantiles)
-
-                else:
-                    # Get the estimates for the means and the variance for each
-                    # latent to parameterize a normal distribution (1 Normal Dist 
-                    # per latent)
-                    mu_hat = self.mu_hat
-                    sigma_hat = self.sigma_hat
-                    normal_dist = [
-                        torch.distributions.normal.Normal(
-                            x, y) for x, y in zip(
-                            mu_hat, sigma_hat
-                        )
-                    ]
-
-                    # Apply quantile function with the specified proabilities to 
-                    # each normal distribution and change the shape
-                    quantiles = torch.stack([
-                        normal_dist[x].icdf(
-                        probabilities) for x in range(len(normal_dist))
-                        ]
-                    )
-                    
-                quantiles = quantiles.view(
-                    self.latent_dim, probabilities.size()[-1]
-                )
-
-                # Create dummy traversal tensor to be filled up in subsequent
-                # loop. The N-Dimension will be N = Latent_Dim * Probabilities.
-                # This is the total number of plots which shall be plotted
-                traversal = torch.rand(
-                    self.latent_dim * probabilities.size()[-1],
-                    self.latent_dim
-                )
-                total = 0
-                median = copy.deepcopy(quantiles[:, 5])
-                with tqdm(total = self.latent_dim * len(probabilities),
-                desc='Buildung traversal plots') as pbar:
-                    for lat in range(self.latent_dim):
-                        for prob in range(len(probabilities)):
-                            med = copy.deepcopy(median)
-                            med[lat] = quantiles[lat, prob]
-                            traversal[total, :] = med
-                            total += 1
-                            pbar.update(1)
-
-                if torch.cuda.is_available():
-                    traversal = traversal.cuda()
+                traversal_ = traversal.unsqueeze(0)
+                traversal = torch.cat((traversal_, traversal_cat), dim=0)
 
             return traversal.float(), num_latent_trav
 
@@ -213,17 +137,9 @@ class Visualizer(nn.Module):
         carry_on = (epoch <= 10) or ((epoch % 20) == 0)
         if not carry_on:
             return
-        
-        # latent_traversals_normal, n_per_latent = self._get_traversals(
-        #     model_type = self.__class__.__name__,
-        #     data = data,
-        #     normal_traversals = True
-        # )
 
         latent_traversals_empirical, n_per_latent = self._get_traversals(
-            model_type = self.__class__.__name__,
-            data = data,
-            normal_traversals = False
+            model_type = self.__class__.__name__
         )
 
         path = os.path.expanduser(path)
@@ -232,29 +148,27 @@ class Visualizer(nn.Module):
             os.makedirs(storage_path)
         
         if self.__class__.__name__ == 'GaussmixVae':
-            for categories in range(self.categorical_dim):
-
-                # decoded_traversals_normal = self.img_decoder(
-                #     latent_traversals_normal[categories]
-                # )
+            for categories in range(self.categorical_dim+1):
 
                 decoded_traversals_empirical = self.img_decoder(
                     latent_traversals_empirical[categories]
                 )
 
-                # vutils.save_image(
-                #     decoded_traversals_normal.data,
-                #     f"{storage_path}traversal_norm_{epoch}_cat{categories+1}.png",
-                #     normalize=True,
-                #     nrow=n_per_latent
-                # )
+                if categories == 0:
+                    vutils.save_image(
+                        decoded_traversals_empirical.data,
+                        f"{storage_path}traversal_emp_{epoch}.png",
+                        normalize=True,
+                        nrow=n_per_latent
+                    )
 
-                vutils.save_image(
-                    decoded_traversals_empirical.data,
-                    f"{storage_path}traversal_emp_{epoch}_cat{categories+1}.png",
-                    normalize=True,
-                    nrow=n_per_latent
-                )
+                else:
+                    vutils.save_image(
+                        decoded_traversals_empirical.data,
+                        f"{storage_path}traversal_emp_{epoch}_cat{categories}.png",
+                        normalize=True,
+                        nrow=n_per_latent
+                    )
         else:
             # decoded_traversals_normal = self.img_decoder(
             #     latent_traversals_normal
