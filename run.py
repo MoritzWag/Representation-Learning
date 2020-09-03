@@ -100,9 +100,9 @@ parser.add_argument('--temperature_bound', type=int, default=None, metavar='N',
                     help='')
 parser.add_argument('--decrease_temp', type=bool, default=None, metavar='N',
                     help='')
-parser.add_argument('--beta1', type=int, default=None, metavar='N',
+parser.add_argument('--cat_weight', type=int, default=None, metavar='N',
                     help='')
-parser.add_argument('--beta2', type=int, default=None, metavar='N',
+parser.add_argument('--cont_weight', type=int, default=None, metavar='N',
                     help='')
 
 # JointVae

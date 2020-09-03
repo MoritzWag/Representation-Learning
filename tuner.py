@@ -31,7 +31,7 @@ parser.add_argument('--config', '-c',
                     dest='filename',
                     metavar='FILE',
                     help='path to config file',
-                    default='configs/ADIDAS/dip_vae.yaml')
+                    default='configs/ADIDAS/gaussmix_vae.yaml')
 parser.add_argument('--experiment_name',
                     type=str, default='VaeExperiment',
                     metavar='N', help='specifies the experiment name for better tracking later')
@@ -247,3 +247,6 @@ fig_intermediate_values.write_image(f'hb_tune_interm_{args.run_name}.png')
 fig_opt_history = optuna.visualization.plot_optimization_history(study)
 fig_opt_history.write_image(f'hb_tune_opt_hist_{args.run_name}.png')
 
+
+fig_hyp_importance = optuna.visualization.plot_param_importances(study)
+fig_hyp_importance.write_image(f"hb_tune_hyp_imp_{args.run_name}.png")

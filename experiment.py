@@ -36,12 +36,14 @@ class RlExperiment(pl.LightningModule):
         self.curr_device = None
         self.train_history = pd.DataFrame()
         self.val_history = pd.DataFrame()
+        self.test_history = pd.DataFrame()
         self.mi_train = pd.DataFrame()
         self.mi_val = pd.DataFrame()
         self.test_score = None
         self.run_name = run_name
         self.experiment_name = experiment_name
         self.accum_index = 0
+        self.accum_test_index = 0
         self.mut_info = []
 
     def forward(self, *args, **kwargs):
@@ -137,43 +139,21 @@ class RlExperiment(pl.LightningModule):
 
         self.model._embed(image)
         
-        # COMMENTED OUT FOR EASY ACCESS
-        # self.model._sample_images(image,
-        #                         path=f"images/{self.params['dataset']}/",
-        #                         epoch=self.current_epoch,
-        #                         run_name=self.run_name)
-
-        # self.model.traversals(epoch=self.current_epoch,
-        #                         run_name=self.run_name,
-        #                         path=f"images/{self.params['dataset']}/")
-
-        # self.model._cluster(image=image,
-        #                     attribute=attribute[:,0],
-        #                     path=f"images/{self.params['dataset']}/",
-        #                     epoch=self.current_epoch,
-        #                     run_name=self.run_name,
-        #                     method='umap')
-                            
-        # self.model._cluster(image=image,
-        #                     attribute=attribute[:,0],
-        #                     path=f"images/{self.params['dataset']}/",
-        #                     epoch=self.current_epoch,
-        #                     run_name=self.run_name,
-        #                     method='tsne')
-
-        # self.model._cluster_freq(path=f"images/{self.params['dataset']}/",
-        #                         epoch=self.current_epoch,
-        #                         run_name=self.run_name)
-
         del image
         del attribute
 
-        mi = self.model.mutual_information(latent_loss=self.val_history.loc[-self.accum_index:,:]['latent_loss'].mean())
-        self.mut_info.append(mi)
-        self.accum_index = 0
+        try:
+            mi = self.model.mutual_information(latent_loss=self.val_history.loc[-self.accum_index:,:]['latent_loss'].mean())
+            self.mut_info.append(mi)
+            self.accum_index = 0
+        except:
+            pass
 
-        #return {'val_loss': avg_loss}  
-        return {'log': {'mut_info': mi}}  
+        try:
+            return {'log': {'mut_info': mi}}  
+        except:
+            return {'val_loss': avg_loss}  
+        
 
     def test_step(self, batch, batch_idx):
         image, attribute = batch
@@ -200,6 +180,12 @@ class RlExperiment(pl.LightningModule):
             self.model.loss_item['recon_image'] = reconstruction
             test_loss = self.model._loss_function(image.float(), **self.model.loss_item)
 
+            test_history = pd.DataFrame([[value.cpu().detach().numpy() for value in test_loss.values()]],
+                                        columns=[key for key in test_loss.keys()])
+            
+            self.test_history = self.test_history.append(test_history, ignore_index=True)
+            self.accum_test_index += test_history.shape[0]
+
         return test_loss
 
     def test_epoch_end(self, outputs):
@@ -223,7 +209,7 @@ class RlExperiment(pl.LightningModule):
 
         train_data = (train_features, train_attributes)
         test_data = (test_features, test_attributes)
-        
+
         self.model._downstream_task(
             train_data=train_data,
             test_data=test_data,
@@ -242,10 +228,14 @@ class RlExperiment(pl.LightningModule):
 
         self.model.unsupervised_metrics(test_features)
 
+        
         self.model.log_metrics(storage_path=f"logs/{self.run_name}/{self.params['dataset']}/test/")
 
-        mut_inf = pd.DataFrame(self.mut_info) 
-        mut_inf.to_csv(f"logs/{self.run_name}/{self.params['dataset']}/test/mutual_information.csv")
+        try:
+            mut_inf = pd.DataFrame(self.mut_info) 
+            mut_inf.to_csv(f"logs/{self.run_name}/{self.params['dataset']}/test/mutual_information.csv")
+        except:
+            pass
 
         del train_data
         del test_data
@@ -254,6 +244,14 @@ class RlExperiment(pl.LightningModule):
         self.model._embed(image)
 
         self.model.calc_num_au(data=image)
+
+        try:
+            mi = self.model.mutual_information(latent_loss=self.test_history.loc[-self.accum_test_index:,:]['latent_loss'].mean())
+            self.logger.experiment.log_metric(key='mi_xz',
+                                            value=mi,
+                                            run_id=self.logger.run_id)
+        except:
+            pass
 
         for key, value in zip(self.model.scores.keys(), self.model.scores.values()):
             self.logger.experiment.log_metric(key=key,
@@ -310,6 +308,7 @@ class RlExperiment(pl.LightningModule):
         self.model._corplot(path=f"images/{self.params['dataset']}/test/",
                             epoch=1,
                             run_name=self.run_name)
+
 
         return {'avg_test_loss': avg_test_loss}
 

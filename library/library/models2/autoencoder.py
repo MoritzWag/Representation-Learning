@@ -25,6 +25,7 @@ class Autoencoder(nn.Module):
 
     def __init__(self,
                 l1_reg: bool = False,
+                trial = None,
                 **kwargs):
         super(Autoencoder, self).__init__(
             **kwargs

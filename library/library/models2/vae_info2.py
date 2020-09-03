@@ -29,7 +29,7 @@ class InfoVae(VaeBase):
             alpha = -0.5,
             beta = 5.0,
             reg_weight = 100,
-            kernel_type = 'imq',
+            kernel_type = 'rbf',
             latent_var = 2.,
             kld_weight: float = 32/40000,
             **kwargs):
@@ -41,16 +41,17 @@ class InfoVae(VaeBase):
         self.hidden_dim = self.img_encoder.enc_hidden_dims
 
         if trial is not None:
-            self.reg_weight = trial.suggest_int("reg_weight", 50, 500, step=25)
-            self.alpha = alpha
-            self.beta = trial.suggest_float("beta", 0, 20, step=2)
-            self.z_var = latent_var
-            #self.z_var = trial.suggest_float("latent_var", 0., 40, step=5)
+            self.reg_weight = trial.suggest_int("reg_weight", 25, 250, step=25)
+            self.alpha = trial.suggest_float("alpha", -20., -1., step=2.)
+            self.beta = beta
+            self.z_var = trial.suggest_float("latent_var", 1., 10., step=2.)
+            self.kernel_type = kernel_type
         else:
             self.reg_weight = reg_weight
             self.z_var = latent_var
             self.alpha = alpha
             self.beta = beta
+            self.kernel_type = kernel_type
 
         assert self.alpha <= 0        
 

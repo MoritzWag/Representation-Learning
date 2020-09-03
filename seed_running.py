@@ -50,7 +50,6 @@ latest_mlflow_id = int(max(mlruns))
 
 get_mlflow_results(mlflow_id=latest_mlflow_id)
 
-#get_mlflow_results(mlflow_id=1)
 
 df = pd.read_csv("seed_check_runs.csv")
 

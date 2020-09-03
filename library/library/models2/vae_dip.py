@@ -45,8 +45,8 @@ class DIPVae(nn.Module):
         self.logvar = nn.Linear(self.hidden_dim[-1] * self.output_dim, self.latent_dim)
 
         if trial is not None:
-            self.lambda_dig = trial.suggest_float("lambda_dig", 1., 20., step=2)
-            self.lambda_offdig = trial.suggest_float("lambda_offdig", 1., 30., step=2)
+            self.lambda_dig = trial.suggest_float("lambda_dig", 0.0001, 0.01, step=0.0005)
+            self.lambda_offdig = trial.suggest_float("lambda_offdig", 0.00001, 0.0001, step=0.000005)
         else:
             self.lambda_dig = lambda_dig
             self.lambda_offdig = lambda_offdig  
@@ -159,7 +159,9 @@ class DIPVae(nn.Module):
         cov_offdiag = cov_z - torch.diag(cov_diag)
         dip_loss = self.lambda_offdig * torch.sum(cov_offdiag ** 2) + \
                     self.lambda_dig * torch.sum((cov_diag - 1) ** 2)
+
+        kld_weight = 1
         
-        loss = image_recon_loss + self.kld_weight * (latent_loss + dip_loss)
+        loss = image_recon_loss + self.kld_weight*latent_loss + dip_loss
 
         return {'loss': loss, 'image_recon_loss': image_recon_loss, 'latent_loss': latent_loss, 'dip_loss': dip_loss}

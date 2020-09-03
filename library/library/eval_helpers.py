@@ -83,6 +83,7 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     """
 
     # Create one-hot-encoding
+    print("one hot encoding")
     y = np.concatenate((train_y, test_y))
     ybin = LabelBinarizer().fit(y).transform(y)
     train_yb = ybin[:train_y.shape[0], :]
@@ -108,6 +109,7 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     train_yb = ybin[:train_y.shape[0], :]
     test_yb = ybin[train_y.shape[0]:, :]
 
+    print("initiate model")
     # Instatiate model
     rf = RandomForestClassifier(
         class_weight="balanced",
@@ -115,8 +117,10 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
         n_estimators=100).fit(train_X, train_y) # min samples leaf is based on the mean of the categories of product type descr that have less than 50 counts
     
     # Obtain Metrics
+    print("obtain metrics")
     probs_hat = rf.predict_proba(test_X)
     y_hat = rf.predict(test_X)
+
 
     try:
         weighted_auc = roc_auc_score(y_true=test_yb, y_score=probs_hat, multi_class="ovr", average='weighted')
@@ -128,6 +132,7 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     prevalence = ybin.sum(axis=0) / ybin.sum()
     aupr = []
 
+    print("blabblub")
     for i in range(len(prevalence)):
         precision, recall, thresholds = precision_recall_curve(test_yb[:,i], probs_hat[:,i])
         auc_ = auc(recall, precision)
@@ -136,23 +141,24 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     aupr = np.array(aupr)
     aupr_wmean = (aupr * prevalence).sum() 
     
+    # print("get feature importance")
     # Obtain permutation importance
-    importance = permutation_importance(rf, test_X, test_y, n_repeats=15, random_state=0)
-    sorted_idx = importance.importances_mean.argsort()
+    # importance = permutation_importance(rf, test_X, test_y, n_repeats=15, random_state=0)
+    # sorted_idx = importance.importances_mean.argsort()
 
-    fig, ax = plt.subplots()
-    latent_names = ['latent_{num}'.format(num=x) for x in (sorted_idx+1)]
-    #latent_names = latent_names[1:]
-    ax.boxplot(importance.importances[sorted_idx].T,
-           vert=False, labels=latent_names)
-    ax.set_title("Permutation Importances "+str(dst_name))
-    fig.tight_layout()
+    # fig, ax = plt.subplots()
+    # latent_names = ['latent_{num}'.format(num=x) for x in (sorted_idx+1)]
+    # #latent_names = latent_names[1:]
+    # ax.boxplot(importance.importances[sorted_idx].T,
+    #        vert=False, labels=latent_names)
+    # ax.set_title("Permutation Importances "+str(dst_name))
+    # fig.tight_layout()
 
-    path = os.path.expanduser(path)
-    if not os.path.exists(path):
-        os.makedirs(path)
-    fig.savefig(f"{path}FI_{dst_name}.png") 
+    # path = os.path.expanduser(path)
+    # if not os.path.exists(path):
+    #     os.makedirs(path)
+    # fig.savefig(f"{path}FI_{dst_name}.png") 
 
-    plt.close()
+    # plt.close()
 
-    return balanced_acc, weighted_auc, aupr_wmean, avg_precision, importance.importances
+    return balanced_acc, weighted_auc, aupr_wmean, avg_precision

@@ -3,10 +3,10 @@ model_params:
   base: 'VaeBase'
 
 model_hyperparams:
-  beta: 10
+  beta: 20 
   restrict_capacity: True
   capacity_max_iter: 10000
-  max_capacity: 25
+  max_capacity: 20
   kld_weight: 0.0005
 
 architecture:
@@ -38,7 +38,7 @@ exp_params:
 
 trainer_params:
   gpus: 1
-  max_epochs: 80
+  max_epochs: 1
 
 logging_params:
   save_dir: "logs/"

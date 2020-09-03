@@ -3,15 +3,14 @@ model_params:
   base: 'VaeBase'
 
 model_hyperparams:
-  temperature: 40
-  anneal_rate: 0.2
+  temperature: 1
+  anneal_rate: 0.5
   anneal_interval: 100
-  alpha: 1250.
-  temperature_bound: 500
+  temperature_bound: 0.5
   decrease_temp: True
-  beta1: 1
-  beta2: 1
-  kld_weight: 0.0008
+  cont_weight: 1
+  cat_weight: 2
+  kld_weight: 0.0005
 
 
 architecture:

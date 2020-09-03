@@ -26,6 +26,7 @@ class LinearAutoencoder(nn.Module):
 
     def __init__(self,
                 placeholder=False,
+                trial=None,
                 **kwargs):
         super(LinearAutoencoder, self).__init__(
             **kwargs

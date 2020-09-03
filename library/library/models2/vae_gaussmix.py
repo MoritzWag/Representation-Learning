@@ -37,6 +37,7 @@ class GaussmixVae(nn.Module):
     kld_weight,
     cont_weight,
     cat_weight,
+    trial=None,
     **kwargs):
         super(GaussmixVae, self).__init__(
             **kwargs
@@ -46,14 +47,29 @@ class GaussmixVae(nn.Module):
         self.hidden_dim = self.img_encoder.enc_hidden_dims
         self.output_dim = self.img_encoder.enc_output_dim
         self.categorical_dim = self.img_decoder.categorical_dim
-        self.temp = temperature
-        self.temp_bound = temperature_bound
-        self.anneal_rate = anneal_rate
-        self.anneal_interval = anneal_interval
-        self.kld_weight = kld_weight
-        self.cont_weight = cont_weight
-        self.cat_weight = cat_weight
-        self.decr = decrease_temp
+
+        
+        if trial is not None:
+            self.temp = trial.suggest_int("temperature", 1, 40, step=10)
+            self.temp_bound = temperature_bound
+            self.anneal_rate = trial.suggest_float("anneal_rate", 0.1, 0.5, step=0.1)
+            self.anneal_interval = anneal_interval
+            self.kld_weight = kld_weight
+            self.cont_weight = trial.suggest_int("cont_weight", 1, 3, step=1)
+            self.cat_weight = trial.suggest_int("cat_weight", 1, 3, step=1)
+            self.decr = decrease_temp
+        else:
+            self.temp = temperature
+            self.temp_bound = temperature_bound
+            self.anneal_rate = anneal_rate
+            self.anneal_interval = anneal_interval
+            self.kld_weight = kld_weight
+            self.cont_weight = cont_weight
+            self.cat_weight = cat_weight
+            self.decr = decrease_temp
+
+
+
         self.mu = nn.Linear(
             self.hidden_dim[(-1)] * self.output_dim, self.latent_dim * self.categorical_dim)
         self.logvar = nn.Linear(
@@ -144,25 +160,28 @@ class GaussmixVae(nn.Module):
         self.sigma_hat = z.transpose(dim0=0, dim1=2).transpose(dim0=0, dim1=1).var(dim=2).sqrt()
         self.store_z = mixtures
         
-    def _parameterize(self, h_enc):
+    def _parameterize(self, h_enc, img=None, attrs=None):
+        
+        if img:
+            mu = self.mu(h_enc)
+            mu = mu.view(-1, self.categorical_dim, self.latent_dim)
+            logvar = self.logvar(h_enc)
+            logvar = logvar.view(-1, self.categorical_dim, self.latent_dim)
 
-        mu = self.mu(h_enc)
-        mu = mu.view(-1, self.categorical_dim, self.latent_dim)
-        logvar = self.logvar(h_enc)
-        logvar = logvar.view(-1, self.categorical_dim, self.latent_dim)
+            logits = self.cat(h_enc)
+            probs = F.softmax((logits), dim=(-1))
 
-        logits = self.cat(h_enc)
-        probs = F.softmax((logits + gumbel_samples), dim=(-1))
+            probs = probs.unsqueeze(1)
 
-        probs = probs.unsqueeze(1)
+            mixtures_mu = torch.matmul(probs, mu)
+            mixtures_mu = mixtures_mu.squeeze(1)
 
-        mixtures_mu = torch.matmul(probs, mu)
-        mixtures_mu = mixtures_mu.squeeze(1)
+            mixtures_logvar = torch.matmul(probs, logvar)
+            mixtures_logvar = mixtures_logvar.squeeze(1)
+        else:
+            return 
 
-        mixtures_logvar = torch.matmul(probs, logvar)
-        mixtures_logvar = mixtures_logvar.squeeze(1)
-
-        return mixtures_mu, log_sigma
+        return mixtures_mu, mixtures_logvar
 
     def _loss_function(
         self,
