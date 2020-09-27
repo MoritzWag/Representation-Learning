@@ -45,6 +45,7 @@ class RlExperiment(pl.LightningModule):
         self.accum_index = 0
         self.accum_test_index = 0
         self.mut_info = []
+        self.downstream_task_names = "Nan"
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
@@ -56,28 +57,11 @@ class RlExperiment(pl.LightningModule):
         self.curr_device = image.device
         image, attribute = Variable(image), Variable(attribute)
 
-        try:
-            reconstruction1 = self.forward(image=image.float(), attrs=attribute)
-            reconstruction2 = self.forward(image=image.float())
-            reconstruction3 = self.forward(attrs=attribute)
+        image, attribute = image.to(self.curr_device), attribute.to(self.curr_device)
 
-            train_loss1 = self.model._loss_function(image.float(), attribute, **reconstruction1)
-            train_loss2 = self.model._loss_function(image.float(), attribute, **reconstruction2)
-            train_loss3 = self.model._loss_function(image.float(), attribute, **reconstruction3)
-            
-            train_loss_dict = [train_loss1, train_loss2, train_loss3]
-            counter = collections.Counter()
-            for d in train_loss_dict:
-                counter.update(d)
-            
-            train_loss = dict(counter)
-            print(train_loss)
-
-        except:
-
-            reconstruction = self.forward(image.float())
-            self.model.loss_item['recon_image'] = reconstruction
-            train_loss = self.model._loss_function(image.float(), **self.model.loss_item)
+        reconstruction = self.forward(image.float())
+        self.model.loss_item['recon_image'] = reconstruction
+        train_loss = self.model._loss_function(image.float(), **self.model.loss_item)
 
         train_history = pd.DataFrame([[value.cpu().detach().numpy() for value in train_loss.values()]],
                                     columns=[key for key in train_loss.keys()])   
@@ -87,36 +71,16 @@ class RlExperiment(pl.LightningModule):
         return train_loss 
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
-        
         batch_idx = {'batch_idx': batch_idx}
         image, attribute = batch
         self.curr_device = image.device
         image, attribute = Variable(image), Variable(attribute)
         
-        if torch.cuda.is_available():
-            image, attribute = image.cuda(), attribute.cuda()
+        image, attribute = image.to(self.curr_device), attribute.to(self.curr_device)
 
-        try:
-            reconstruction1 = self.forward(image=image.float(), attrs=attribute)
-            reconstruction2 = self.forward(image=image.float())
-            reconstruction3 = self.forward(attrs=attribute)
-
-            val_loss1 = self.model._loss_function(image.float(), attribute, **reconstruction1)
-            val_loss2 = self.model._loss_function(image.float(), attribute, **reconstruction2)
-            val_loss3 = self.model._loss_function(image.float(), attribute, **reconstruction3)
-
-
-            val_loss_dict = [val_loss1, val_loss2, val_loss3]
-            counter = collections.Counter()
-            for d in val_loss_dict:
-                counter.update(d)
-            
-            val_loss = dict(counter)
-
-        except:
-            reconstruction = self.forward(image.float())
-            self.model.loss_item['recon_image'] = reconstruction
-            val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
+        reconstruction = self.forward(image.float())
+        self.model.loss_item['recon_image'] = reconstruction
+        val_loss = self.model._loss_function(image.float(), **self.model.loss_item)
         
         val_history = pd.DataFrame([[value.cpu().detach().numpy() for value in val_loss.values()]],
                                     columns=[key for key in val_loss.keys()])
@@ -127,6 +91,7 @@ class RlExperiment(pl.LightningModule):
         return val_loss
 
     def validation_epoch_end(self, outputs):
+
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean().to(torch.double)
         avg_loss = avg_loss.cpu().detach().numpy() + 0
 
@@ -136,6 +101,8 @@ class RlExperiment(pl.LightningModule):
                                         run_id=self.logger.run_id)
 
         image, attribute = self.model.accumulate_batches(self.val_gen)
+
+        image, attribute = image.to(self.curr_device), attribute.to(self.curr_device)
 
         self.model._embed(image)
         
@@ -159,32 +126,16 @@ class RlExperiment(pl.LightningModule):
         image, attribute = batch
         image, attribute = image.to(self.curr_device), attribute.to(self.curr_device)
 
-        try:
-            reconstruction1 = self.forward(image=image.float(), attrs=attribute)
-            reconstruction2 = self.forward(image=image.float())
-            reconstruction3 = self.forward(attrs=attribute)
 
-            test_loss1 = self.model._loss_function(image.float(), attribute, **reconstruction1)
-            test_loss2 = self.model._loss_function(image.float(), attribute, **reconstruction2)
-            test_loss3 = self.model._loss_function(image.float(), attribute, **reconstruction3)
+        reconstruction = self.forward(image.float())
+        self.model.loss_item['recon_image'] = reconstruction
+        test_loss = self.model._loss_function(image.float(), **self.model.loss_item)
 
-            test_loss_dict = [test_loss1, test_loss2, test_loss3]
-            counter = collections.Counter()
-            for d in test_loss_dict:
-                counter.update(d)
-            
-            test_loss = dict(counter)
-            
-        except:
-            reconstruction = self.forward(image.float())
-            self.model.loss_item['recon_image'] = reconstruction
-            test_loss = self.model._loss_function(image.float(), **self.model.loss_item)
-
-            test_history = pd.DataFrame([[value.cpu().detach().numpy() for value in test_loss.values()]],
-                                        columns=[key for key in test_loss.keys()])
-            
-            self.test_history = self.test_history.append(test_history, ignore_index=True)
-            self.accum_test_index += test_history.shape[0]
+        test_history = pd.DataFrame([[value.cpu().detach().numpy() for value in test_loss.values()]],
+                                    columns=[key for key in test_loss.keys()])
+        
+        self.test_history = self.test_history.append(test_history, ignore_index=True)
+        self.accum_test_index += test_history.shape[0]
 
         return test_loss
 
@@ -204,9 +155,13 @@ class RlExperiment(pl.LightningModule):
                             storage_path=f"logs/{self.run_name}/{self.params['dataset']}/validation/")
         
         # Evaluation Metrics
-        train_features, train_attributes = self.model.accumulate_batches(data=self.train_gen, return_latents=True)
-        test_features, test_attributes = self.model.accumulate_batches(data=self.test_gen, return_latents=True)
-
+        train_features, train_attributes = self.model.accumulate_batches(data=self.train_gen, 
+                                                                        return_latents=True,
+                                                                        cuda=(self.curr_device.type == 'cuda'))
+        test_features, test_attributes = self.model.accumulate_batches(data=self.test_gen, 
+                                                                    return_latents=True,
+                                                                    cuda=(self.curr_device.type == 'cuda'))
+        
         train_data = (train_features, train_attributes)
         test_data = (test_features, test_attributes)
 
@@ -214,17 +169,17 @@ class RlExperiment(pl.LightningModule):
             train_data=train_data,
             test_data=test_data,
             model='random_forest',
+            dataset=self.params['dataset'],
             storage_path=f"images/{self.params['dataset']}/test/{self.run_name}/",
-            downstream_task_names=['color_group','product_group','product_type','gender','age_group']
-        )
+            downstream_task_names=self.downstream_task_names)
 
         self.model._downstream_task(
-            train_data,
-            test_data,
-            'knn_classifier',
+            train_data=train_data,
+            test_data=test_data,
+            model='knn_classifier',
+            dataset=self.params['dataset'],
             storage_path=f"images/{self.params['dataset']}/test/{self.run_name}/",
-            downstream_task_names=['color_group','product_group','product_type','gender','age_group']
-        )
+            downstream_task_names=self.downstream_task_names)
 
         self.model.unsupervised_metrics(test_features)
 
@@ -287,15 +242,18 @@ class RlExperiment(pl.LightningModule):
                                 run_name=self.run_name,
                                 path=f"images/{self.params['dataset']}/test/")
 
+        if self.params['dataset'] == 'adidas':
+            attribute = attribute[:, 0]
+
         self.model._cluster(image=image,
-                            attribute=attribute[:,0],
+                            attribute=attribute,
                             path=f"images/{self.params['dataset']}/test/",
                             epoch=1,
                             run_name=self.run_name,
                             method='umap')
                             
         self.model._cluster(image=image,
-                            attribute=attribute[:,0],
+                            attribute=attribute,
                             path=f"images/{self.params['dataset']}/test/",
                             epoch=1,
                             run_name=self.run_name,
@@ -321,11 +279,6 @@ class RlExperiment(pl.LightningModule):
                                 weight_decay=self.params['weight_decay'])
         optims.append(optimizer)
 
-        #optimizer_D = optim.Adam(self.discriminator.parameters(),
-        #                        lr=0.00001,
-        #                        weight_decay=self.params['weight_decay'])
-        
-        #optims.append(optimizer_D)
 
         try:
             if self.params['scheduler_gamma'] is not None:
@@ -343,18 +296,24 @@ class RlExperiment(pl.LightningModule):
         if self.params['dataset'] == 'mnist':
             path = 'data/mnist/'
             data_suffix=None
+            self.downstream_task_names = ['mnist_labels']
         
         if self.params['dataset'] == 'fashionmnist':
             path = 'data/fashionmnist/'
             data_suffix=None
+            self.downstream_task_names = ['fashionmnist_labels']
         
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
             data_suffix = ['front_view']
-        
+            #data_suffix=['side_lateral']
+            self.downstream_task_names = ['color_group','product_group','product_type','gender','age_group']
+
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
             data_suffix=None
+            self.downstream_task_names = ['cifar10_labels']
+
         
         train_rawdata, val_rawdata = utils.img_to_npy(path=path,
                                             train=True,
@@ -385,12 +344,12 @@ class RlExperiment(pl.LightningModule):
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
             data_suffix=['front_view']
+            #data_suffix=['side_lateral']
         
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'
             data_suffix=None
 
-        #transform = self.data_transforms()
         _, val_rawdata = utils.img_to_npy(path=path,
                                         train=True,
                                         val_split_ratio=0.2,
@@ -419,6 +378,7 @@ class RlExperiment(pl.LightningModule):
         if self.params['dataset'] == 'adidas':
             path = '/home/ubuntu/data/adidas/Data/'
             data_suffix=['front_view']
+            #data_suffix=['side_lateral']
 
         if self.params['dataset'] == 'cifar10':
             path = '/home/ubuntu/data/cifar10/'

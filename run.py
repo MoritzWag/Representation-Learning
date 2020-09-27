@@ -3,10 +3,8 @@ import argparse
 import numpy as np 
 import pdb
 from library import models2
-#from library.models2 import helpers
-#from library.models2.helpers import vae_models, vae_architectures, #
+
 from library.models2.helpers import *
-from library.architectures import Discriminator 
 from experiment import RlExperiment
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import MLFlowLogger
@@ -23,7 +21,7 @@ parser.add_argument('--config', '-c',
                     dest='filename',
                     metavar='FILE',
                     help='path to config file',
-                    default='configs/ADIDAS/beta_vae.yaml')
+                    default='configs/FASHIONMNIST/beta_vae.yaml')
 parser.add_argument('--experiment_name',
                     type=str, default='VaeExperiment',
                     metavar='N', help='specifies the experiment name for better tracking later')
@@ -63,8 +61,7 @@ parser.add_argument('--manual_seed', type=int, default=None,
 # model params
 parser.add_argument('--kld_weight', type=float, default=None,
                     help='Weight for the KL-Divergence term in the ELBO of VAE Models')
-# GaussianVae
-#parser.add_argument()
+
 
 # BetaVae 
 parser.add_argument('--beta', type=float, default=None, metavar='N',
@@ -149,13 +146,12 @@ mlflow_logger = MLFlowLogger(
                     experiment_name=args.experiment_name)
 
 
-#ddiscriminator = Discriminator(latent_dim=config['img_arch_params']['latent_dim'])
-
 #For reproducibility
 torch.manual_seed(config['logging_params']['manual_seed'])
 np.random.seed(config['logging_params']['manual_seed'])
 cudnn.deterministic = True 
 cudnn.benchmark = False
+
 
 ## build experiment
 experiment = RlExperiment(model,
@@ -167,7 +163,6 @@ experiment = RlExperiment(model,
 
 
 ## build trainer
-## do I need the default_save_path?
 runner = Trainer(default_save_path=config['logging_params']['save_dir'],
                 min_epochs=1,
                 logger=mlflow_logger,

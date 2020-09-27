@@ -7,8 +7,7 @@ import argparse
 import numpy as np 
 import pdb
 from library import models2
-#from library.models2 import helpers
-#from library.models2.helpers import vae_models, vae_architectures, #
+
 from library.models2.helpers import *
 from library.architectures import Discriminator 
 from experiment import RlExperiment
@@ -67,11 +66,6 @@ parser.add_argument('--max_epochs', type=int, default=None,
 # model params
 parser.add_argument('--kld_weight', type=float, default=None,
                     help='Weight for the KL-Divergence term in the ELBO of VAE Models')
-# GaussianVae
-#parser.add_argument()
-
-# BetaVae 
-#parser.add_argument()
 
 # InfoVae   
 parser.add_argument('--beta', type=float, default=None, metavar='N',

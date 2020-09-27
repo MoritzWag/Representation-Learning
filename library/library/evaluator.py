@@ -25,23 +25,22 @@ class Evaluator(nn.Module):
         super(Evaluator, self).__init__(**kwargs)
         self.scores = {}
 
-    def _downstream_task(self, train_data, test_data, model, storage_path, downstream_task_names=None):
+    def _downstream_task(self, 
+                        train_data, 
+                        test_data, 
+                        model,
+                        dataset,
+                        storage_path, 
+                        downstream_task_names=None):
         
-        print("1.1")
         features_train, target_train = train_data[0].cpu().numpy(), train_data[1].cpu().numpy()
         features_test, target_test = test_data[0].cpu().numpy(), test_data[1].cpu().numpy()
 
-        print("1.2")
         if downstream_task_names is None:
             downstream_task_names = 'downstream task ' * target_train.shape[1]
 
-        print("1.3")
         if model == 'random_forest':
-            if target_train.shape[1] > 1:
-                
-                feature_imp = []
-
-                print("1.4")
+            if dataset == 'adidas':
                 for i in range(target_train.shape[1]):
                     acc, auc, aupr, avg_pr = random_forest(
                         features_train,
@@ -55,25 +54,22 @@ class Evaluator(nn.Module):
                     self.scores['rf_auc_'+downstream_task_names[i]] = auc
                     self.scores['rf_aupr_'+downstream_task_names[i]] = aupr.round(5)
                     self.scores['rf_avg_pr_'+downstream_task_names[i]] = avg_pr.round(5)
-
             else:
                 acc, auc, aupr, avg_pr = random_forest(
                         features_train,
-                        target_train[:,i],
+                        target_train,
                         features_test,
-                        target_test[:,i],
-                        'downstream task',
+                        target_test,
+                        downstream_task_names,
                         storage_path
-                    )
-        
-                self.scores['dst_rf_acc'] = acc.round(5)
-                self.scores['dst_rf_auc'] = auc
-                self.scores['dst_rf_aupr'] = aupr.round(5)
-                self.scores['dst_rf_avg_pr'] = avg_pr.round(5)
+                )
+                self.scores['rf_acc_'+downstream_task_names[0]] = acc.round(5)
+                self.scores['rf_auc_'+downstream_task_names[0]] = auc
+                self.scores['rf_aupr_'+downstream_task_names[0]] = aupr.round(5)
+                self.scores['rf_avg_pr_'+downstream_task_names[0]] = avg_pr.round(5)
 
         elif model == 'knn_classifier':
-            if target_train.shape[1] > 1:
-            
+            if dataset == 'adidas':
                 for i in range(target_train.shape[1]):
                     acc = knn_classifier(features_train, target_train[:,i], features_test, target_test[:,i])
 
@@ -81,7 +77,7 @@ class Evaluator(nn.Module):
             else:
                 acc = knn_classifier(features_train, target_train, features_test, target_test)
                 self.scores['dst_knn_acc'] = acc.round(5)
-        print("done")    
+    
     def unsupervised_metrics(self, data):
         """
         """        
@@ -89,20 +85,16 @@ class Evaluator(nn.Module):
         num_latents = zs.shape[1]
         zs_transposed = np.transpose(zs)
         cov_zs = np.cov(zs_transposed)
-        print("1.1")
+
         self.scores['gaussian_total_correlation'] = self.gaussian_total_correlation(cov_zs)
         self.scores['gaussian_wasserstein_correlation'] = self.gaussian_wasserstein_correlation(cov_zs)
         self.scores['gaussian_wasserstein_correlation_norm'] = (
                 self.scores['gaussian_wasserstein_correlation'] / np.sum(np.diag(cov_zs)))
 
-        print("1.2")
         #features_discrete = make_discretizer(zs)
         features_discrete = histogram_discretize(zs, num_bins=400)   
-        print("1.3")
         mutual_info_matrix = discrete_mutual_info(features_discrete, features_discrete)
-        print("1.4")
         np.fill_diagonal(mutual_info_matrix, 0)
-        print("1.4")
         mutual_info_score = np.sum(mutual_info_matrix) / (num_latents**2 - num_latents)
         self.scores['mutual_info_score'] = mutual_info_score
 

@@ -122,4 +122,6 @@ def reshape_image(img, scaling):
     # resize image
     resized = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
 
+    if resized.ndim == 2:
+        resized = np.expand_dims(resized, 2)
     return resized

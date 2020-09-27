@@ -266,8 +266,6 @@ def get_mlflow_results(mlflow_id, path=None):
                         ]
         i += 1 
     
-    #frame.to_csv(f'{path}runs.csv')
-    #frame.to_csv('runs.csv')
     frame.to_csv(f'{experiment_name}_runs.csv')
 
 

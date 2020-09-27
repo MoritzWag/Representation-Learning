@@ -164,7 +164,6 @@ class BetaVae(nn.Module):
         if recon_text is not None and text is not None:
             text_recon_loss = F.nll_loss(recon_text, text.to(torch.long)).to(torch.float64)
         
-        #latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar + mu ** 2 - logvar.exp(), dim=1), dim=0)
         latent_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp(), dim=1), dim=0)
 
         if self.restrict_capacity == False:

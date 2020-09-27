@@ -86,11 +86,11 @@ class Autoencoder(nn.Module):
         """
 
         embedding = self.img_encoder(data.float())
+        self.store_z = self._reparameterization(embedding)
 
         if return_latents == True:
-            return embedding
+            return self.store_z
 
-        self.store_z = embedding
 
 
     def _loss_function(self, image=None, recon_image=None, code=None, *args, **kwargs):

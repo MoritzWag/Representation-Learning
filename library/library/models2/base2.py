@@ -4,7 +4,7 @@ import pdb
 import logging
 import os
 
-from library.architectures import prior_experts, CustomizedResNet101
+from library.architectures import CustomizedResNet101
 from library.visualizer import Visualizer
 from library.evaluator import Evaluator
 from abc import ABC, abstractmethod
@@ -67,13 +67,15 @@ class ReprLearner(Visualizer, Evaluator):
     def _embed(self):
         pass
 
-    def accumulate_batches(self, data, return_latents=False):
+    def accumulate_batches(self, data, return_latents=False, cuda=True):
 
         image_ = []
         attribute_ = []
 
         if return_latents == False:
             for batch, (image, attribute) in enumerate(data):
+                if cuda:
+                    image = image.cuda()
                 image_.append(image)
                 attribute_.append(attribute)
         
@@ -81,7 +83,7 @@ class ReprLearner(Visualizer, Evaluator):
             attribute_ = torch.cat(attribute_)
         else:
             for batch, (image, attribute) in enumerate(data):
-                if torch.cuda.is_available():
+                if cuda:
                     image = image.cuda()
                 z = self._embed(image, return_latents=True)
                 image_.append(z)
@@ -89,89 +91,13 @@ class ReprLearner(Visualizer, Evaluator):
         
             image_ = torch.cat(image_)
             attribute_ = torch.cat(attribute_)
-
-
-        if torch.cuda.is_available():
+        
+        if cuda:
             image_, attribute_ = image_.cuda(), attribute_.cuda()
 
         return image_, attribute_
 
     
-
-
-###########################################
-#
-# Unimodal vae image base learner
-#
-###########################################
-
-
-
-class MMVaeBase(ReprLearner):
-    """Create a Base class for Multimodal VAE which inherits from ReprLearner.
-    """     
-    def __init__(self,
-            img_encoder,
-            img_decoder,
-            text_encoder,
-            text_decoder,
-            expert,
-            **kwargs):
-        super(MMVaeBase, self).__init__(**kwargs)
-        self.img_encoder = img_encoder
-        self.img_decoder = img_decoder
-        self.text_encoder = text_encoder
-        self.text_decoder = text_decoder
-        self.expert = expert
-
-    def _reparameterization(self, x):
-        pass
-
-    def forward(self, image=None, attrs=None):
-        assert image is not None or attrs is not None
-
-        batch_size = image.size(0) if image is not None else attrs.size(0)
-        
-        mu, logvar = prior_experts((1, batch_size, 10))
-        # mu, logvar unsqueeze(0) or squeeze(0)
-        if torch.cuda.is_available():
-            #mu, logvar = mu.squeeze(0).float().cuda(), logvar.squeeze(0).float().cuda()
-            mu, logvar = mu.float().cuda(), logvar.float().cuda()
-
-        if image is not None and attrs is not None:
-            img_henc = self.img_encoder(image)
-            attrs_henc = self.text_encoder(attrs.to(torch.int64))
-
-            image_mu, image_logvar = self._parameterize(img_henc, img=True)
-            mu = torch.cat((mu, image_mu.unsqueeze(0)), dim=0)
-            logvar = torch.cat((logvar, image_logvar.unsqueeze(0)), dim=0)
-
-            attr_mu, attr_logvar = self._parameterize(attrs_henc, attrs=True)
-            mu = torch.cat((mu, attr_mu.unsqueeze(0)), dim=0)
-            logvar = torch.cat((logvar, attr_logvar.unsqueeze(0)), dim=0)
-
-        elif image is not None:
-            img_henc = self.img_encoder(image)
-            image_mu, image_logvar = self._parameterize(img_henc, img=True)
-            mu = torch.cat((mu, image_mu.unsqueeze(0)), dim=0)
-            logvar = torch.cat((logvar, image_logvar.unsqueeze(0)), dim=0)
-
-        elif attrs is not None:
-            attr_henc = self.text_encoder(attrs.to(torch.int64))
-            attr_mu, attr_logvar = self._parameterize(attr_henc, attrs=True)
-            mu = torch.cat((mu, attr_mu.unsqueeze(0)), dim=0)
-            logvar = torch.cat((logvar, attr_logvar.unsqueeze(0)), dim=0)
-
-        mu, logvar = self.expert(mu, logvar)
-
-        z = self._mm_reparameterization(mu, logvar)
-
-        image_recon = self.img_decoder(z)
-        attr_recon = self.text_decoder(z)
-
-        return {'recon_image': image_recon, 'recon_text': attr_recon, 'mu': mu, 'logvar': logvar}
-
-
 
 class VaeBase(ReprLearner):
     """ Create Base class for VAE which inherits the architecture.
@@ -199,9 +125,12 @@ class VaeBase(ReprLearner):
 
         mus, logvars, embeddings, attributes = [], [], [], []
         for batch, (image, attribute) in enumerate(data):
+            curr_device = image.device
+            
             image = image.float()
-            if torch.cuda.is_available():
-                image.cuda()
+            image = image.to(curr_device)
+            # if torch.cuda.is_available():
+            #     image.cuda()
             mu, logvar, embedding = self._embed(image)
             mus.append(mu)
             logvars.append(logvar)

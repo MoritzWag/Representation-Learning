@@ -81,7 +81,6 @@ def save_metrics(scores, save_path, epoch=None):
 def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     """
     """
-
     # Create one-hot-encoding
     print("one hot encoding")
     y = np.concatenate((train_y, test_y))
@@ -121,13 +120,17 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     probs_hat = rf.predict_proba(test_X)
     y_hat = rf.predict(test_X)
 
-
+    #pdb.set_trace()
     try:
         weighted_auc = roc_auc_score(y_true=test_yb, y_score=probs_hat, multi_class="ovr", average='weighted')
     except:
-        weighted_auc = 0.5
+        weighted_auc = 0.0
     balanced_acc = balanced_accuracy_score(test_y, y_hat)
-    avg_precision = average_precision_score(test_yb, probs_hat, average='weighted')
+
+    try:
+        avg_precision = average_precision_score(test_yb, probs_hat, average='weighted')
+    except: 
+        avg_precision = np.asarray(0.0)
 
     prevalence = ybin.sum(axis=0) / ybin.sum()
     aupr = []
@@ -141,24 +144,24 @@ def random_forest(train_X, train_y, test_X, test_y, dst_name, path):
     aupr = np.array(aupr)
     aupr_wmean = (aupr * prevalence).sum() 
     
-    # print("get feature importance")
-    # Obtain permutation importance
-    # importance = permutation_importance(rf, test_X, test_y, n_repeats=15, random_state=0)
-    # sorted_idx = importance.importances_mean.argsort()
+    print("get feature importance")
+    #Obtain permutation importance
+    importance = permutation_importance(rf, test_X, test_y, n_repeats=15, random_state=0)
+    sorted_idx = importance.importances_mean.argsort()
 
-    # fig, ax = plt.subplots()
-    # latent_names = ['latent_{num}'.format(num=x) for x in (sorted_idx+1)]
-    # #latent_names = latent_names[1:]
-    # ax.boxplot(importance.importances[sorted_idx].T,
-    #        vert=False, labels=latent_names)
-    # ax.set_title("Permutation Importances "+str(dst_name))
-    # fig.tight_layout()
+    fig, ax = plt.subplots()
+    latent_names = ['latent_{num}'.format(num=x) for x in (sorted_idx+1)]
+    #latent_names = latent_names[1:]
+    ax.boxplot(importance.importances[sorted_idx].T,
+           vert=False, labels=latent_names)
+    ax.set_title("Permutation Importances "+str(dst_name))
+    fig.tight_layout()
 
-    # path = os.path.expanduser(path)
-    # if not os.path.exists(path):
-    #     os.makedirs(path)
-    # fig.savefig(f"{path}FI_{dst_name}.png") 
+    path = os.path.expanduser(path)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    fig.savefig(f"{path}FI_{dst_name}.png") 
 
-    # plt.close()
+    plt.close()
 
     return balanced_acc, weighted_auc, aupr_wmean, avg_precision

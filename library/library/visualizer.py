@@ -142,10 +142,12 @@ class Visualizer(nn.Module):
             model_type = self.__class__.__name__
         )
 
+
         path = os.path.expanduser(path)
         storage_path = f"{path}{run_name}/"
         if not os.path.exists(storage_path):
             os.makedirs(storage_path)
+        
         
         if self.__class__.__name__ == 'GaussmixVae':
             for categories in range(self.categorical_dim+1):
@@ -170,20 +172,9 @@ class Visualizer(nn.Module):
                         nrow=n_per_latent
                     )
         else:
-            # decoded_traversals_normal = self.img_decoder(
-            #     latent_traversals_normal
-            # )
-
             decoded_traversals_empirical = self.img_decoder(
                 latent_traversals_empirical
             )
-
-            # vutils.save_image(
-            #     decoded_traversals_normal.data,
-            #     f"{storage_path}traversal_norm_{epoch}.png",
-            #     normalize=True,
-            #     nrow=n_per_latent
-            # )
 
             vutils.save_image(
                 decoded_traversals_empirical.data,
@@ -276,31 +267,28 @@ class Visualizer(nn.Module):
         if not os.path.exists(storage_path):
             os.makedirs(storage_path)
 
-        if self.img_encoder.in_channels == 1:
-            imgplot = 255 * np.ones((plot_size, plot_size), np.uint8)
-        else:
-            imgplot = 255 * \
+        imgplot =  255 * \
                 np.ones(
                     (plot_size,
                      plot_size,
                      self.img_encoder.in_channels),
                     np.uint8)
 
-        # Fill the blank plot with the coordinates of the images according to
         # tSNE
         for img, label, x, y in tqdm(zip(image, feature_labels, tx, ty),
                                      desc='Plotting t-SNE/UMAP with images',
                                      total=len(image)):
+            
+            # potentially add if statement
+            if img.shape[2] == 1:
+                scaling = 100
+            else:
+                scaling = 20
 
-            img = reshape_image(img, 20)
+            img = reshape_image(img, scaling=scaling)
             tl_x, tl_y, br_x, br_y = get_coordinates(img, x, y, plot_size)
 
-            # draw a rectangle with a color corresponding to the image class
-            #image = draw_rectangle_by_class(img, label)
-            if self.img_encoder.in_channels > 1:
-                imgplot[tl_y:br_y, tl_x:br_x, :] = img
-            else:
-                imgplot[tl_y:br_y, tl_x:br_x] = img
+            imgplot[tl_y:br_y, tl_x:br_x, :] = img
 
         img_storage_path = f"{storage_path}/{method}img_{epoch}.png"
         cv2.imwrite(img_storage_path, imgplot)
