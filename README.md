@@ -70,10 +70,14 @@ Note, all commands must be run from parent level of the repository.
 4. Install the required packages via `pip install -r requirements.txt`
 5. Install the local package `library` as described above.
 6. Download the data by moving to data folder `cd data` and executing `python get_<dataset>_data.py`
-7. Run code from `run.py`
+7. Run code from `run.py --config/config_file.yaml`
 
 # Further notes on running experiments.
 In case that hyperparameters want to be adjusted, you can do so by respectively adjusting the parameters set in the `config` files.
 Note, however, the parameter configurations listed we found worked best for the respective problem. 
+If you want to run your own experiments, it is advisable to additionally specify the `run_name` and the `experiment_name`. 
+This is required for `mlflow` to log adequately. 
+An exemplary command could be as follows:
+`python run.py --configs/MNIST/vae.yaml --run_name mnist_vae --experiment_name mnist_vae`
 
 
