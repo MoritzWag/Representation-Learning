@@ -7,7 +7,7 @@ command2 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40
 command3 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --kld_weight 0.0005 --experiment_name kld_check --run_name kld_weight_0005'
 command4 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --kld_weight 0.001 --experiment_name kld_check --run_name kld_weight_001'
 command5 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --kld_weight 0.01 --experiment_name kld_check --run_name kld_weight_01'
-command6 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --kld_weight 0.1 --experiment_name kld_check --run_name kld_weight_1
+command6 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --kld_weight 0.1 --experiment_name kld_check --run_name kld_weight_1'
 command7 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --kld_weight 0.5 --experiment_name kld_check --run_name kld_weight_5'
 command8 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --kld_weight 1. --experiment_name kld_check --run_name kld_weight_1_0'
 
