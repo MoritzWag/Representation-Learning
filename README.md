@@ -4,8 +4,23 @@ Alexander Piehler, Moritz Wagner
 
 ## Introduction
 This Github Repository is developed by Moritz Wagner and Alexander Piehler in collaboration with Adidas.
-The main objective is to learn representation of image and text data with Variational Autoencoders. This codebase allows to run experiments in a reproducible manner and to track experiments via mlflow.
-We use PEP8 as styleguide ...
+This project stresses the suitability of Variational Autoencoders for representation learning of image data. The main goal was to establish a codebase that allows for reproducing and tracking experiments via mlflow. 
+The world of Variational Autoencoders is quite large and therefore, we restricted ourselves to the ones we believed that would perform best. To further benchmark, we also included PCA and Autoencoders.
+The following models were considered:
+```bash
+├── VAE
+├── beta-VAE
+├── InfoVAE
+├── GaussMixVAE
+├── DIP-VAE
+├── PCA
+├── Autoencoder
+```
+
+For each model, we found some valid hyperparameter configurations that can be considered in the folder `configs/`.
+
+
+
 
 ## Code Structure
 This framework is structured as follows:
@@ -51,7 +66,8 @@ The package contains different modules
 └── viz_helpers.py
 ```
 
-
+### `playground`
+Contains only some playground files which are absolutely not important to consider.
 
 
 ## Packaging
