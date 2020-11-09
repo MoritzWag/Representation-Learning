@@ -51,18 +51,7 @@ class ImageData(data.Dataset):
 		if self.dataset == 'cifar10':
 			x = crop_center(x, 28, 28)
 			x = x / 255.
-		
-		# if self.dataset == 'adidas':
-		# 	x = x / 255.
-		#if self.transform is notNone:
-		#	#x = Image.fromarray((x*255).astype(np.uint8))
-		#	#x = self.transform(x)
-		#	#x = self.transform(np.uint8(x))
-		#	x = x / 255.
-		#	#x = cropND(x, (28, 28))
-		#	x = crop_center(x, 28, 28)
-		#	#x = x * 255
-		#	#x = x
+	
 		return x, y
 
 
@@ -178,48 +167,4 @@ def accumulate_batches(data, accum_img=True, accum_attr=True):
 
 
 		
-
-
-
-class Transform1(object):
-
-
-	def __init__(self):
-		pass
-
-	def __call__(self):
-		pass
-
-class Transform2(object):
-
-	def __init__(self):
-		pass
 	
-	def __call__(self):
-		pass
-
-
-
-
-	
-def cropND(img, bounding):
-    start = tuple(map(lambda a, da: a//2-da//2, img.shape, bounding))
-    end = tuple(map(operator.add, start, bounding))
-    slices = tuple(map(slice, start, end))
-    return img[slices]
-
-
-def crop_center(img, cropx, cropy):
-    _, y, x = img.shape
-    startx = x // 2 - (cropx // 2)
-    starty = y // 2 - (cropy // 2)
-    return img[:, starty:starty + cropy, startx:startx + cropx]
-
-
-def permute_dims(z):
-	"""
-	"""
-	B, _ = z.size()
-	perm = torch.randperm(B)
-	perm_z = z[perm]
-	return perm_z

@@ -31,16 +31,6 @@ class ConvEncoder(nn.Module):
         self.latent_dim = latent_dim
         self.in_channels = in_channels
         self.img_size = img_size
-
-        # Input check for padding
-        #assertTrue(len(enc_hidden_dims) == len(enc_padding))
-
-        # Input check for kernel size
-        #assertTrue(len(enc_hidden_dims) == len(kernel_size))
-        
-        # Input check for stride
-        #assertTrue(len(enc_hidden_dims) == len(stride))
-
         self.enc_hidden_dims = enc_hidden_dims
         self.enc_padding = enc_padding
         self.enc_kernel_size = enc_kernel_size
@@ -53,8 +43,6 @@ class ConvEncoder(nn.Module):
                 output_dims[i+1] = np.floor((output_dims[i+1] + 2*enc_padding[i] - enc_kernel_size[i])/enc_stride[i]) + 1
             else:
                 output_dims[i+1] = np.floor((output_dims[i] + 2*enc_padding[i] - enc_kernel_size[i])/enc_stride[i]) + 1
-
-        #assertNotIn(0, output_dims, 'H or W dimensions are 0 at layer {}. Please adjust kernel size, padding or stride to fix this'format(output_dims.index(0)))
         
         self.enc_output_dim = output_dims[-1]*output_dims[-1]
 
@@ -104,19 +92,6 @@ class ConvDecoder(nn.Module):
         self.latent_dim = latent_dim
         self.in_channels = in_channels
         self.categorical_dim = categorical_dim
-
-        # Input check for padding
-        #assertTrue(len(dec_hidden_dims) == len(dec_padding))
-
-        # Input check for kernel size
-        #assertTrue(len(dec_hidden_dims) == len(dec_kernel_size))
-        
-        # Input check for dec_stride
-        #assertTrue(len(dec_hidden_dims) == len(dec_stride))
-
-        # Input check for out padding
-        #assertTrue(len(dec_hidden_dims)-1 == len(dec_out_padding))
-
         self.dec_padding = dec_padding
         self.dec_kernel_size = dec_kernel_size
         self.dec_stride = dec_stride

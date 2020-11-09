@@ -55,13 +55,6 @@ def get_mlflow_results(mlflow_id):
         dataset = open(f'{path}{run}/params/dataset').read()
         model = open(f'{path}{run}/params/model').read()
         
-        
-
-
-    #i = 0 
-    #for run in runs:
-    #    model = open()
-
 
 
 
