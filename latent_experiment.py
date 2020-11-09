@@ -13,6 +13,9 @@ os.system(command3)
 os.system(command4)
 
 mlruns = os.listdir('mlruns')
-latest_mlflow_id = 2
+latest_mlflow_id = int(max(mlruns))
 
 get_mlflow_results(mlflow_id=latest_mlflow_id)
+
+
+
