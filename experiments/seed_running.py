@@ -3,26 +3,26 @@ import pandas as pd
 from library.postprocessing import get_mlflow_results, plot_boxes
 
 
-command1 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1'
-command2 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_1'
-command3 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_2'
-command4 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_3'
-command5 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_4'
-command6 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_5'
+command1 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1'
+command2 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_1'
+command3 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_2'
+command4 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_3'
+command5 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_4'
+command6 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1337 --experiment_name seed_check --run_name seed1_5'
 
-command7 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2'
-command8 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_1'
-command9 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_2'
-command10 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_3'
-command11 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_4'
-command12 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_5'
+command7 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2'
+command8 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_1'
+command9 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_2'
+command10 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_3'
+command11 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_4'
+command12 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 1789 --experiment_name seed_check --run_name seed2_5'
 
-command13 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3'
-command14 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_1'
-command15 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_2'
-command16 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_3'
-command17 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_4'
-command18 = 'python ../run.py --config configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_5'
+command13 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3'
+command14 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_1'
+command15 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_2'
+command16 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_3'
+command17 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_4'
+command18 = 'python ../run.py --config ../configs/ADIDAS/vae.yaml --max_epochs 40 --manual_seed 5687 --experiment_name seed_check --run_name seed3_5'
 
 
 os.system(command1)

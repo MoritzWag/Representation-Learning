@@ -12,8 +12,6 @@ from pytorch_lightning.loggers import MLFlowLogger
 import torch.backends.cudnn as cudnn
 
 
-
-
 torch.set_default_dtype(torch.float64)
 
 parser = argparse.ArgumentParser(description='Generic runner for Representation Learning with VAE')
@@ -103,7 +101,6 @@ parser.add_argument('--cont_weight', type=int, default=None, metavar='N',
                     help='')
 
 # JointVae
-#parser.add_argument()
 parser.add_argument('--latent_min_capacity', type=float, default=None, metavar='N',
                     help='')
 parser.add_argument('--latent_max_capacity', type=float, default=None, metavar='N',
@@ -122,7 +119,6 @@ parser.add_argument('--categorical_num_iter',  type=float, default=None, metavar
                     help='')
 
 # DIPVae
-#parser.add_argument()
 parser.add_argument('--lambda_dig', type=float, default=None, metavar='N',
                     help='')
 parser.add_argument('--lambda_offdig', type=float, default=None, metavar='N',

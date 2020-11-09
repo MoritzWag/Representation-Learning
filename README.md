@@ -1,5 +1,6 @@
 # Representation-Learning
 Representation Learning of Image Data with VAE.
+Alexander Piehler, Moritz Wagner
 
 ## Introduction
 This Github Repository is developed by Moritz Wagner and Alexander Piehler in collaboration with Adidas.
@@ -7,6 +8,50 @@ The main objective is to learn representation of image and text data with Variat
 We use PEP8 as styleguide ...
 
 ## Code Structure
+This framework is structured as follows:
+```bash
+├── configs
+├── data
+├── experiments
+├── library
+├── playground
+```
+
+### `configs`
+Contains the config files for each model depending on the chosen data set.
+
+### `data`
+In this folder, you find all relevant python scripts to download and preprocess the data for running the models.
+
+### `experiments`
+Contains the scripts for running all relevant experiments. To run them in the right order, follow these steps:
+To run them first change into the directory accordingly: `cd experiments`
+1. `python seed_running.py`
+2. `python latent_experiment.py`
+3. `python epochs_experiment.py`
+4. `python kld_weight_experiment.py`
+5. `python latent_experiment.py`
+6. `python tune_models.py`
+7. `python run_best_configurations.py`
+8. `python deep_dive.py`
+
+### `library`
+
+This is the package for this repository, it stores all functions and (model) classes that are used. 
+The package contains different modules
+
+```bash
+├── models2
+├── architectures.py
+├── eval_helpers.py
+├── evaluator.py
+├── postprocessing.py
+├── utils.py
+├── visualizer.py
+└── viz_helpers.py
+```
+
+
 
 
 ## Packaging
