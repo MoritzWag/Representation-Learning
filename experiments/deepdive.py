@@ -3,7 +3,7 @@ from library.postprocessing import get_mlflow_results
 
 
 experiment_name = "deep_dive"
-max_epochs = 40
+max_epochs = 80
 
 
 command_beta = f"python ../run.py --config ../configs/ADIDAS/beta_vae.yaml --experiment_name {experiment_name} --run_name beta_vae --max_epochs {max_epochs} --latent_dim 5"
